@@ -31,9 +31,7 @@ void ErrorLogger::error(size_t begin, size_t end, std::string message)
 	}
 
 	output << "Error: ln " << line << ", col " << column << ", \"" << source.substr(begin, end - begin) << "\": " << message << "\n";
-#ifdef _DEBUG
 	throw std::exception(message.c_str());
-#endif
 }
 
 void ErrorLogger::warning(size_t position, std::string message)
@@ -50,7 +48,6 @@ void ErrorLogger::warning(size_t position, std::string message)
 	}
 
 	output << "Warning: ln " << line << ", col " << column << ": " << message << "\n";
-	throw std::exception(message.c_str());
 }
 
 void ErrorLogger::warning(size_t begin, size_t end, std::string message)
