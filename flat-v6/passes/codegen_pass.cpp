@@ -1,5 +1,9 @@
 #include "codegen_pass.hpp"
 
+#include <llvm/Passes/PassBuilder.h>
+#include <llvm/Analysis/LoopAnalysisManager.h>
+#include <llvm/Analysis/CGSCCPassManager.h>
+
 void LLVMCodegenPass::compile(AstNode* ast)
 {
 	isFunctionBodyPass = false;

@@ -7,9 +7,6 @@
 #include <llvm/IR/Value.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/IRBuilder.h>
-#include <llvm/Passes/PassBuilder.h>
-#include <llvm/Analysis/LoopAnalysisManager.h>
-#include <llvm/Analysis/CGSCCPassManager.h>
 
 #include "../data/ast.hpp"
 #include "../util/error_logger.hpp"
