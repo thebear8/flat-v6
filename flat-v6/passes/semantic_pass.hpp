@@ -9,9 +9,10 @@
 #include "../util/error_logger.hpp"
 #include "../data/operator.hpp"
 
-class SemanticPass : protected Visitor<Type*>, protected ErrorLogger
+class SemanticPass : protected Visitor<Type*>
 {
 private:
+	ErrorLogger& logger;
 	AstContext& astCtx;
 	TypeContext& typeCtx;
 	Type* functionResult, * expectedFunctionResult;
@@ -21,8 +22,8 @@ private:
 	std::unordered_map<std::string, Type*> localVariables;
 
 public:
-	SemanticPass(AstContext& astCtx, TypeContext& typeCtx, std::string_view source, std::ostream& logStream) :
-		ErrorLogger(source, logStream), astCtx(astCtx), typeCtx(typeCtx), functionResult(nullptr), expectedFunctionResult(nullptr) { }
+	SemanticPass(ErrorLogger& logger, AstContext& astCtx, TypeContext& typeCtx) :
+		logger(logger), astCtx(astCtx), typeCtx(typeCtx), functionResult(nullptr), expectedFunctionResult(nullptr) { }
 
 public:
 	void analyze(AstNode* program);
@@ -62,22 +63,4 @@ protected:
 	virtual Type* visit(Declaration* node) override { return node->accept(this); }
 	virtual Type* visit(BoundCallExpression* node) override { throw std::exception(); }
 	virtual Type* visit(BoundIndexExpression* node) override { throw std::exception(); }
-
-private:
-	void error(AstNode* node, std::string const& message) { return ErrorLogger::error(node->begin, node->end, message); }
-	void warning(AstNode* node, std::string const& message) { return ErrorLogger::warning(node->begin, node->end, message); }
-
-	template<typename ReturnType>
-	ReturnType error(AstNode* node, std::string const& message, ReturnType&& returnValue)
-	{
-		error(node, message);
-		return std::forward<ReturnType>(returnValue);
-	}
-
-	template<typename ReturnType>
-	ReturnType warning(AstNode* node, std::string const& message, ReturnType&& returnValue)
-	{
-		warning(node, message);
-		return std::forward<ReturnType>(returnValue);
-	}
 };

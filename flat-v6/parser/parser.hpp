@@ -6,12 +6,13 @@
 class Parser : protected Lexer
 {
 private:
+	ErrorLogger& logger;
 	AstContext& ctx;
 	TypeContext& typeCtx;
 
 public:
-	Parser(AstContext& ctx, TypeContext& typeCtx, std::string_view input, std::ostream& logStream) :
-		Lexer(input, logStream), ctx(ctx), typeCtx(typeCtx) { }
+	Parser(ErrorLogger& logger, AstContext& ctx, TypeContext& typeCtx, std::string_view input) :
+		Lexer(logger, input), logger(logger), ctx(ctx), typeCtx(typeCtx) { }
 
 public:
 	Expression* l0()
@@ -55,7 +56,7 @@ public:
 			}
 		}
 		else {
-			error(position, "Invalid L0");
+			logger.error(position, "Invalid L0");
 			return nullptr;
 		}
 	}
@@ -454,7 +455,7 @@ public:
 				declarations.push_back(functionDeclaration());
 			}
 			else {
-				error(position, "Expected struct declaration or function declaration");
+				logger.error(position, "Expected struct declaration or function declaration");
 			}
 		}
 		return ctx.make<Module>(begin, position, declarations);

@@ -7,15 +7,16 @@
 #include "../util/error_logger.hpp"
 #include "../data/operator.hpp"
 
-class OperatorLoweringPass : protected Visitor<AstNode*>, protected ErrorLogger
+class OperatorLoweringPass : protected Visitor<AstNode*>
 {
 private:
+	ErrorLogger& logger;
 	AstContext& astCtx;
 	TypeContext& typeCtx;
 
 public:
-	OperatorLoweringPass(AstContext& astCtx, TypeContext& ctx, std::string_view source, std::ostream& logStream) :
-		ErrorLogger(source, logStream), astCtx(astCtx), typeCtx(ctx) { }
+	OperatorLoweringPass(ErrorLogger& logger, AstContext& astCtx, TypeContext& ctx) :
+		logger(logger), astCtx(astCtx), typeCtx(ctx) { }
 
 public:
 	AstNode* process(AstNode* program);
@@ -60,22 +61,5 @@ private:
 		if (!ptr)
 			throw std::exception("bad check_cast");
 		return ptr;
-	}
-
-	void error(AstNode* node, std::string const& message) { return ErrorLogger::error(node->begin, node->end, message); }
-	void warning(AstNode* node, std::string const& message) { return ErrorLogger::warning(node->begin, node->end, message); }
-
-	template<typename ReturnType>
-	ReturnType error(AstNode* node, std::string const& message, ReturnType&& returnValue)
-	{
-		error(node, message);
-		return std::forward<ReturnType>(returnValue);
-	}
-
-	template<typename ReturnType>
-	ReturnType warning(AstNode* node, std::string const& message, ReturnType&& returnValue)
-	{
-		warning(node, message);
-		return std::forward<ReturnType>(returnValue);
 	}
 };

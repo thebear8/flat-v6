@@ -1,6 +1,13 @@
 #include "error_logger.hpp"
 
-void ErrorLogger::error(size_t position, std::string message)
+#include "../data/ast.hpp"
+
+void ErrorLogger::error(AstNode* node, std::string const& message)
+{
+	return error(node->begin, node->end, message);
+}
+
+void ErrorLogger::error(size_t position, std::string const& message)
 {
 	size_t line = 1, column = 1;
 	for (size_t i = 0; i < position && i < source.length(); i++) {
@@ -17,7 +24,7 @@ void ErrorLogger::error(size_t position, std::string message)
 	throw std::exception(message.c_str());
 }
 
-void ErrorLogger::error(size_t begin, size_t end, std::string message)
+void ErrorLogger::error(size_t begin, size_t end, std::string const& message)
 {
 	size_t line = 1, column = 1;
 	for (size_t i = 0; i < begin && i < source.length(); i++) {
@@ -34,7 +41,12 @@ void ErrorLogger::error(size_t begin, size_t end, std::string message)
 	throw std::exception(message.c_str());
 }
 
-void ErrorLogger::warning(size_t position, std::string message)
+void ErrorLogger::warning(AstNode* node, std::string const& message)
+{
+	return warning(node->begin, node->end, message);
+}
+
+void ErrorLogger::warning(size_t position, std::string const& message)
 {
 	size_t line = 1, column = 1;
 	for (size_t i = 0; i < position && i < source.length(); i++) {
@@ -50,7 +62,7 @@ void ErrorLogger::warning(size_t position, std::string message)
 	output << "Warning: ln " << line << ", col " << column << ": " << message << "\n";
 }
 
-void ErrorLogger::warning(size_t begin, size_t end, std::string message)
+void ErrorLogger::warning(size_t begin, size_t end, std::string const& message)
 {
 	size_t line = 1, column = 1;
 	for (size_t i = 0; i < begin && i < source.length(); i++) {

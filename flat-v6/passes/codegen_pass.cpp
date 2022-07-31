@@ -86,7 +86,7 @@ llvm::Value* LLVMCodegenPass::visit(StringExpression* node)
 llvm::Value* LLVMCodegenPass::visit(IdentifierExpression* node)
 {
 	if (!localValues.contains(node->value))
-		return error(node, "Undefined local variable " + node->value, nullptr);
+		return logger.error(node, "Undefined local variable " + node->value, nullptr);
 
 	return builder.CreateLoad(getLLVMType(node->computedType), localValues.at(node->value), node->value + "_");
 }
@@ -110,7 +110,7 @@ llvm::Value* LLVMCodegenPass::visit(StructExpression* node)
 			}
 
 			if (j == node->fields.size())
-				return error(node, "No initializer for field " + type->fields.at(i).first, nullptr);
+				return logger.error(node, "No initializer for field " + type->fields.at(i).first, nullptr);
 		}
 	}
 
@@ -137,7 +137,7 @@ llvm::Value* LLVMCodegenPass::visit(UnaryExpression* node)
 	}
 	else
 	{
-		return error(node, "Invalid Unary operator", nullptr);
+		return logger.error(node, "Invalid Unary operator", nullptr);
 	}
 }
 
@@ -147,7 +147,7 @@ llvm::Value* LLVMCodegenPass::visit(BinaryExpression* node)
 	{
 		auto name = dynamic_cast<IdentifierExpression*>(node->left)->value;
 		if (!localValues.contains(name))
-			return error(node, "Undefined local variable " + name, nullptr);
+			return logger.error(node, "Undefined local variable " + name, nullptr);
 
 		builder.CreateStore(visit(node->right), localValues.at(name));
 		return builder.CreateLoad(getLLVMType(node->computedType), localValues.at(name), name + "_");
@@ -245,7 +245,7 @@ llvm::Value* LLVMCodegenPass::visit(BinaryExpression* node)
 		}
 		else
 		{
-			return error(node, "Invalid binary expression", nullptr);
+			return logger.error(node, "Invalid binary expression", nullptr);
 		}
 	}
 }
@@ -268,10 +268,10 @@ llvm::Value* LLVMCodegenPass::visit(BoundCallExpression* node)
 	auto type = llvm::FunctionType::get(getLLVMType(node->computedType), llvmArgTypes, false);
 	auto function = (mod.getFunction(name) ? mod.getFunction(name) : mod.getFunction(node->identifier));
 	if (!function)
-		return error(node, "No matching function named " + name + " found", nullptr);
+		return logger.error(node, "No matching function named " + name + " found", nullptr);
 
 	if (function->getFunctionType() != type)
-		return error(node, "Type of function " + name + " does not match", nullptr);
+		return logger.error(node, "Type of function " + name + " does not match", nullptr);
 
 	return builder.CreateCall(function, argValues);
 }
@@ -308,7 +308,7 @@ llvm::Value* LLVMCodegenPass::visit(FieldExpression* node)
 		}
 	}
 
-	return error(node, "Struct " + structType->toString() + " does not have a field called " + node->fieldName, nullptr);
+	return logger.error(node, "Struct " + structType->toString() + " does not have a field called " + node->fieldName, nullptr);
 }
 
 llvm::Value* LLVMCodegenPass::visit(BlockStatement* node)
@@ -334,7 +334,7 @@ llvm::Value* LLVMCodegenPass::visit(VariableStatement* node)
 	for (auto& [name, value] : node->items)
 	{
 		if (localValues.contains(name))
-			return error(node, "Variable " + name + " is already defined", nullptr);
+			return logger.error(node, "Variable " + name + " is already defined", nullptr);
 
 		localValues.try_emplace(name, builder.CreateAlloca(getLLVMType(value->computedType), nullptr, name));
 		builder.CreateStore(visit(value), localValues.at(name));
@@ -434,7 +434,7 @@ llvm::Value* LLVMCodegenPass::visit(FunctionDeclaration* node)
 	{
 		auto function = mod.getFunction(name);
 		if (!function)
-			return error(node, "Function " + name + " is undefined", nullptr);
+			return logger.error(node, "Function " + name + " is undefined", nullptr);
 
 		auto entryBlock = llvm::BasicBlock::Create(llvmCtx, "entry");
 		auto bodyBlock = llvm::BasicBlock::Create(llvmCtx, "body");
@@ -447,7 +447,7 @@ llvm::Value* LLVMCodegenPass::visit(FunctionDeclaration* node)
 		{
 			auto& [name, type] = node->parameters.at(i);
 			if (localValues.contains(name))
-				return error(node, "Parameter " + name + " is already defined", nullptr);
+				return logger.error(node, "Parameter " + name + " is already defined", nullptr);
 
 			localValues.try_emplace(name, builder.CreateAlloca(getLLVMType(type), nullptr, name + "_"));
 			builder.CreateStore(function->getArg(i), localValues.at(name));
@@ -645,7 +645,7 @@ std::string LLVMCodegenPass::unescapeString(std::string const& input, AstNode* n
 		}
 		else
 		{
-			return error(node, "Invalid Unicode code point", "");
+			return logger.error(node, "Invalid Unicode code point", "");
 		}
 	}
 
@@ -665,7 +665,7 @@ uint32_t LLVMCodegenPass::unescapeCodePoint(std::string const& input, size_t& po
 				position++;
 
 			if ((position - start) > 3)
-				return error(node, "Octal char literal cannot have more than three digits", 0);
+				return logger.error(node, "Octal char literal cannot have more than three digits", 0);
 
 			return std::stoul(input.substr(start, (position - start)), nullptr, 8);
 		}
@@ -677,7 +677,7 @@ uint32_t LLVMCodegenPass::unescapeCodePoint(std::string const& input, size_t& po
 				position++;
 
 			if ((position - start) == 0)
-				return error(node, "Hex char literal cannot have zero digits", 0);
+				return logger.error(node, "Hex char literal cannot have zero digits", 0);
 
 			return std::stoul(input.substr(start, (position - start)), nullptr, 16);
 		}
@@ -689,7 +689,7 @@ uint32_t LLVMCodegenPass::unescapeCodePoint(std::string const& input, size_t& po
 				position++;
 
 			if ((position - start) != 4)
-				error(node, "2 byte Unicode code point (\\u) must have 4 digits", "");
+				logger.error(node, "2 byte Unicode code point (\\u) must have 4 digits", "");
 
 			return std::stoul(input.substr(start, (position - start)), nullptr, 16);
 		}
@@ -701,21 +701,21 @@ uint32_t LLVMCodegenPass::unescapeCodePoint(std::string const& input, size_t& po
 				position++;
 
 			if ((position - start) != 8)
-				error(node, "4 byte Unicode code point (\\U) must have 8 digits", "");
+				logger.error(node, "4 byte Unicode code point (\\U) must have 8 digits", "");
 
 			return std::stoul(input.substr(start, (position - start)), nullptr, 16);
 		}
 		else if (position < input.length())
 		{
 			if (!escapeChars.contains(input[position]))
-				return error(node, "Invalid escape sequence", 0);
+				return logger.error(node, "Invalid escape sequence", 0);
 
 			position++;
 			return escapeChars.at(input[position]);
 		}
 		else
 		{
-			return error(node, "Incomplete escape sequence", 0);
+			return logger.error(node, "Incomplete escape sequence", 0);
 		}
 	}
 	else if (position < input.length())
@@ -724,6 +724,6 @@ uint32_t LLVMCodegenPass::unescapeCodePoint(std::string const& input, size_t& po
 	}
 	else
 	{
-		return error(node, "Unexpected end of char sequence", 0);
+		return logger.error(node, "Unexpected end of char sequence", 0);
 	}
 }

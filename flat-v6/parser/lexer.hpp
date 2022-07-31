@@ -6,7 +6,7 @@
 #include "../data/token.hpp"
 #include "../util/error_logger.hpp"
 
-class Lexer : protected ErrorLogger
+class Lexer
 {
 private:
 	static constexpr std::pair<Token, std::string_view> tokens[] =
@@ -63,6 +63,7 @@ private:
 	};
 
 protected:
+	ErrorLogger& logger;
 	size_t position;
 	std::string_view input;
 	std::string_view value;
@@ -70,8 +71,8 @@ protected:
 	std::string_view intSuffixValue;
 
 public:
-	Lexer(std::string_view input, std::ostream& logStream) :
-		ErrorLogger(input, logStream), input(input), position(0), value("") { }
+	Lexer(ErrorLogger& logger, std::string_view input) :
+		logger(logger), input(input), position(0), value("") { }
 
 private:
 	Token advance();

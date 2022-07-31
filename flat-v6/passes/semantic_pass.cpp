@@ -7,7 +7,7 @@ void SemanticPass::analyze(AstNode* program)
 	for (auto& [name, structDeclaration] : structs)
 	{
 		if (typeCtx.structTypes.contains(name))
-			return error(structDeclaration, "Struct " + name + " is already defined");
+			return logger.error(structDeclaration, "Struct " + name + " is already defined");
 
 		typeCtx.structTypes.try_emplace(name, new StructType(typeCtx, name, structDeclaration->fields));
 	}
@@ -24,7 +24,7 @@ void SemanticPass::analyze(AstNode* program)
 		visit(function->body);
 
 		if (!expectedFunctionResult->isVoidType() && !functionResult)
-			return error(function, "Missing return statement in function " + name + ", should return " + expectedFunctionResult->toString());
+			return logger.error(function, "Missing return statement in function " + name + ", should return " + expectedFunctionResult->toString());
 	}
 }
 
@@ -71,7 +71,7 @@ Type* SemanticPass::getFunctionResult(std::string const& name, std::vector<Type*
 Type* SemanticPass::getFunctionResult(std::string const& name, std::vector<Type*> const& args, AstNode* current)
 {
 	if (!functions.contains(name) && !externFunctions.contains(name))
-		return error(current, "No function named " + name, nullptr);
+		return logger.error(current, "No function named " + name, nullptr);
 
 	for (auto [it, end] = functions.equal_range(name); it != end; ++it)
 	{
@@ -105,7 +105,7 @@ Type* SemanticPass::getFunctionResult(std::string const& name, std::vector<Type*
 		}
 	}
 
-	return error(current, "No matching overload for function " + name, nullptr);
+	return logger.error(current, "No matching overload for function " + name, nullptr);
 }
 
 Type* SemanticPass::visit(IntegerExpression* node)
@@ -129,7 +129,7 @@ Type* SemanticPass::visit(IntegerExpression* node)
 	else if (node->suffix == "u64")
 		return (node->computedType = typeCtx.resolveNamedType("u64"));
 	else
-		return error(node, "Invalid integer literal suffix", nullptr);
+		return logger.error(node, "Invalid integer literal suffix", nullptr);
 }
 
 Type* SemanticPass::visit(BoolExpression* node)
@@ -150,7 +150,7 @@ Type* SemanticPass::visit(StringExpression* node)
 Type* SemanticPass::visit(IdentifierExpression* node)
 {
 	if (!localVariables.contains(node->value))
-		return error(node, "Undefined Identifier", nullptr);
+		return logger.error(node, "Undefined Identifier", nullptr);
 
 	return (node->computedType = localVariables.at(node->value));
 }
@@ -158,7 +158,7 @@ Type* SemanticPass::visit(IdentifierExpression* node)
 Type* SemanticPass::visit(StructExpression* node)
 {
 	if (!typeCtx.structTypes.contains(node->structName))
-		return error(node, "Undefined Struct Type", nullptr);
+		return logger.error(node, "Undefined Struct Type", nullptr);
 
 	for (auto& [name, value] : node->fields)
 		visit(value);
@@ -173,12 +173,12 @@ Type* SemanticPass::visit(StructExpression* node)
 			if (fieldName == name)
 			{
 				if (fieldType != value->computedType)
-					return error(value, "Field " + name + " has type " + fieldType->toString() + ", value type is " + value->computedType->toString(), nullptr);
+					return logger.error(value, "Field " + name + " has type " + fieldType->toString() + ", value type is " + value->computedType->toString(), nullptr);
 				break;
 			}
 
 			if (i == structType->fields.size() - 1)
-				return error(node, "Struct " + structType->name + " does not contain a field called " + name, nullptr);
+				return logger.error(node, "Struct " + structType->name + " does not contain a field called " + name, nullptr);
 		}
 	}
 
@@ -190,12 +190,12 @@ Type* SemanticPass::visit(StructExpression* node)
 			if (name == fieldName)
 			{
 				if (value->computedType != fieldType)
-					return error(value, "Field " + name + " has type " + fieldType->toString() + ", value type is " + value->computedType->toString(), nullptr);
+					return logger.error(value, "Field " + name + " has type " + fieldType->toString() + ", value type is " + value->computedType->toString(), nullptr);
 				break;
 			}
 
 			if (i == node->fields.size() - 1)
-				return error(node, "No initializer for field " + fieldName + ": " + fieldType->toString(), nullptr);
+				return logger.error(node, "No initializer for field " + fieldName + ": " + fieldType->toString(), nullptr);
 		}
 	}
 
@@ -253,10 +253,10 @@ Type* SemanticPass::visit(BinaryExpression* node)
 	else if (binaryOperators.at(node->type).category == OperatorCategory::BinaryAssign && (Type::areSame(left, right) || (left->isIntegerType() && right->isIntegerType())))
 	{
 		if (!dynamic_cast<IdentifierExpression*>(node->left))
-			return error(node, "Left side of assignment has to be identifier", nullptr);
+			return logger.error(node, "Left side of assignment has to be identifier", nullptr);
 
 		if ((left->isIntegerType() && right->isIntegerType()) && (left->getBitSize() < right->getBitSize()))
-			warning(node, "Narrowing conversion from " + left->toString() + " to " + right->toString());
+			logger.warning(node, "Narrowing conversion from " + left->toString() + " to " + right->toString());
 
 		return (node->computedType = left);
 	}
@@ -266,7 +266,7 @@ Type* SemanticPass::visit(BinaryExpression* node)
 		auto result = getFunctionResult(binaryOperators.at(node->type).name, args, node);
 
 		if (binaryOperators.at(node->type).category == OperatorCategory::BinaryAssign && !Type::areSame(left, result))
-			return error(node, "Assignment operator overload function has to return a value that has the type of the left operand", nullptr);
+			return logger.error(node, "Assignment operator overload function has to return a value that has the type of the left operand", nullptr);
 
 		return (node->computedType = result);
 	}
@@ -318,7 +318,7 @@ Type* SemanticPass::visit(FieldExpression* node)
 {
 	auto value = visit(node->expression);
 	if (!value->isStructType())
-		return error(node, "Left side of field expression has to be of struct type", nullptr);
+		return logger.error(node, "Left side of field expression has to be of struct type", nullptr);
 
 	auto structType = dynamic_cast<StructType*>(value->getResolvedType());
 	for (int i = 0; i < structType->fields.size(); i++)
@@ -327,7 +327,7 @@ Type* SemanticPass::visit(FieldExpression* node)
 			return (node->computedType = structType->fields[i].second);
 	}
 
-	return error(node, "Struct " + structType->name + " does not have a field named " + node->fieldName, nullptr);
+	return logger.error(node, "Struct " + structType->name + " does not have a field named " + node->fieldName, nullptr);
 }
 
 Type* SemanticPass::visit(BlockStatement* node)
@@ -351,10 +351,10 @@ Type* SemanticPass::visit(VariableStatement* node)
 	for (auto& [name, value] : node->items)
 	{
 		if (localVariables.contains(name))
-			return error(node, "Variable is already defined", nullptr);
+			return logger.error(node, "Variable is already defined", nullptr);
 
 		if (Type::areSame(visit(value), typeCtx.resolveNamedType("void")))
-			return error(node, "Variable cannot have void type", nullptr);
+			return logger.error(node, "Variable cannot have void type", nullptr);
 
 		localVariables.try_emplace(name, value->computedType);
 	}
@@ -368,7 +368,7 @@ Type* SemanticPass::visit(ReturnStatement* node)
 	if (!Type::areSame(functionResult, expectedFunctionResult))
 	{
 		functionResult = nullptr;
-		return error(node->expression, "Return expression has to be of function result type", nullptr);
+		return logger.error(node->expression, "Return expression has to be of function result type", nullptr);
 	}
 
 	return nullptr;
@@ -378,7 +378,7 @@ Type* SemanticPass::visit(WhileStatement* node)
 {
 	auto condition = visit(node->condition);
 	if (!Type::areSame(condition, typeCtx.getNamedType("bool")))
-		return error(node->condition, "While condition has to be of boolean type", nullptr);
+		return logger.error(node->condition, "While condition has to be of boolean type", nullptr);
 
 	auto prevResult = functionResult;
 	visit(node->body);
@@ -391,7 +391,7 @@ Type* SemanticPass::visit(IfStatement* node)
 {
 	auto condition = visit(node->condition);
 	if (!Type::areSame(condition, typeCtx.getNamedType("bool")))
-		return error(node->condition, "If condition has to be of boolean type", nullptr);
+		return logger.error(node->condition, "If condition has to be of boolean type", nullptr);
 
 	auto prevResult = functionResult;
 
@@ -412,7 +412,7 @@ Type* SemanticPass::visit(IfStatement* node)
 Type* SemanticPass::visit(StructDeclaration* node)
 {
 	if (structs.contains(node->name))
-		return error(node, "Struct " + node->name + " is already defined", nullptr);
+		return logger.error(node, "Struct " + node->name + " is already defined", nullptr);
 
 	structs.try_emplace(node->name, node);
 	return nullptr;
@@ -425,7 +425,7 @@ Type* SemanticPass::visit(FunctionDeclaration* node)
 		args.push_back(param.second);
 
 	if (getFunctionResult(node->name, args))
-		return error(node, "Function " + node->name + " is already declared with the same parameters", nullptr);
+		return logger.error(node, "Function " + node->name + " is already declared with the same parameters", nullptr);
 
 	functions.emplace(node->name, node);
 	return nullptr;
@@ -438,7 +438,7 @@ Type* SemanticPass::visit(ExternFunctionDeclaration* node)
 		args.push_back(param.second);
 
 	if (getFunctionResult(node->name, args))
-		return error(node, "Function " + node->name + " is already declared with the same parameters", nullptr);
+		return logger.error(node, "Function " + node->name + " is already declared with the same parameters", nullptr);
 
 	externFunctions.emplace(node->name, node);
 	return nullptr;

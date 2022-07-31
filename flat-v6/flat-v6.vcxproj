@@ -159,6 +159,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="compiler.cpp" />
     <ClCompile Include="flat-v6.cpp" />
     <ClCompile Include="parser\lexer.cpp" />
     <ClCompile Include="parser\parser.cpp" />
@@ -173,6 +174,7 @@
     <ClCompile Include="util\error_logger.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="compiler.hpp" />
     <ClInclude Include="data\ast.hpp" />
     <ClInclude Include="data\enum.hpp" />
     <ClInclude Include="data\operator.hpp" />

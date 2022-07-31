@@ -85,12 +85,12 @@ Token Lexer::advance()
 		position++;
 		size_t start = position;
 		if (input[position] == '\'')
-			error(position, "Empty char literal");
+			logger.error(position, "Empty char literal");
 
 		advanceChar();
 
 		if (!(position < input.length() && input[position] == '\''))
-			error(position, "Unterminated char literal");
+			logger.error(position, "Unterminated char literal");
 
 		value = input.substr(start, (position - start));
 		position++;
@@ -106,7 +106,7 @@ Token Lexer::advance()
 			advanceChar();
 
 		if (!(position < input.length() && input[position] == '\"'))
-			error(position, "Unterminated string literal");
+			logger.error(position, "Unterminated string literal");
 
 		value = input.substr(start, (position - start));
 		position++;
@@ -129,7 +129,7 @@ std::string_view Lexer::advanceChar()
 				position++;
 
 			if ((position - numStart) > 3)
-				error(numStart, "Too many digits for octal char literal");
+				logger.error(numStart, "Too many digits for octal char literal");
 
 			return input.substr(start, (position - start));
 		}
@@ -141,7 +141,7 @@ std::string_view Lexer::advanceChar()
 				position++;
 
 			if ((position - numStart) == 0)
-				error(numStart, "Hex char literal cannot have zero digits");
+				logger.error(numStart, "Hex char literal cannot have zero digits");
 
 			return input.substr(start, (position - start));
 		}
@@ -153,7 +153,7 @@ std::string_view Lexer::advanceChar()
 				position++;
 
 			if ((position - numStart) != 4)
-				error(numStart, "2 byte Unicode code point (\\u) must have 4 digits");
+				logger.error(numStart, "2 byte Unicode code point (\\u) must have 4 digits");
 
 			return input.substr(start, (position - start));
 		}
@@ -165,21 +165,21 @@ std::string_view Lexer::advanceChar()
 				position++;
 
 			if ((position - numStart) != 8)
-				error(numStart, "4 byte Unicode code point (\\U) must have 8 digits");
+				logger.error(numStart, "4 byte Unicode code point (\\U) must have 8 digits");
 
 			return input.substr(start, (position - start));
 		}
 		else if (position < input.length())
 		{
 			if (std::string("abefnrtv\\\'\"\?").find(input[position]) == std::string::npos)
-				error(position, "Invalid escape sequence");
+				logger.error(position, "Invalid escape sequence");
 
 			position++;
 			return input.substr(start, (position - start));
 		}
 		else
 		{
-			error(position, "Unexpected EOF in escape sequence");
+			logger.error(position, "Unexpected EOF in escape sequence");
 			return "";
 		}
 	}
@@ -190,7 +190,7 @@ std::string_view Lexer::advanceChar()
 	}
 	else
 	{
-		error(position, "Unexpected EOF");
+		logger.error(position, "Unexpected EOF");
 		return "";
 	}
 }
@@ -224,7 +224,7 @@ bool Lexer::match(Token expected)
 	size_t start = trim();
 	token = advance();
 	if (token == Token::Error)
-		error(position, "Invalid Token");
+		logger.error(position, "Invalid Token");
 	else if (token == expected)
 		return true;
 
@@ -243,11 +243,11 @@ bool Lexer::expect(Token expected)
 	size_t start = trim();
 	token = advance();
 	if (token == Token::Error)
-		error(position, "Invalid Token");
+		logger.error(position, "Invalid Token");
 	else if (token == expected)
 		return true;
 
 	position = before;
-	error(position, "Unexpected Token " + std::string(value) + ", expected " + TokenNames[(size_t)expected]);
+	logger.error(position, "Unexpected Token " + std::string(value) + ", expected " + TokenNames[(size_t)expected]);
 	return false;
 }

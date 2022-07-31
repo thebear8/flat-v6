@@ -12,20 +12,23 @@
 #include "../util/error_logger.hpp"
 #include "../data/operator.hpp"
 
-class LLVMCodegenPass : protected Visitor<llvm::Value*>, protected ErrorLogger
+class LLVMCodegenPass : protected Visitor<llvm::Value*>
 {
 private:
+	ErrorLogger& logger;
 	TypeContext& typeCtx;
+
 	llvm::LLVMContext& llvmCtx;
 	llvm::Module& mod;
 	llvm::IRBuilder<> builder;
+
+	bool isFunctionBodyPass;
 	std::unordered_map<Type*, llvm::Type*> llvmTypes;
 	std::unordered_map<std::string, llvm::Value*> localValues;
-	bool isFunctionBodyPass;
 
 public:
-	LLVMCodegenPass(TypeContext& ctx, llvm::LLVMContext& llvmCtx, llvm::Module& mod, std::string_view source, std::ostream& logStream) :
-		ErrorLogger(source, logStream), typeCtx(ctx), llvmCtx(llvmCtx), mod(mod), builder(llvmCtx), isFunctionBodyPass(false) { }
+	LLVMCodegenPass(ErrorLogger& logger, TypeContext& ctx, llvm::LLVMContext& llvmCtx, llvm::Module& mod) :
+		logger(logger), typeCtx(ctx), llvmCtx(llvmCtx), mod(mod), builder(llvmCtx), isFunctionBodyPass(false) { }
 
 public:
 	void compile(AstNode* ast);
@@ -77,24 +80,6 @@ private:
 	bool isLetter(char c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'); }
 	bool isWhitespace(char c) { return (c == ' ' || c == '\t' || c == '\r' || c == '\n'); }
 	bool isIdentifier(char c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || (c == '_'); }
-
-private:
-	void error(AstNode* node, std::string const& message) { return ErrorLogger::error(node->begin, node->end, message); }
-	void warning(AstNode* node, std::string const& message) { return ErrorLogger::warning(node->begin, node->end, message); }
-
-	template<typename ReturnType>
-	ReturnType error(AstNode* node, std::string const& message, ReturnType&& returnValue)
-	{
-		error(node, message);
-		return std::forward<ReturnType>(returnValue);
-	}
-
-	template<typename ReturnType>
-	ReturnType warning(AstNode* node, std::string const& message, ReturnType&& returnValue)
-	{
-		warning(node, message);
-		return std::forward<ReturnType>(returnValue);
-	}
 
 private:
 	std::unordered_map<char, uint32_t> escapeChars =
