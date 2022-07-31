@@ -111,6 +111,7 @@
       <AdditionalIncludeDirectories>../cli11;../llvm/llvm/include;../llvm/build/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <DisableSpecificWarnings>4146</DisableSpecificWarnings>
+      <Optimization>Disabled</Optimization>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -149,6 +150,7 @@
       <AdditionalIncludeDirectories>../cli11;../llvm/llvm/include;../llvm/build/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <DisableSpecificWarnings>4146</DisableSpecificWarnings>
+      <Optimization>Disabled</Optimization>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -187,6 +189,7 @@
     <ClInclude Include="passes\semantic_pass.hpp" />
     <ClInclude Include="type\type.hpp" />
     <ClInclude Include="util\error_logger.hpp" />
+    <ClInclude Include="util\string_switch.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

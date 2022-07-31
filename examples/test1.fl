@@ -1,0 +1,60 @@
+fn main(argc: i32, argv: str[]): i32 {
+    let i = -1
+
+    let str = "abcdefghi"
+
+    let a = vec3(1, 2, 3), b = vec3(2, 3, 4)
+    let c = b + a * b * (a - b)
+
+    while ((i = i + 1) < argc) {
+        print(argv[i])
+    }
+
+    if (argv[0][0] == 51) {
+        print(51)
+    } else {
+        print(52)
+    }
+
+    return 1 + 2 + 3 + 4
+}
+
+struct vec3 {
+    x: i32,
+    y: i32,
+    z: i32,
+}
+
+fn vec3(x: i32, y: i32, z: i32): vec3 {
+    return vec3 {
+        x: x,
+        y: y,
+        z: z,
+    }
+}
+
+fn __assign__(current: vec3, value: i32): vec3 {
+    return vec3(value, value, value)
+}
+
+fn __add__(a: vec3, b: vec3): vec3 {
+    return vec3(a.x + b.x, a.y + b.y, a.z + b.z)
+}
+
+fn __sub__(a: vec3, b: vec3): vec3 {
+    return vec3(a.x - b.x, a.y - b.y, a.z - b.z)
+}
+
+fn __mul__(a: vec3, b: vec3): vec3 {
+    return vec3(a.x * b.x, a.y * b.y, a.z * b.z)
+}
+
+fn __div__(a: vec3, b: vec3): vec3 {
+    return vec3(a.x / b.x, a.y / b.y, a.z / b.z)
+}
+
+fn print(x: i32): i32 { return 0 }
+fn print(x: str): i32 { return 0 }
+
+extern(user32)
+fn MessageBoxA(hWnd: u64, lpText: str, lpCaption: str, uType: u32): i32

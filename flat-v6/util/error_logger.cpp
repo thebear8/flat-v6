@@ -2,6 +2,12 @@
 
 #include "../data/ast.hpp"
 
+void ErrorLogger::error(std::string const& message)
+{
+	output << "Error: " << message << "\n";
+	throw std::exception(message.c_str());
+}
+
 void ErrorLogger::error(AstNode* node, std::string const& message)
 {
 	return error(node->begin, node->end, message);
@@ -38,6 +44,12 @@ void ErrorLogger::error(size_t begin, size_t end, std::string const& message)
 	}
 
 	output << "Error: ln " << line << ", col " << column << ", \"" << source.substr(begin, end - begin) << "\": " << message << "\n";
+	throw std::exception(message.c_str());
+}
+
+void ErrorLogger::warning(std::string const& message)
+{
+	output << "Warning: " << message << "\n";
 	throw std::exception(message.c_str());
 }
 

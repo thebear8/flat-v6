@@ -39,9 +39,10 @@ public:
 
 class TypeContext
 {
-public:
+private:
 	size_t pointerSize;
 
+public:
 	std::unordered_map<std::string, Type*> namedTypes;
 	std::unordered_map<std::string, Type*> builtinTypes;
 	std::unordered_map<std::string, Type*> structTypes;
@@ -49,16 +50,19 @@ public:
 	std::unordered_map<Type*, Type*> arrayTypes;
 
 public:
-	TypeContext(size_t pointerSize) :
-		pointerSize(pointerSize) { }
+	TypeContext() :
+		pointerSize(0) { }
 
 public:
+	size_t getPointerSize() { return pointerSize; }
+	size_t setPointerSize(size_t size) { return (pointerSize = size); }
+
 	Type* getNamedType(std::string const& name);
 	Type* getPointerType(Type* base);
 	Type* getArrayType(Type* base);
 	Type* resolveNamedType(std::string const& name);
 
-	bool hasNamedType(std::string const& name);
+	bool addBuiltinType(std::string const& name, Type* value) { return (builtinTypes.try_emplace(name, value).second); }
 };
 
 class VoidType : public Type
@@ -136,7 +140,7 @@ public:
 		Type(ctx) { }
 
 public:
-	virtual size_t getBitSize() override { return ctx.pointerSize; };
+	virtual size_t getBitSize() override { return ctx.getPointerSize(); };
 	virtual Type* getResolvedType() override { return this; };
 	virtual std::string toString() override { return "str"; };
 	virtual std::string toCppString() override { return "const char*"; };
@@ -173,7 +177,7 @@ public:
 		Type(base->ctx), base(base) { }
 
 public:
-	virtual size_t getBitSize() override { return ctx.pointerSize; };
+	virtual size_t getBitSize() override { return ctx.getPointerSize(); };
 	virtual Type* getResolvedType() override { return this; };
 	virtual std::string toString() override { return base->toString() + "*"; };
 	virtual std::string toCppString() override { return base->toCppString() + "*"; };
@@ -191,7 +195,7 @@ public:
 		Type(base->ctx), base(base) { }
 
 public:
-	virtual size_t getBitSize() override { return ctx.pointerSize; };
+	virtual size_t getBitSize() override { return ctx.getPointerSize(); };
 	virtual Type* getResolvedType() override { return this; };
 	virtual std::string toString() override { return base->toString() + "[]"; };
 	virtual std::string toCppString() override { return base->toCppString() + "*"; };

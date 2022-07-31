@@ -86,5 +86,8 @@
     <ClInclude Include="compiler.hpp">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="util\string_switch.hpp">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

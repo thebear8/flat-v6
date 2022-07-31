@@ -1,0 +1,16 @@
+fn main(argc: i32, argv: char[][]): i32 {
+    let i = -1
+    while ((i = i + 1) < argc) {
+        print(i)
+    }
+
+    if (3 > 2) {
+        print(51)
+    } else {
+        print(52)
+    }
+
+    return 1 + 2 + 3 + 4
+}
+
+fn print(x: i32): void { }

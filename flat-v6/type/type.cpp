@@ -36,11 +36,6 @@ Type* TypeContext::resolveNamedType(std::string const& name)
 	throw std::exception("Unknown type");
 }
 
-bool TypeContext::hasNamedType(std::string const& name)
-{
-	return (builtinTypes.contains(name) || structTypes.contains(name));
-}
-
 std::string IntegerType::toCppString()
 {
 	std::string sign = (signedness ? "" : "unsigned ");
@@ -81,7 +76,7 @@ size_t StructType::getBitSize()
 	for (auto& [name, type] : fields)
 	{
 		bitSize += type->getBitSize();
-		bitSize = (size_t)(ceil(bitSize / (double)ctx.pointerSize) * ctx.pointerSize); // align bitSize to pointer size
+		bitSize = (size_t)(ceil(bitSize / (double)ctx.getPointerSize()) * ctx.getPointerSize()); // align bitSize to pointer size
 	}
 
 	return bitSize;

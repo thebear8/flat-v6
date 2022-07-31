@@ -1,115 +1,66 @@
 #include <iostream>
-
+#include <filesystem>
 #include <cli11/CLI11.hpp>
-
-#include <llvm/IR/LLVMContext.h>
-#include <llvm/IR/Verifier.h>
-#include <llvm/Support/Host.h>
-#include <llvm/MC/TargetRegistry.h>
 #include <llvm/Support/TargetSelect.h>
-#include <llvm/Target/TargetMachine.h>
-#include <llvm/Target/TargetOptions.h>
-#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Support/Host.h>
 
-#include "data/ast.hpp"
-#include "type/type.hpp"
-#include "parser/parser.hpp"
-#include "passes/semantic_pass.hpp"
-#include "passes/lowering_pass.hpp"
-#include "passes/codegen_pass.hpp"
+#include "compiler.hpp"
+#include "util/string_switch.hpp"
 
 int main(int argc, char* argv[])
 {
-	std::string inputFile, outputFile;
+	CLI::App app("flat compiler v6", "flat-v6");
+	std::string input, output, target, cpuDesc, featureDesc;
 
-	CLI::App app("flc");
-	app.add_option("input, -i, --input", inputFile)->required()->check(CLI::ExistingFile);
+	app.add_option("input, -i, --input", input)->type_name("FILENAME")->required()->check([](std::string const& value) -> std::string {
+		std::ifstream ifs(value);
+		if (ifs.fail() || ifs.bad() || !ifs.is_open())
+			return "Cannot open input file " + value;
+		return "";
+	});
+
+	app.add_option("-o, --output", output)->type_name("FILENAME")->check([](std::string const& value) -> std::string {
+		std::ofstream ofs(value);
+		if (ofs.fail() || ofs.bad() || !ofs.is_open())
+			return "Cannot open output file " + value;
+		ofs.close();
+		return "";
+	});
+
+	app.add_option("--target", target)->type_name("TARGET TRIPLE")->default_val(llvm::sys::getDefaultTargetTriple())->check([](std::string const& value) -> std::string
+	{
+		llvm::InitializeAllTargetInfos();
+		llvm::InitializeAllTargets();
+		llvm::InitializeAllTargetMCs();
+		llvm::InitializeAllAsmParsers();
+		llvm::InitializeAllAsmPrinters();
+
+		std::string error;
+		if (!llvm::TargetRegistry::lookupTarget(value, error))
+			return value + " is not recognized as a valid target triple. This could be because llvm was not built with the matching backend.";
+		return "";
+	});
+
+	app.add_option("--target-cpu", cpuDesc)->type_name("TARGET CPU")->default_val("generic")->check([](std::string const& value) -> std::string {
+		return "";
+	});
+
+	app.add_option("--target-features", cpuDesc)->type_name("TARGET CPU FEATURES")->default_val("")->check([](std::string const& value) -> std::string {
+		return "";
+	});
 
 	CLI11_PARSE(app, argc, argv);
 
-	std::ifstream in{ inputFile };
-	std::string input{ std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>() };
+	std::ifstream ifs(input);
+	std::string source(std::istreambuf_iterator<char>(ifs), {});
 
-	TypeContext typeCtx(64);
-	typeCtx.builtinTypes.try_emplace("void", new VoidType(typeCtx));
-	typeCtx.builtinTypes.try_emplace("bool", new BoolType(typeCtx));
-	typeCtx.builtinTypes.try_emplace("u8", new IntegerType(typeCtx, false, 8));
-	typeCtx.builtinTypes.try_emplace("u16", new IntegerType(typeCtx, false, 16));
-	typeCtx.builtinTypes.try_emplace("u32", new IntegerType(typeCtx, false, 32));
-	typeCtx.builtinTypes.try_emplace("u64", new IntegerType(typeCtx, false, 64));
-	typeCtx.builtinTypes.try_emplace("i8", new IntegerType(typeCtx, true, 8));
-	typeCtx.builtinTypes.try_emplace("i16", new IntegerType(typeCtx, true, 16));
-	typeCtx.builtinTypes.try_emplace("i32", new IntegerType(typeCtx, true, 32));
-	typeCtx.builtinTypes.try_emplace("i64", new IntegerType(typeCtx, true, 64));
-	typeCtx.builtinTypes.try_emplace("char", new CharType(typeCtx, 32));
-	typeCtx.builtinTypes.try_emplace("str", new StringType(typeCtx));
+	CompilationOptions options = {};
+	options.targetDesc.cpuDesc = cpuDesc;
+	options.targetDesc.featureDesc = featureDesc;
+	options.targetDesc.targetTriple = target;
+	options.moduleName = std::filesystem::path(input).stem().string();
+	options.moduleSource = source;
 
-	AstContext ctx;
-	Parser parser(ctx, typeCtx, input, std::cout);
-	auto program = parser.module();
-
-	SemanticPass semPass(ctx, typeCtx, input, std::cout);
-	semPass.analyze(program);
-
-	OperatorLoweringPass opPass(ctx, typeCtx, input, std::cout);
-	opPass.process(program);
-
-	llvm::LLVMContext llvmCtx;
-
-	llvm::Module mod("module", llvmCtx);
-	LLVMCodegenPass llvmCodePass(typeCtx, llvmCtx, mod, input, std::cout);
-
-	llvmCodePass.compile(program);
-
-	std::cout << "\n====== BEFORE OPTIMIZATION ======\n\n";
-	mod.print(llvm::outs(), nullptr);
-
-	llvmCodePass.optimize();
-
-	std::cout << "\n====== AFTER OPTIMIZATION ======\n\n";
-	mod.print(llvm::outs(), nullptr);
-
-	std::cout << "\n====== VERIFICATION ======\n\n";
-	llvm::verifyModule(mod, &llvm::outs());
-
-	std::error_code ec;
-	llvm::raw_fd_ostream llvmOutput(inputFile + ".ll", ec);
-	mod.print(llvmOutput, nullptr);
-
-	std::string error;
-	auto targetTriple = llvm::sys::getDefaultTargetTriple();
-
-	llvm::InitializeAllTargetInfos();
-	llvm::InitializeAllTargets();
-	llvm::InitializeAllTargetMCs();
-	llvm::InitializeAllAsmParsers();
-	llvm::InitializeAllAsmPrinters();
-
-	auto target = llvm::TargetRegistry::lookupTarget(targetTriple, error);
-	if (!target)
-	{
-		std::cout << error;
-		return 1;
-	}
-
-	auto relocationModel = llvm::Optional<llvm::Reloc::Model>();
-	auto targetMachine = target->createTargetMachine(targetTriple, "generic", "", llvm::TargetOptions(), relocationModel);
-
-	mod.setDataLayout(targetMachine->createDataLayout());
-	mod.setTargetTriple(targetTriple);
-
-	auto objectFile = llvm::raw_fd_ostream(inputFile + ".o", ec);
-	if (ec)
-	{
-		std::cout << "Could not open output object file: " << ec.message() << "\n";
-	}
-
-	llvm::legacy::PassManager passManager;
-	if (targetMachine->addPassesToEmitFile(passManager, objectFile, nullptr, llvm::CodeGenFileType::CGFT_ObjectFile))
-	{
-		std::cout << "TargetMachine can't emit a file of this type\n";
-	}
-
-	passManager.run(mod);
-	objectFile.flush();
+	CompilationContext ctx(options, std::cout);
+	ctx.compile((output.empty() ? std::filesystem::path(input).replace_extension(".obj").string() : output));
 }

@@ -1,0 +1,10 @@
+fn main(argc: i32, argv: str[]): i32 {
+    MessageBoxA(0u64, "Hello World", "Hello World", 0u32)
+    return 0
+}
+
+fn test(): i32 { return 0i32 }
+fn test2(): bool { return false }
+
+extern(user32)
+fn MessageBoxA(hWnd: u64, lpText: str, lpCaption: str, uType: u32): i32
