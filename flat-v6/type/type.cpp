@@ -1,73 +1,62 @@
 #include "type.hpp"
 
-bool Type::areSame(Type* a, Type* b)
+TypeContext::TypeContext() :
+	pointerSize()
 {
-	return a->getResolvedType()->isSame(b->getResolvedType());
+	builtinTypes.try_emplace("void", new VoidType(*this));
+	builtinTypes.try_emplace("bool", new BoolType(*this));
+	builtinTypes.try_emplace("u8", new IntegerType(*this, false, 8));
+	builtinTypes.try_emplace("u16", new IntegerType(*this, false, 16));
+	builtinTypes.try_emplace("u32", new IntegerType(*this, false, 32));
+	builtinTypes.try_emplace("u64", new IntegerType(*this, false, 64));
+	builtinTypes.try_emplace("i8", new IntegerType(*this, true, 8));
+	builtinTypes.try_emplace("i16", new IntegerType(*this, true, 16));
+	builtinTypes.try_emplace("i32", new IntegerType(*this, true, 32));
+	builtinTypes.try_emplace("i64", new IntegerType(*this, true, 64));
+	builtinTypes.try_emplace("char", new CharType(*this, 32));
+	builtinTypes.try_emplace("str", new StringType(*this));
 }
 
-Type* TypeContext::getNamedType(std::string const& name)
+TypeContext::~TypeContext()
 {
-	if (!namedTypes.contains(name))
-		namedTypes.try_emplace(name, new NamedType(*this, name));
-	return namedTypes.at(name);
+	for (auto& [base, type] : pointerTypes)
+		delete type;
+	for (auto& [base, type] : arrayTypes)
+		delete type;
+	for (auto& [name, type] : structTypes)
+		delete type;
+	for (auto& [name, type] : builtinTypes)
+		delete type;
 }
 
-Type* TypeContext::getPointerType(Type* base)
+PointerType* TypeContext::getPointerType(Type* base)
 {
 	if (!pointerTypes.contains(base))
 		pointerTypes.try_emplace(base, new PointerType(base));
 	return pointerTypes.at(base);
 }
 
-Type* TypeContext::getArrayType(Type* base)
+ArrayType* TypeContext::getArrayType(Type* base)
 {
 	if (!arrayTypes.contains(base))
 		arrayTypes.try_emplace(base, new ArrayType(base));
 	return arrayTypes.at(base);
 }
 
-Type* TypeContext::resolveNamedType(std::string const& name)
+StructType* TypeContext::getStructType(std::string const& name)
+{
+	if (!structTypes.contains(name))
+		structTypes.try_emplace(name, new StructType(*this, name, {}));
+	return structTypes.at(name);
+}
+
+Type* TypeContext::getResolvedType(std::string const& name)
 {
 	if (builtinTypes.contains(name))
 		return builtinTypes.at(name);
 	else if (structTypes.contains(name))
 		return structTypes.at(name);
-
-	throw std::exception("Unknown type");
-}
-
-std::string IntegerType::toCppString()
-{
-	std::string sign = (signedness ? "" : "unsigned ");
-
-	if (bitSize == 8)
-		return sign + "char";
-	if (bitSize == 16)
-		return sign + "short";
-	if (bitSize == 32)
-		return sign + "int";
-	if (bitSize == 64)
-		return sign + "long long";
-
-	throw std::exception("Invalid bit size");
-}
-
-bool IntegerType::isSame(Type* other)
-{
-	return dynamic_cast<IntegerType*>(other)
-		&& signedness == dynamic_cast<IntegerType*>(other)->signedness
-		&& bitSize == dynamic_cast<IntegerType*>(other)->bitSize;
-}
-
-bool CharType::isSame(Type* other)
-{
-	return dynamic_cast<CharType*>(other) &&
-		bitSize == dynamic_cast<CharType*>(other)->bitSize;
-}
-
-bool StringType::isSame(Type* other)
-{
-	return dynamic_cast<StringType*>(other);
+	return nullptr;
 }
 
 size_t StructType::getBitSize()
@@ -80,34 +69,4 @@ size_t StructType::getBitSize()
 	}
 
 	return bitSize;
-}
-
-bool StructType::isSame(Type* other)
-{
-	auto o = dynamic_cast<StructType const*>(other);
-	if (!o)
-		return false;
-
-	if (fields.size() != o->fields.size())
-		return false;
-
-	for (size_t i = 0; i < fields.size(); i++)
-	{
-		if (!Type::areSame(fields[i].second, o->fields[i].second))
-			return false;
-	}
-
-	return true;
-}
-
-bool PointerType::isSame(Type* other)
-{
-	return dynamic_cast<PointerType const*>(other)
-		&& Type::areSame(base, dynamic_cast<PointerType const*>(other)->base);
-}
-
-bool ArrayType::isSame(Type* other)
-{
-	return dynamic_cast<ArrayType const*>(other)
-		&& Type::areSame(base, dynamic_cast<ArrayType const*>(other)->base);
 }

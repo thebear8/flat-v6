@@ -399,7 +399,7 @@ public:
 			match(Token::Comma);
 		}
 
-		Type* result = typeCtx.getNamedType("void");
+		Type* result = typeCtx.getResolvedType("void");
 		if (match(Token::Colon)) {
 			result = typeName();
 		}
@@ -432,7 +432,7 @@ public:
 			match(Token::Comma);
 		}
 
-		Type* result = typeCtx.getNamedType("void");
+		Type* result = typeCtx.getResolvedType("void");
 		if (match(Token::Colon)) {
 			result = typeName();
 		}
@@ -464,7 +464,7 @@ public:
 	Type* typeName()
 	{
 		expect(Token::Identifier);
-		Type* type = typeCtx.getNamedType(getTokenValue());
+		Type* type = (typeCtx.getResolvedType(getTokenValue()) ? typeCtx.getResolvedType(getTokenValue()) : typeCtx.getStructType(getTokenValue()));
 		while (true) {
 			if (match(Token::Multiply)) {
 				type = typeCtx.getPointerType(type);

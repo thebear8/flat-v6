@@ -47,18 +47,6 @@ CompilationContext::CompilationContext(CompilationOptions const& options, std::o
 	module.setTargetTriple(options.targetDesc.targetTriple);
 
 	typeCtx.setPointerSize(module.getDataLayout().getPointerSizeInBits());
-	typeCtx.addBuiltinType("void", new VoidType(typeCtx));
-	typeCtx.addBuiltinType("bool", new BoolType(typeCtx));
-	typeCtx.addBuiltinType("u8", new IntegerType(typeCtx, false, 8));
-	typeCtx.addBuiltinType("u16", new IntegerType(typeCtx, false, 16));
-	typeCtx.addBuiltinType("u32", new IntegerType(typeCtx, false, 32));
-	typeCtx.addBuiltinType("u64", new IntegerType(typeCtx, false, 64));
-	typeCtx.addBuiltinType("i8", new IntegerType(typeCtx, true, 8));
-	typeCtx.addBuiltinType("i16", new IntegerType(typeCtx, true, 16));
-	typeCtx.addBuiltinType("i32", new IntegerType(typeCtx, true, 32));
-	typeCtx.addBuiltinType("i64", new IntegerType(typeCtx, true, 64));
-	typeCtx.addBuiltinType("char", new CharType(typeCtx, 32));
-	typeCtx.addBuiltinType("str", new StringType(typeCtx));
 }
 
 void CompilationContext::compile(std::string const& outputFile)

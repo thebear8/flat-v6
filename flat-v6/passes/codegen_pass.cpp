@@ -93,7 +93,7 @@ llvm::Value* LLVMCodegenPass::visit(IdentifierExpression* node)
 
 llvm::Value* LLVMCodegenPass::visit(StructExpression* node)
 {
-	auto type = dynamic_cast<StructType*>(node->computedType->getResolvedType());
+	auto type = dynamic_cast<StructType*>(node->computedType);
 	auto structPtr = builder.CreateAlloca(getLLVMType(type), nullptr, type->name + "_");
 
 	for (int i = 0; i < type->fields.size(); i++)
@@ -296,7 +296,7 @@ llvm::Value* LLVMCodegenPass::visit(BoundIndexExpression* node)
 
 llvm::Value* LLVMCodegenPass::visit(FieldExpression* node)
 {
-	auto structType = dynamic_cast<StructType*>(node->expression->computedType->getResolvedType());
+	auto structType = dynamic_cast<StructType*>(node->expression->computedType);
 	for (int i = 0; i < structType->fields.size(); i++)
 	{
 		if (structType->fields[i].first == node->fieldName)
@@ -518,12 +518,12 @@ llvm::Type* LLVMCodegenPass::getLLVMType(Type* type)
 	}
 	else if (type->isStringType())
 	{
-		llvmTypes.try_emplace(type, getLLVMType(typeCtx.getArrayType(typeCtx.resolveNamedType("u8"))));
+		llvmTypes.try_emplace(type, getLLVMType(typeCtx.getArrayType(typeCtx.getResolvedType("u8"))));
 		return llvmTypes.at(type);
 	}
 	else if (type->isStructType())
 	{
-		auto structType = dynamic_cast<StructType*>(type->getResolvedType());
+		auto structType = dynamic_cast<StructType*>(type);
 
 		std::vector<llvm::Type*> fields;
 		for (auto& [fieldName, fieldType] : structType->fields)
@@ -534,13 +534,13 @@ llvm::Type* LLVMCodegenPass::getLLVMType(Type* type)
 	}
 	else if (type->isPointerType())
 	{
-		auto base = dynamic_cast<PointerType*>(type->getResolvedType())->base;
+		auto base = dynamic_cast<PointerType*>(type)->base;
 		llvmTypes.try_emplace(type, getLLVMType(base)->getPointerTo());
 		return llvmTypes.at(type);
 	}
 	else if (type->isArrayType())
 	{
-		auto base = dynamic_cast<ArrayType*>(type->getResolvedType())->base;
+		auto base = dynamic_cast<ArrayType*>(type)->base;
 		auto fields = std::vector<llvm::Type*>({
 			llvm::Type::getInt64Ty(llvmCtx),
 			llvm::ArrayType::get(getLLVMType(base), 0)
@@ -579,7 +579,7 @@ std::string LLVMCodegenPass::getMangledType(Type* type)
 	}
 	else if (type->isStructType())
 	{
-		auto structType = dynamic_cast<StructType*>(type->getResolvedType());
+		auto structType = dynamic_cast<StructType*>(type);
 		auto output = "S_" + structType->name + "_";
 
 		for (auto& [fieldName, fieldType] : structType->fields)
@@ -590,12 +590,12 @@ std::string LLVMCodegenPass::getMangledType(Type* type)
 	}
 	else if (type->isPointerType())
 	{
-		auto ptrType = dynamic_cast<PointerType*>(type->getResolvedType());
+		auto ptrType = dynamic_cast<PointerType*>(type);
 		return "P_" + getMangledType(ptrType->base) + "_";
 	}
 	else if (type->isArrayType())
 	{
-		auto arrType = dynamic_cast<ArrayType*>(type->getResolvedType());
+		auto arrType = dynamic_cast<ArrayType*>(type);
 		return "A_" + getMangledType(arrType->base) + "_";
 	}
 	else

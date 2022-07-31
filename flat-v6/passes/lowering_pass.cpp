@@ -85,11 +85,11 @@ AstNode* OperatorLoweringPass::visit(BinaryExpression* node)
 	{
 		return node;
 	}
-	else if (binaryOperators.at(node->type).category == OperatorCategory::BinaryEquality && (Type::areSame(left, right) || (left->isIntegerType() && right->isIntegerType())))
+	else if (binaryOperators.at(node->type).category == OperatorCategory::BinaryEquality && ((left == right) || (left->isIntegerType() && right->isIntegerType())))
 	{
 		return node;
 	}
-	else if (binaryOperators.at(node->type).category == OperatorCategory::BinaryAssign && (Type::areSame(left, right) || (left->isIntegerType() && right->isIntegerType())))
+	else if (binaryOperators.at(node->type).category == OperatorCategory::BinaryAssign && ((left == right) || (left->isIntegerType() && right->isIntegerType())))
 	{
 		return node;
 	}

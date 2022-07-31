@@ -167,10 +167,6 @@
     <ClCompile Include="parser\parser.cpp" />
     <ClCompile Include="passes\codegen_pass.cpp" />
     <ClCompile Include="passes\lowering_pass.cpp" />
-    <ClCompile Include="pch.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
-    </ClCompile>
     <ClCompile Include="passes\semantic_pass.cpp" />
     <ClCompile Include="type\type.cpp" />
     <ClCompile Include="util\error_logger.cpp" />
@@ -185,7 +181,6 @@
     <ClInclude Include="parser\parser.hpp" />
     <ClInclude Include="passes\codegen_pass.hpp" />
     <ClInclude Include="passes\lowering_pass.hpp" />
-    <ClInclude Include="pch.h" />
     <ClInclude Include="passes\semantic_pass.hpp" />
     <ClInclude Include="type\type.hpp" />
     <ClInclude Include="util\error_logger.hpp" />

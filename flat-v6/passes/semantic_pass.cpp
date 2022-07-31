@@ -6,10 +6,9 @@ void SemanticPass::analyze(AstNode* program)
 
 	for (auto& [name, structDeclaration] : structs)
 	{
-		if (typeCtx.structTypes.contains(name))
-			return logger.error(structDeclaration, "Struct " + name + " is already defined");
-
-		typeCtx.structTypes.try_emplace(name, new StructType(typeCtx, name, structDeclaration->fields));
+		auto structType = typeCtx.getStructType(name);
+		for (auto& [name, type] : structDeclaration->fields)
+			structType->addField(name, type);
 	}
 
 	for (auto& [name, function] : functions)
@@ -41,7 +40,7 @@ Type* SemanticPass::getFunctionResult(std::string const& name, std::vector<Type*
 
 		for (int i = 0; i < function->parameters.size(); i++)
 		{
-			if (!Type::areSame(function->parameters[i].second, args[i]))
+			if (function->parameters[i].second != args[i])
 				break;
 
 			if (i == function->parameters.size() - 1)
@@ -57,7 +56,7 @@ Type* SemanticPass::getFunctionResult(std::string const& name, std::vector<Type*
 
 		for (int i = 0; i < function->parameters.size(); i++)
 		{
-			if (!Type::areSame(function->parameters[i].second, args[i]))
+			if (function->parameters[i].second != args[i])
 				break;
 
 			if (i == function->parameters.size() - 1)
@@ -81,7 +80,7 @@ Type* SemanticPass::getFunctionResult(std::string const& name, std::vector<Type*
 
 		for (int i = 0; i < function->parameters.size(); i++)
 		{
-			if (!Type::areSame(function->parameters[i].second, args[i]))
+			if (function->parameters[i].second != args[i])
 				break;
 
 			if (i == function->parameters.size() - 1)
@@ -97,7 +96,7 @@ Type* SemanticPass::getFunctionResult(std::string const& name, std::vector<Type*
 
 		for (int i = 0; i < function->parameters.size(); i++)
 		{
-			if (!Type::areSame(function->parameters[i].second, args[i]))
+			if (function->parameters[i].second != args[i])
 				break;
 
 			if (i == function->parameters.size() - 1)
@@ -111,40 +110,40 @@ Type* SemanticPass::getFunctionResult(std::string const& name, std::vector<Type*
 Type* SemanticPass::visit(IntegerExpression* node)
 {
 	if (node->suffix == "")
-		return (node->computedType = typeCtx.resolveNamedType("i32"));
+		return (node->computedType = typeCtx.getResolvedType("i32"));
 	else if (node->suffix == "i8")
-		return (node->computedType = typeCtx.resolveNamedType("i8"));
+		return (node->computedType = typeCtx.getResolvedType("i8"));
 	else if (node->suffix == "i16")
-		return (node->computedType = typeCtx.resolveNamedType("i16"));
+		return (node->computedType = typeCtx.getResolvedType("i16"));
 	else if (node->suffix == "i32")
-		return (node->computedType = typeCtx.resolveNamedType("i32"));
+		return (node->computedType = typeCtx.getResolvedType("i32"));
 	else if (node->suffix == "i64")
-		return (node->computedType = typeCtx.resolveNamedType("i64"));
+		return (node->computedType = typeCtx.getResolvedType("i64"));
 	else if (node->suffix == "u8")
-		return (node->computedType = typeCtx.resolveNamedType("u8"));
+		return (node->computedType = typeCtx.getResolvedType("u8"));
 	else if (node->suffix == "u16")
-		return (node->computedType = typeCtx.resolveNamedType("u16"));
+		return (node->computedType = typeCtx.getResolvedType("u16"));
 	else if (node->suffix == "u32")
-		return (node->computedType = typeCtx.resolveNamedType("u32"));
+		return (node->computedType = typeCtx.getResolvedType("u32"));
 	else if (node->suffix == "u64")
-		return (node->computedType = typeCtx.resolveNamedType("u64"));
+		return (node->computedType = typeCtx.getResolvedType("u64"));
 	else
 		return logger.error(node, "Invalid integer literal suffix", nullptr);
 }
 
 Type* SemanticPass::visit(BoolExpression* node)
 {
-	return (node->computedType = typeCtx.resolveNamedType("bool"));
+	return (node->computedType = typeCtx.getResolvedType("bool"));
 }
 
 Type* SemanticPass::visit(CharExpression* node)
 {
-	return (node->computedType = typeCtx.resolveNamedType("char"));
+	return (node->computedType = typeCtx.getResolvedType("char"));
 }
 
 Type* SemanticPass::visit(StringExpression* node)
 {
-	return (node->computedType = typeCtx.resolveNamedType("str"));
+	return (node->computedType = typeCtx.getResolvedType("str"));
 }
 
 Type* SemanticPass::visit(IdentifierExpression* node)
@@ -157,13 +156,13 @@ Type* SemanticPass::visit(IdentifierExpression* node)
 
 Type* SemanticPass::visit(StructExpression* node)
 {
-	if (!typeCtx.structTypes.contains(node->structName))
+	if (!typeCtx.getResolvedType(node->structName))
 		return logger.error(node, "Undefined Struct Type", nullptr);
 
 	for (auto& [name, value] : node->fields)
 		visit(value);
 
-	auto structType = dynamic_cast<StructType*>(typeCtx.resolveNamedType(node->structName));
+	auto structType = dynamic_cast<StructType*>(typeCtx.getResolvedType(node->structName));
 
 	for (auto& [name, value] : node->fields)
 	{
@@ -215,7 +214,7 @@ Type* SemanticPass::visit(UnaryExpression* node)
 	}
 	else if (unaryOperators.at(node->type).category == OperatorCategory::UnaryLogic && value->isBoolType())
 	{
-		return (node->computedType = typeCtx.resolveNamedType("bool"));
+		return (node->computedType = typeCtx.getResolvedType("bool"));
 	}
 	else
 	{
@@ -240,17 +239,17 @@ Type* SemanticPass::visit(BinaryExpression* node)
 	}
 	else if (binaryOperators.at(node->type).category == OperatorCategory::BinaryComparison && (left->isIntegerType() && right->isIntegerType()))
 	{
-		return (node->computedType = typeCtx.resolveNamedType("bool"));
+		return (node->computedType = typeCtx.getResolvedType("bool"));
 	}
 	else if (binaryOperators.at(node->type).category == OperatorCategory::BinaryLogic && (left->isBoolType() && right->isBoolType()))
 	{
-		return (node->computedType = typeCtx.resolveNamedType("bool"));
+		return (node->computedType = typeCtx.getResolvedType("bool"));
 	}
-	else if (binaryOperators.at(node->type).category == OperatorCategory::BinaryEquality && (Type::areSame(left, right) || (left->isIntegerType() && right->isIntegerType())))
+	else if (binaryOperators.at(node->type).category == OperatorCategory::BinaryEquality && ((left == right) || (left->isIntegerType() && right->isIntegerType())))
 	{
-		return (node->computedType = typeCtx.resolveNamedType("bool"));
+		return (node->computedType = typeCtx.getResolvedType("bool"));
 	}
-	else if (binaryOperators.at(node->type).category == OperatorCategory::BinaryAssign && (Type::areSame(left, right) || (left->isIntegerType() && right->isIntegerType())))
+	else if (binaryOperators.at(node->type).category == OperatorCategory::BinaryAssign && ((left == right) || (left->isIntegerType() && right->isIntegerType())))
 	{
 		if (!dynamic_cast<IdentifierExpression*>(node->left))
 			return logger.error(node, "Left side of assignment has to be identifier", nullptr);
@@ -265,7 +264,7 @@ Type* SemanticPass::visit(BinaryExpression* node)
 		std::vector<Type*> args = std::vector<Type*>({ left, right });
 		auto result = getFunctionResult(binaryOperators.at(node->type).name, args, node);
 
-		if (binaryOperators.at(node->type).category == OperatorCategory::BinaryAssign && !Type::areSame(left, result))
+		if (binaryOperators.at(node->type).category == OperatorCategory::BinaryAssign && left != right)
 			return logger.error(node, "Assignment operator overload function has to return a value that has the type of the left operand", nullptr);
 
 		return (node->computedType = result);
@@ -305,7 +304,7 @@ Type* SemanticPass::visit(IndexExpression* node)
 	}
 	if (value->isStringType() && args.size() == 1 && args.front()->isIntegerType())
 	{
-		return (node->computedType = typeCtx.resolveNamedType("u8"));
+		return (node->computedType = typeCtx.getResolvedType("u8"));
 	}
 	else
 	{
@@ -320,7 +319,7 @@ Type* SemanticPass::visit(FieldExpression* node)
 	if (!value->isStructType())
 		return logger.error(node, "Left side of field expression has to be of struct type", nullptr);
 
-	auto structType = dynamic_cast<StructType*>(value->getResolvedType());
+	auto structType = dynamic_cast<StructType*>(value);
 	for (int i = 0; i < structType->fields.size(); i++)
 	{
 		if (structType->fields[i].first == node->fieldName)
@@ -353,7 +352,7 @@ Type* SemanticPass::visit(VariableStatement* node)
 		if (localVariables.contains(name))
 			return logger.error(node, "Variable is already defined", nullptr);
 
-		if (Type::areSame(visit(value), typeCtx.resolveNamedType("void")))
+		if (visit(value)->isVoidType())
 			return logger.error(node, "Variable cannot have void type", nullptr);
 
 		localVariables.try_emplace(name, value->computedType);
@@ -365,7 +364,7 @@ Type* SemanticPass::visit(VariableStatement* node)
 Type* SemanticPass::visit(ReturnStatement* node)
 {
 	functionResult = visit(node->expression);
-	if (!Type::areSame(functionResult, expectedFunctionResult))
+	if (functionResult != expectedFunctionResult)
 	{
 		functionResult = nullptr;
 		return logger.error(node->expression, "Return expression has to be of function result type", nullptr);
@@ -377,7 +376,7 @@ Type* SemanticPass::visit(ReturnStatement* node)
 Type* SemanticPass::visit(WhileStatement* node)
 {
 	auto condition = visit(node->condition);
-	if (!Type::areSame(condition, typeCtx.getNamedType("bool")))
+	if (!condition->isBoolType())
 		return logger.error(node->condition, "While condition has to be of boolean type", nullptr);
 
 	auto prevResult = functionResult;
@@ -390,7 +389,7 @@ Type* SemanticPass::visit(WhileStatement* node)
 Type* SemanticPass::visit(IfStatement* node)
 {
 	auto condition = visit(node->condition);
-	if (!Type::areSame(condition, typeCtx.getNamedType("bool")))
+	if (!condition->isBoolType())
 		return logger.error(node->condition, "If condition has to be of boolean type", nullptr);
 
 	auto prevResult = functionResult;
