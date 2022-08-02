@@ -1,0 +1,20 @@
+constraint Comparable(T) {
+    fn __eq__(a: T, b: T): bool
+    fn __neq__(a: T, b: T): bool
+    fn __lt__(a: T, b: T): bool
+    fn __gt__(a: T, b: T): bool
+    fn __lteq__(a: T, b: T): bool
+    fn __gteq__(a: T, b: T): bool
+}
+
+constraint Stringifieable(T) {
+    fn toString(v: T): str
+}
+
+struct GenericStruct<T> [Comparable(T)] {
+    T number,
+}
+
+fn generic<T>(): bool [Comparable(T), Stringifieable(T)] {
+    
+}

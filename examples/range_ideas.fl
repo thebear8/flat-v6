@@ -1,0 +1,7 @@
+generator range(start: i32, end: i32): i32 {
+    let i = start
+    while(i < end) {
+        yield i
+        i = i + 1
+    }
+}

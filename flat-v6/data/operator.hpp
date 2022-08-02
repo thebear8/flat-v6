@@ -79,12 +79,12 @@ static const inline std::unordered_map<BinaryOperator, OperatorInfo> binaryOpera
 	{ BinaryOperator::LogicalOr, { "__lor__", "||", OperatorCategory::BinaryLogic } },
 
 	{ BinaryOperator::Equal, { "__eq__", "==", OperatorCategory::BinaryEquality } },
-	{ BinaryOperator::NotEqual, { "__neq__", "!=", OperatorCategory::BinaryEquality } },
+	{ BinaryOperator::NotEqual, { "__ne__", "!=", OperatorCategory::BinaryEquality } },
 
 	{ BinaryOperator::LessThan, { "__lt__", "<", OperatorCategory::BinaryComparison } },
 	{ BinaryOperator::GreaterThan, { "__gt__", ">", OperatorCategory::BinaryComparison } },
-	{ BinaryOperator::LessOrEqual, { "__ltoreq__", "<=", OperatorCategory::BinaryComparison } },
-	{ BinaryOperator::GreaterOrEqual, { "__gtoreq__", ">=", OperatorCategory::BinaryComparison } },
+	{ BinaryOperator::LessOrEqual, { "__lteq__", "<=", OperatorCategory::BinaryComparison } },
+	{ BinaryOperator::GreaterOrEqual, { "__gteq__", ">=", OperatorCategory::BinaryComparison } },
 
 	{ BinaryOperator::Assign, { "__assign__", "=", OperatorCategory::BinaryAssign } },
 };
