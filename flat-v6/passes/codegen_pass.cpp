@@ -46,7 +46,7 @@ llvm::Value* LLVMCodegenPass::visit(IntegerExpression* node)
 		value = value.substr(2);
 	}
 
-	auto type = llvm::IntegerType::get(llvmCtx, node->computedType->getBitSize());
+	auto type = llvm::IntegerType::get(llvmCtx, node->type->getBitSize());
 	return llvm::ConstantInt::get(type, value, radix);
 }
 
@@ -88,12 +88,12 @@ llvm::Value* LLVMCodegenPass::visit(IdentifierExpression* node)
 	if (!localValues.contains(node->value))
 		return logger.error(node, "Undefined local variable " + node->value, nullptr);
 
-	return builder.CreateLoad(getLLVMType(node->computedType), localValues.at(node->value), node->value + "_");
+	return builder.CreateLoad(getLLVMType(node->type), localValues.at(node->value), node->value + "_");
 }
 
 llvm::Value* LLVMCodegenPass::visit(StructExpression* node)
 {
-	auto type = dynamic_cast<StructType*>(node->computedType);
+	auto type = dynamic_cast<StructType*>(node->type);
 	auto structPtr = builder.CreateAlloca(getLLVMType(type), nullptr, type->name + "_");
 
 	for (int i = 0; i < type->fields.size(); i++)
@@ -119,19 +119,19 @@ llvm::Value* LLVMCodegenPass::visit(StructExpression* node)
 
 llvm::Value* LLVMCodegenPass::visit(UnaryExpression* node)
 {
-	if (node->type == UnaryOperator::Positive)
+	if (node->operation == UnaryOperator::Positive)
 	{
 		return visit(node->expression);
 	}
-	else if (node->type == UnaryOperator::Negative)
+	else if (node->operation == UnaryOperator::Negative)
 	{
 		return builder.CreateNeg(visit(node->expression));
 	}
-	else if (node->type == UnaryOperator::BitwiseNot)
+	else if (node->operation == UnaryOperator::BitwiseNot)
 	{
 		return builder.CreateNot(visit(node->expression));
 	}
-	else if (node->type == UnaryOperator::LogicalNot)
+	else if (node->operation == UnaryOperator::LogicalNot)
 	{
 		return builder.CreateNot(visit(node->expression));
 	}
@@ -150,96 +150,96 @@ llvm::Value* LLVMCodegenPass::visit(BinaryExpression* node)
 			return logger.error(node, "Undefined local variable " + name, nullptr);
 
 		builder.CreateStore(visit(node->right), localValues.at(name));
-		return builder.CreateLoad(getLLVMType(node->computedType), localValues.at(name), name + "_");
+		return builder.CreateLoad(getLLVMType(node->type), localValues.at(name), name + "_");
 	}
 	else
 	{
 		auto left = visit(node->left);
-		auto right = ((node->left->computedType->isSigned()) ?
-			builder.CreateSExtOrTrunc(visit(node->right), getLLVMType(node->left->computedType)) :
-			builder.CreateZExtOrTrunc(visit(node->right), getLLVMType(node->left->computedType)));
+		auto right = ((node->left->type->isSigned()) ?
+			builder.CreateSExtOrTrunc(visit(node->right), getLLVMType(node->left->type)) :
+			builder.CreateZExtOrTrunc(visit(node->right), getLLVMType(node->left->type)));
 
-		if (node->type == BinaryOperator::Add)
+		if (node->operation == BinaryOperator::Add)
 		{
 			return builder.CreateAdd(left, right);
 		}
-		else if (node->type == BinaryOperator::Subtract)
+		else if (node->operation == BinaryOperator::Subtract)
 		{
 			return builder.CreateSub(left, right);
 		}
-		else if (node->type == BinaryOperator::Multiply)
+		else if (node->operation == BinaryOperator::Multiply)
 		{
 			return builder.CreateMul(left, right);
 		}
-		else if (node->type == BinaryOperator::Divide)
+		else if (node->operation == BinaryOperator::Divide)
 		{
-			return (node->left->computedType->isSigned() ?
+			return (node->left->type->isSigned() ?
 				builder.CreateSDiv(left, right) :
 				builder.CreateUDiv(left, right));
 		}
-		else if (node->type == BinaryOperator::Modulo)
+		else if (node->operation == BinaryOperator::Modulo)
 		{
-			return (node->left->computedType->isSigned() ?
+			return (node->left->type->isSigned() ?
 				builder.CreateSRem(left, right) :
 				builder.CreateURem(left, right));
 		}
-		else if (node->type == BinaryOperator::BitwiseAnd)
+		else if (node->operation == BinaryOperator::BitwiseAnd)
 		{
 			return builder.CreateAnd(left, right);
 		}
-		else if (node->type == BinaryOperator::BitwiseOr)
+		else if (node->operation == BinaryOperator::BitwiseOr)
 		{
 			return builder.CreateOr(left, right);
 		}
-		else if (node->type == BinaryOperator::BitwiseXor)
+		else if (node->operation == BinaryOperator::BitwiseXor)
 		{
 			return builder.CreateXor(left, right);
 		}
-		else if (node->type == BinaryOperator::ShiftLeft)
+		else if (node->operation == BinaryOperator::ShiftLeft)
 		{
 			return builder.CreateShl(left, right);
 		}
-		else if (node->type == BinaryOperator::ShiftRight)
+		else if (node->operation == BinaryOperator::ShiftRight)
 		{
 			return builder.CreateAShr(left, right);
 		}
-		else if (node->type == BinaryOperator::LogicalAnd)
+		else if (node->operation == BinaryOperator::LogicalAnd)
 		{
 			return builder.CreateLogicalAnd(left, right);
 		}
-		else if (node->type == BinaryOperator::LogicalOr)
+		else if (node->operation == BinaryOperator::LogicalOr)
 		{
 			return builder.CreateLogicalOr(left, right);
 		}
-		else if (node->type == BinaryOperator::Equal)
+		else if (node->operation == BinaryOperator::Equal)
 		{
 			return builder.CreateCmp(llvm::CmpInst::Predicate::ICMP_EQ, left, right);
 		}
-		else if (node->type == BinaryOperator::NotEqual)
+		else if (node->operation == BinaryOperator::NotEqual)
 		{
 			return builder.CreateCmp(llvm::CmpInst::Predicate::ICMP_NE, left, right);
 		}
-		else if (node->type == BinaryOperator::LessThan)
+		else if (node->operation == BinaryOperator::LessThan)
 		{
-			return (node->left->computedType->isSigned() ?
+			return (node->left->type->isSigned() ?
 				builder.CreateCmp(llvm::CmpInst::Predicate::ICMP_SLT, left, right) :
 				builder.CreateCmp(llvm::CmpInst::Predicate::ICMP_ULT, left, right));
 		}
-		else if (node->type == BinaryOperator::GreaterThan)
+		else if (node->operation == BinaryOperator::GreaterThan)
 		{
-			return (node->left->computedType->isSigned() ?
+			return (node->left->type->isSigned() ?
 				builder.CreateCmp(llvm::CmpInst::Predicate::ICMP_SGT, left, right) :
 				builder.CreateCmp(llvm::CmpInst::Predicate::ICMP_UGT, left, right));
 		}
-		else if (node->type == BinaryOperator::LessOrEqual)
+		else if (node->operation == BinaryOperator::LessOrEqual)
 		{
-			return (node->left->computedType->isSigned() ?
+			return (node->left->type->isSigned() ?
 				builder.CreateCmp(llvm::CmpInst::Predicate::ICMP_SLE, left, right) :
 				builder.CreateCmp(llvm::CmpInst::Predicate::ICMP_ULE, left, right));
 		}
-		else if (node->type == BinaryOperator::GreaterOrEqual)
+		else if (node->operation == BinaryOperator::GreaterOrEqual)
 		{
-			return (node->left->computedType->isSigned() ?
+			return (node->left->type->isSigned() ?
 				builder.CreateCmp(llvm::CmpInst::Predicate::ICMP_SGE, left, right) :
 				builder.CreateCmp(llvm::CmpInst::Predicate::ICMP_UGE, left, right));
 		}
@@ -254,18 +254,18 @@ llvm::Value* LLVMCodegenPass::visit(BoundCallExpression* node)
 {
 	std::vector<Type*> argTypes;
 	for (auto& arg : node->args)
-		argTypes.push_back(arg->computedType);
+		argTypes.push_back(arg->type);
 
 	std::vector<llvm::Type*> llvmArgTypes;
 	for (auto& arg : node->args)
-		llvmArgTypes.push_back(getLLVMType(arg->computedType));
+		llvmArgTypes.push_back(getLLVMType(arg->type));
 
 	std::vector<llvm::Value*> argValues;
 	for (auto& arg : node->args)
 		argValues.push_back(visit(arg));
 
 	auto name = getMangledFunction(node->identifier, argTypes);
-	auto type = llvm::FunctionType::get(getLLVMType(node->computedType), llvmArgTypes, false);
+	auto type = llvm::FunctionType::get(getLLVMType(node->type), llvmArgTypes, false);
 	auto function = (mod.getFunction(name) ? mod.getFunction(name) : mod.getFunction(node->identifier));
 	if (!function)
 		return logger.error(node, "No matching function named " + name + " found", nullptr);
@@ -280,7 +280,7 @@ llvm::Value* LLVMCodegenPass::visit(BoundIndexExpression* node)
 {
 	auto fieldTypes = std::vector<llvm::Type*>({
 		llvm::Type::getInt64Ty(llvmCtx),
-		llvm::ArrayType::get(getLLVMType(node->computedType), 0)
+		llvm::ArrayType::get(getLLVMType(node->type), 0)
 		});
 	auto arrayType = llvm::StructType::get(llvmCtx, fieldTypes);
 
@@ -291,12 +291,12 @@ llvm::Value* LLVMCodegenPass::visit(BoundIndexExpression* node)
 		});
 
 	auto ptr = builder.CreateGEP(arrayType, visit(node->expression), indexes);
-	return builder.CreateLoad(getLLVMType(node->computedType), ptr);
+	return builder.CreateLoad(getLLVMType(node->type), ptr);
 }
 
 llvm::Value* LLVMCodegenPass::visit(FieldExpression* node)
 {
-	auto structType = dynamic_cast<StructType*>(node->expression->computedType);
+	auto structType = dynamic_cast<StructType*>(node->expression->type);
 	for (int i = 0; i < structType->fields.size(); i++)
 	{
 		if (structType->fields[i].first == node->fieldName)
@@ -304,7 +304,7 @@ llvm::Value* LLVMCodegenPass::visit(FieldExpression* node)
 			auto value = builder.CreateAlloca(getLLVMType(structType), nullptr, structType->name + "_");
 			builder.CreateStore(visit(node->expression), value);
 			auto ptr = builder.CreateStructGEP(getLLVMType(structType), value, i);
-			return builder.CreateLoad(getLLVMType(node->computedType), ptr, structType->toString() + "." + node->fieldName + "_");
+			return builder.CreateLoad(getLLVMType(node->type), ptr, structType->toString() + "." + node->fieldName + "_");
 		}
 	}
 
@@ -336,7 +336,7 @@ llvm::Value* LLVMCodegenPass::visit(VariableStatement* node)
 		if (localValues.contains(name))
 			return logger.error(node, "Variable " + name + " is already defined", nullptr);
 
-		localValues.try_emplace(name, builder.CreateAlloca(getLLVMType(value->computedType), nullptr, name));
+		localValues.try_emplace(name, builder.CreateAlloca(getLLVMType(value->type), nullptr, name));
 		builder.CreateStore(visit(value), localValues.at(name));
 	}
 

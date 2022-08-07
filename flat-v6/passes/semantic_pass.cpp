@@ -110,40 +110,40 @@ Type* SemanticPass::getFunctionResult(std::string const& name, std::vector<Type*
 Type* SemanticPass::visit(IntegerExpression* node)
 {
 	if (node->suffix == "")
-		return (node->computedType = typeCtx.getResolvedType("i32"));
+		return (node->type = typeCtx.getResolvedType("i32"));
 	else if (node->suffix == "i8")
-		return (node->computedType = typeCtx.getResolvedType("i8"));
+		return (node->type = typeCtx.getResolvedType("i8"));
 	else if (node->suffix == "i16")
-		return (node->computedType = typeCtx.getResolvedType("i16"));
+		return (node->type = typeCtx.getResolvedType("i16"));
 	else if (node->suffix == "i32")
-		return (node->computedType = typeCtx.getResolvedType("i32"));
+		return (node->type = typeCtx.getResolvedType("i32"));
 	else if (node->suffix == "i64")
-		return (node->computedType = typeCtx.getResolvedType("i64"));
+		return (node->type = typeCtx.getResolvedType("i64"));
 	else if (node->suffix == "u8")
-		return (node->computedType = typeCtx.getResolvedType("u8"));
+		return (node->type = typeCtx.getResolvedType("u8"));
 	else if (node->suffix == "u16")
-		return (node->computedType = typeCtx.getResolvedType("u16"));
+		return (node->type = typeCtx.getResolvedType("u16"));
 	else if (node->suffix == "u32")
-		return (node->computedType = typeCtx.getResolvedType("u32"));
+		return (node->type = typeCtx.getResolvedType("u32"));
 	else if (node->suffix == "u64")
-		return (node->computedType = typeCtx.getResolvedType("u64"));
+		return (node->type = typeCtx.getResolvedType("u64"));
 	else
 		return logger.error(node, "Invalid integer literal suffix", nullptr);
 }
 
 Type* SemanticPass::visit(BoolExpression* node)
 {
-	return (node->computedType = typeCtx.getResolvedType("bool"));
+	return (node->type = typeCtx.getResolvedType("bool"));
 }
 
 Type* SemanticPass::visit(CharExpression* node)
 {
-	return (node->computedType = typeCtx.getResolvedType("char"));
+	return (node->type = typeCtx.getResolvedType("char"));
 }
 
 Type* SemanticPass::visit(StringExpression* node)
 {
-	return (node->computedType = typeCtx.getResolvedType("str"));
+	return (node->type = typeCtx.getResolvedType("str"));
 }
 
 Type* SemanticPass::visit(IdentifierExpression* node)
@@ -151,7 +151,7 @@ Type* SemanticPass::visit(IdentifierExpression* node)
 	if (!localVariables.contains(node->value))
 		return logger.error(node, "Undefined Identifier", nullptr);
 
-	return (node->computedType = localVariables.at(node->value));
+	return (node->type = localVariables.at(node->value));
 }
 
 Type* SemanticPass::visit(StructExpression* node)
@@ -171,8 +171,8 @@ Type* SemanticPass::visit(StructExpression* node)
 			auto& [fieldName, fieldType] = structType->fields[i];
 			if (fieldName == name)
 			{
-				if (fieldType != value->computedType)
-					return logger.error(value, "Field " + name + " has type " + fieldType->toString() + ", value type is " + value->computedType->toString(), nullptr);
+				if (fieldType != value->type)
+					return logger.error(value, "Field " + name + " has type " + fieldType->toString() + ", value type is " + value->type->toString(), nullptr);
 				break;
 			}
 
@@ -188,8 +188,8 @@ Type* SemanticPass::visit(StructExpression* node)
 			auto& [name, value] = node->fields[i];
 			if (name == fieldName)
 			{
-				if (value->computedType != fieldType)
-					return logger.error(value, "Field " + name + " has type " + fieldType->toString() + ", value type is " + value->computedType->toString(), nullptr);
+				if (value->type != fieldType)
+					return logger.error(value, "Field " + name + " has type " + fieldType->toString() + ", value type is " + value->type->toString(), nullptr);
 				break;
 			}
 
@@ -198,29 +198,29 @@ Type* SemanticPass::visit(StructExpression* node)
 		}
 	}
 
-	return (node->computedType = structType);
+	return (node->type = structType);
 }
 
 Type* SemanticPass::visit(UnaryExpression* node)
 {
 	auto value = visit(node->expression);
-	if (unaryOperators.at(node->type).category == OperatorCategory::UnaryArithmetic && value->isIntegerType())
+	if (unaryOperators.at(node->operation).category == OperatorCategory::UnaryArithmetic && value->isIntegerType())
 	{
-		return (node->computedType = value);
+		return (node->type = value);
 	}
-	else if (unaryOperators.at(node->type).category == OperatorCategory::UnaryBitwise && value->isIntegerType())
+	else if (unaryOperators.at(node->operation).category == OperatorCategory::UnaryBitwise && value->isIntegerType())
 	{
-		return (node->computedType = value);
+		return (node->type = value);
 	}
-	else if (unaryOperators.at(node->type).category == OperatorCategory::UnaryLogic && value->isBoolType())
+	else if (unaryOperators.at(node->operation).category == OperatorCategory::UnaryLogic && value->isBoolType())
 	{
-		return (node->computedType = typeCtx.getResolvedType("bool"));
+		return (node->type = typeCtx.getResolvedType("bool"));
 	}
 	else
 	{
 		std::vector<Type*> args = std::vector<Type*>({ value });
-		auto result = getFunctionResult(unaryOperators.at(node->type).name, args, node);
-		return (node->computedType = result);
+		auto result = getFunctionResult(unaryOperators.at(node->operation).name, args, node);
+		return (node->type = result);
 	}
 }
 
@@ -229,27 +229,27 @@ Type* SemanticPass::visit(BinaryExpression* node)
 	auto left = visit(node->left);
 	auto right = visit(node->right);
 
-	if (binaryOperators.at(node->type).category == OperatorCategory::BinaryArithmetic && (left->isIntegerType() && right->isIntegerType()))
+	if (binaryOperators.at(node->operation).category == OperatorCategory::BinaryArithmetic && (left->isIntegerType() && right->isIntegerType()))
 	{
-		return (node->computedType = ((left->getBitSize() >= right->getBitSize()) ? left : right));
+		return (node->type = ((left->getBitSize() >= right->getBitSize()) ? left : right));
 	}
-	else if (binaryOperators.at(node->type).category == OperatorCategory::BinaryBitwise && (left->isIntegerType() && right->isIntegerType()) && (left->getBitSize() == right->getBitSize()))
+	else if (binaryOperators.at(node->operation).category == OperatorCategory::BinaryBitwise && (left->isIntegerType() && right->isIntegerType()) && (left->getBitSize() == right->getBitSize()))
 	{
-		return (node->computedType = left);
+		return (node->type = left);
 	}
-	else if (binaryOperators.at(node->type).category == OperatorCategory::BinaryComparison && (left->isIntegerType() && right->isIntegerType()))
+	else if (binaryOperators.at(node->operation).category == OperatorCategory::BinaryComparison && (left->isIntegerType() && right->isIntegerType()))
 	{
-		return (node->computedType = typeCtx.getResolvedType("bool"));
+		return (node->type = typeCtx.getResolvedType("bool"));
 	}
-	else if (binaryOperators.at(node->type).category == OperatorCategory::BinaryLogic && (left->isBoolType() && right->isBoolType()))
+	else if (binaryOperators.at(node->operation).category == OperatorCategory::BinaryLogic && (left->isBoolType() && right->isBoolType()))
 	{
-		return (node->computedType = typeCtx.getResolvedType("bool"));
+		return (node->type = typeCtx.getResolvedType("bool"));
 	}
-	else if (binaryOperators.at(node->type).category == OperatorCategory::BinaryEquality && ((left == right) || (left->isIntegerType() && right->isIntegerType())))
+	else if (binaryOperators.at(node->operation).category == OperatorCategory::BinaryEquality && ((left == right) || (left->isIntegerType() && right->isIntegerType())))
 	{
-		return (node->computedType = typeCtx.getResolvedType("bool"));
+		return (node->type = typeCtx.getResolvedType("bool"));
 	}
-	else if (binaryOperators.at(node->type).category == OperatorCategory::BinaryAssign && ((left == right) || (left->isIntegerType() && right->isIntegerType())))
+	else if (binaryOperators.at(node->operation).category == OperatorCategory::BinaryAssign && ((left == right) || (left->isIntegerType() && right->isIntegerType())))
 	{
 		if (!dynamic_cast<IdentifierExpression*>(node->left))
 			return logger.error(node, "Left side of assignment has to be identifier", nullptr);
@@ -257,17 +257,17 @@ Type* SemanticPass::visit(BinaryExpression* node)
 		if ((left->isIntegerType() && right->isIntegerType()) && (left->getBitSize() < right->getBitSize()))
 			logger.warning(node, "Narrowing conversion from " + left->toString() + " to " + right->toString());
 
-		return (node->computedType = left);
+		return (node->type = left);
 	}
 	else
 	{
 		std::vector<Type*> args = std::vector<Type*>({ left, right });
-		auto result = getFunctionResult(binaryOperators.at(node->type).name, args, node);
+		auto result = getFunctionResult(binaryOperators.at(node->operation).name, args, node);
 
-		if (binaryOperators.at(node->type).category == OperatorCategory::BinaryAssign && left != right)
+		if (binaryOperators.at(node->operation).category == OperatorCategory::BinaryAssign && left != right)
 			return logger.error(node, "Assignment operator overload function has to return a value that has the type of the left operand", nullptr);
 
-		return (node->computedType = result);
+		return (node->type = result);
 	}
 }
 
@@ -281,13 +281,13 @@ Type* SemanticPass::visit(CallExpression* node)
 	{
 		auto name = dynamic_cast<IdentifierExpression*>(node->expression)->value;
 		auto result = getFunctionResult(name, args, node);
-		return (node->computedType = result);
+		return (node->type = result);
 	}
 	else
 	{
 		args.insert(args.begin(), visit(node->expression));
 		auto result = getFunctionResult("__call__", args, node);
-		return (node->computedType = result);
+		return (node->type = result);
 	}
 }
 
@@ -300,16 +300,16 @@ Type* SemanticPass::visit(IndexExpression* node)
 	auto value = visit(node->expression);
 	if (value->isArrayType() && args.size() == 1 && args.front()->isIntegerType())
 	{
-		return (node->computedType = dynamic_cast<ArrayType*>(value)->base);
+		return (node->type = dynamic_cast<ArrayType*>(value)->base);
 	}
 	if (value->isStringType() && args.size() == 1 && args.front()->isIntegerType())
 	{
-		return (node->computedType = typeCtx.getResolvedType("u8"));
+		return (node->type = typeCtx.getResolvedType("u8"));
 	}
 	else
 	{
 		args.insert(args.begin(), value);
-		return (node->computedType = getFunctionResult("__index__", args, node));
+		return (node->type = getFunctionResult("__index__", args, node));
 	}
 }
 
@@ -323,7 +323,7 @@ Type* SemanticPass::visit(FieldExpression* node)
 	for (int i = 0; i < structType->fields.size(); i++)
 	{
 		if (structType->fields[i].first == node->fieldName)
-			return (node->computedType = structType->fields[i].second);
+			return (node->type = structType->fields[i].second);
 	}
 
 	return logger.error(node, "Struct " + structType->name + " does not have a field named " + node->fieldName, nullptr);
@@ -355,7 +355,7 @@ Type* SemanticPass::visit(VariableStatement* node)
 		if (visit(value)->isVoidType())
 			return logger.error(node, "Variable cannot have void type", nullptr);
 
-		localVariables.try_emplace(name, value->computedType);
+		localVariables.try_emplace(name, value->type);
 	}
 
 	return nullptr;

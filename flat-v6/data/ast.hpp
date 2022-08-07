@@ -92,10 +92,10 @@ struct Statement : public AstNode
 
 struct Expression : public AstNode
 {
-	Type* computedType;
+	Type* type;
 
 	Expression() :
-		computedType(nullptr) { }
+		type(nullptr) { }
 
 	IMPLEMENT_ACCEPT()
 };
@@ -166,22 +166,22 @@ struct StructExpression : public Expression
 
 struct UnaryExpression : public Expression
 {
-	UnaryOperator type;
+	UnaryOperator operation;
 	Expression* expression;
 
-	UnaryExpression(UnaryOperator type, Expression* expression) :
-		type(type), expression(expression) { }
+	UnaryExpression(UnaryOperator operation, Expression* expression) :
+		operation(operation), expression(expression) { }
 
 	IMPLEMENT_ACCEPT()
 };
 
 struct BinaryExpression : public Expression
 {
-	BinaryOperator type;
-	Expression* left, * right;
+	BinaryOperator operation;
+	Expression* left, *right;
 
-	BinaryExpression(BinaryOperator type, Expression* left, Expression* right) :
-		type(type), left(left), right(right) { }
+	BinaryExpression(BinaryOperator operation, Expression* left, Expression* right) :
+		operation(operation), left(left), right(right) { }
 
 	IMPLEMENT_ACCEPT()
 };

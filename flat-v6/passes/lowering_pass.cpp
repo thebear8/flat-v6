@@ -39,24 +39,24 @@ AstNode* OperatorLoweringPass::visit(UnaryExpression* node)
 {
 	node->expression = checked_cast<Expression>(visit(node->expression));
 
-	auto value = node->expression->computedType;
-	if (unaryOperators.at(node->type).category == OperatorCategory::UnaryArithmetic && value->isIntegerType())
+	auto value = node->expression->type;
+	if (unaryOperators.at(node->operation).category == OperatorCategory::UnaryArithmetic && value->isIntegerType())
 	{
 		return node;
 	}
-	else if (unaryOperators.at(node->type).category == OperatorCategory::UnaryBitwise && value->isIntegerType())
+	else if (unaryOperators.at(node->operation).category == OperatorCategory::UnaryBitwise && value->isIntegerType())
 	{
 		return node;
 	}
-	else if (unaryOperators.at(node->type).category == OperatorCategory::UnaryLogic && value->isBoolType())
+	else if (unaryOperators.at(node->operation).category == OperatorCategory::UnaryLogic && value->isBoolType())
 	{
 		return node;
 	}
 	else
 	{
 		std::vector<Expression*> args = std::vector<Expression*>({ node->expression });
-		auto newNode = astCtx.make<BoundCallExpression>(node->begin, node->end, unaryOperators.at(node->type).name, args);
-		newNode->computedType = node->computedType;
+		auto newNode = astCtx.make<BoundCallExpression>(node->begin, node->end, unaryOperators.at(node->operation).name, args);
+		newNode->type = node->type;
 		return newNode;
 	}
 }
@@ -66,48 +66,48 @@ AstNode* OperatorLoweringPass::visit(BinaryExpression* node)
 	node->left = checked_cast<Expression>(visit(node->left));
 	node->right = checked_cast<Expression>(visit(node->right));
 
-	auto left = node->left->computedType;
-	auto right = node->right->computedType;
+	auto left = node->left->type;
+	auto right = node->right->type;
 
-	if (binaryOperators.at(node->type).category == OperatorCategory::BinaryArithmetic && (left->isIntegerType() && right->isIntegerType()))
+	if (binaryOperators.at(node->operation).category == OperatorCategory::BinaryArithmetic && (left->isIntegerType() && right->isIntegerType()))
 	{
 		return node;
 	}
-	else if (binaryOperators.at(node->type).category == OperatorCategory::BinaryBitwise && (left->isIntegerType() && right->isIntegerType()) && (left->getBitSize() == right->getBitSize()))
+	else if (binaryOperators.at(node->operation).category == OperatorCategory::BinaryBitwise && (left->isIntegerType() && right->isIntegerType()) && (left->getBitSize() == right->getBitSize()))
 	{
 		return node;
 	}
-	else if (binaryOperators.at(node->type).category == OperatorCategory::BinaryComparison && (left->isIntegerType() && right->isIntegerType()))
+	else if (binaryOperators.at(node->operation).category == OperatorCategory::BinaryComparison && (left->isIntegerType() && right->isIntegerType()))
 	{
 		return node;
 	}
-	else if (binaryOperators.at(node->type).category == OperatorCategory::BinaryLogic && (left->isBoolType() && right->isBoolType()))
+	else if (binaryOperators.at(node->operation).category == OperatorCategory::BinaryLogic && (left->isBoolType() && right->isBoolType()))
 	{
 		return node;
 	}
-	else if (binaryOperators.at(node->type).category == OperatorCategory::BinaryEquality && ((left == right) || (left->isIntegerType() && right->isIntegerType())))
+	else if (binaryOperators.at(node->operation).category == OperatorCategory::BinaryEquality && ((left == right) || (left->isIntegerType() && right->isIntegerType())))
 	{
 		return node;
 	}
-	else if (binaryOperators.at(node->type).category == OperatorCategory::BinaryAssign && ((left == right) || (left->isIntegerType() && right->isIntegerType())))
+	else if (binaryOperators.at(node->operation).category == OperatorCategory::BinaryAssign && ((left == right) || (left->isIntegerType() && right->isIntegerType())))
 	{
 		return node;
 	}
 	else
 	{
-		if (node->type == BinaryOperator::Assign)
+		if (node->operation == BinaryOperator::Assign)
 		{
 			auto wrapArgs = std::vector<Expression*>({ node->left, node->right });
 			auto wrappedRight = astCtx.make<BoundCallExpression>(node->begin, node->end, binaryOperators.at(BinaryOperator::Assign).name, wrapArgs);
 			auto newNode = astCtx.make<BinaryExpression>(node->begin, node->end, BinaryOperator::Assign, node->left, wrappedRight);
-			newNode->computedType = node->computedType;
+			newNode->type = node->type;
 			return newNode;
 		}
 		else
 		{
 			auto args = std::vector<Expression*>({ node->left, node->right });
-			auto newNode = astCtx.make<BoundCallExpression>(node->begin, node->end, binaryOperators.at(node->type).name, args);
-			newNode->computedType = node->computedType;
+			auto newNode = astCtx.make<BoundCallExpression>(node->begin, node->end, binaryOperators.at(node->operation).name, args);
+			newNode->type = node->type;
 			return newNode;
 		}
 	}
@@ -122,7 +122,7 @@ AstNode* OperatorLoweringPass::visit(CallExpression* node)
 	if (dynamic_cast<IdentifierExpression*>(node->expression))
 	{
 		auto newNode = astCtx.make<BoundCallExpression>(node->begin, node->end, dynamic_cast<IdentifierExpression*>(node->expression)->value, node->args);
-		newNode->computedType = node->computedType;
+		newNode->type = node->type;
 		return newNode;
 	}
 	else
@@ -130,7 +130,7 @@ AstNode* OperatorLoweringPass::visit(CallExpression* node)
 		auto args = node->args;
 		args.insert(args.begin(), node->expression);
 		auto newNode = astCtx.make<BoundCallExpression>(node->begin, node->end, "__call__", args);
-		newNode->computedType = node->computedType;
+		newNode->type = node->type;
 		return newNode;
 	}
 }
@@ -141,17 +141,17 @@ AstNode* OperatorLoweringPass::visit(IndexExpression* node)
 	for (auto& arg : node->args)
 		arg = checked_cast<Expression>(visit(arg));
 
-	auto value = node->expression->computedType;
-	if (value->isArrayType() && node->args.size() == 1 && node->args.front()->computedType->isIntegerType())
+	auto value = node->expression->type;
+	if (value->isArrayType() && node->args.size() == 1 && node->args.front()->type->isIntegerType())
 	{
 		auto newNode = astCtx.make<BoundIndexExpression>(node->begin, node->end, node->expression, node->args.front());
-		newNode->computedType = node->computedType;
+		newNode->type = node->type;
 		return newNode;
 	}
-	if (value->isStringType() && node->args.size() == 1 && node->args.front()->computedType->isIntegerType())
+	if (value->isStringType() && node->args.size() == 1 && node->args.front()->type->isIntegerType())
 	{
 		auto newNode = astCtx.make<BoundIndexExpression>(node->begin, node->end, node->expression, node->args.front());
-		newNode->computedType = node->computedType;
+		newNode->type = node->type;
 		return newNode;
 	}
 	else
@@ -159,7 +159,7 @@ AstNode* OperatorLoweringPass::visit(IndexExpression* node)
 		auto args = node->args;
 		args.insert(args.begin(), node->expression);
 		auto newNode = astCtx.make<BoundCallExpression>(node->begin, node->end, "__index__", args);
-		newNode->computedType = node->computedType;
+		newNode->type = node->type;
 		return newNode;
 	}
 }
