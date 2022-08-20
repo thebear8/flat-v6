@@ -1,0 +1,31 @@
+// This tells the compiler what module the file belongs to
+// Module names consist of at least one identifier, 
+// followed by zero or more combinations of a dot and
+// another identifier.
+// For example std, std.gui, std.gui.input
+
+module test_module
+
+// Modules can be split up over multiple files by
+// having the same module declaration statement at the top
+// of every file that is part of the module.
+// This is done to support ordered modularization of code
+// and keep down the amount of import statement in comparison
+// to C++ include statements.
+// When a module is imported using an import statement without
+// any items, all entities of the imported module are accessible
+// under [MODULE_NAME].[ENTITY_NAME], for example std.vector .
+// If there are items listed in the import statement, these entities
+// are going to be inserted in the scope of the current module directly
+// If instead of a list of items, all is given after the name
+// of the module, all entities in the module will be inserted
+// into the scope of the current module
+
+import std
+import std { vector, hashmap }
+import std all
+
+struct Data {
+    vec: std.vector,
+    map: std.hashmap,
+}
