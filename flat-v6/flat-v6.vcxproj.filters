@@ -42,6 +42,9 @@
     <ClCompile Include="compiler.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
+    <ClCompile Include="passes\no_op_pass.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="data\enum.hpp">
@@ -81,6 +84,12 @@
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="util\string_switch.hpp">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="passes\no_op_pass.hpp">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="util\type_id.hpp">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>

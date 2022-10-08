@@ -167,6 +167,7 @@
     <ClCompile Include="parser\parser.cpp" />
     <ClCompile Include="passes\codegen_pass.cpp" />
     <ClCompile Include="passes\lowering_pass.cpp" />
+    <ClCompile Include="passes\no_op_pass.cpp" />
     <ClCompile Include="passes\semantic_pass.cpp" />
     <ClCompile Include="type\type.cpp" />
     <ClCompile Include="util\error_logger.cpp" />
@@ -181,10 +182,12 @@
     <ClInclude Include="parser\parser.hpp" />
     <ClInclude Include="passes\codegen_pass.hpp" />
     <ClInclude Include="passes\lowering_pass.hpp" />
+    <ClInclude Include="passes\no_op_pass.hpp" />
     <ClInclude Include="passes\semantic_pass.hpp" />
     <ClInclude Include="type\type.hpp" />
     <ClInclude Include="util\error_logger.hpp" />
     <ClInclude Include="util\string_switch.hpp" />
+    <ClInclude Include="util\type_id.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

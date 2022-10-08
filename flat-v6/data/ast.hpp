@@ -2,10 +2,12 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
+#include <typeinfo>
 
 #include "token.hpp"
 #include "operator.hpp"
 #include "../type/type.hpp"
+#include "../util/type_id.hpp"
 
 namespace visitor
 {
@@ -16,9 +18,6 @@ namespace visitor
 	struct VisitorImpl<ReturnType, T>
 	{
 		virtual ReturnType visit(T* visitable) = 0;
-
-		template<typename T>
-		ReturnType dispatch(T* node) { return node->accept(this); }
 	};
 
 	template<typename ReturnType, typename T, typename... Types>
@@ -29,7 +28,137 @@ namespace visitor
 	};
 
 	template<typename ReturnType, typename... Types>
-	using Visitor = VisitorImpl<ReturnType, Types...>;
+	struct Visitor : VisitorImpl<ReturnType, Types...>
+	{
+		template<typename T>
+		ReturnType dispatch(T* node) { return node->accept(this); }
+	};
+}
+
+namespace typeid_visitor
+{
+	struct AstNode
+	{
+		virtual ~AstNode() {}
+	};
+
+	template<typename TVisitor, typename TReturn, typename TValue, typename... TNodes>
+	struct DispatchImpl;
+
+	template<typename TVisitor, typename TReturn, typename TValue, typename TFirst>
+	struct DispatchImpl<TVisitor, TReturn, TValue, TFirst>
+	{
+		static __forceinline TReturn dispatch(TVisitor* visitor, TValue* node)
+		{
+			if (typeid(*node) == typeid(TFirst))
+				return visitor->visit(reinterpret_cast<TFirst*>(node));
+			throw std::exception();
+		}
+	};
+
+	template<typename TVisitor, typename TReturn, typename TValue, typename TFirst, typename... TRest>
+	struct DispatchImpl<TVisitor, TReturn, TValue, TFirst, TRest...>
+	{
+		static __forceinline TReturn dispatch(TVisitor* visitor, TValue* node)
+		{
+			if (typeid(*node) == typeid(TFirst))
+				return visitor->visit(reinterpret_cast<TFirst*>(node));
+			return DispatchImpl<TVisitor, TReturn, TValue, TRest...>::dispatch(visitor, node);
+		}
+	};
+
+	template<typename TReturn, typename... TNodes>
+	struct VisitorImpl;
+
+	template<typename TReturn, typename TFirst>
+	struct VisitorImpl<TReturn, TFirst>
+	{
+		virtual TReturn visit(TFirst* node) = 0;
+	};
+
+	template<typename TReturn, typename TFirst, typename... TRest>
+	struct VisitorImpl<TReturn, TFirst, TRest...> : public VisitorImpl<TReturn, TRest...>
+	{
+		using VisitorImpl<TReturn, TRest...>::visit;
+		virtual TReturn visit(TFirst* node) = 0;
+	};
+
+	template<typename TReturn, typename... TNodes>
+	struct Visitor : public VisitorImpl<TReturn, TNodes...>
+	{
+		template<typename TValue>
+		inline TReturn dispatch(TValue* node)
+		{
+			return DispatchImpl<VisitorImpl<TReturn, TNodes...>, TReturn, TValue, TNodes...>::dispatch(this, node);
+		}
+	};
+}
+
+namespace dynamic_visitor
+{
+	struct AstNode
+	{
+	private:
+		TypeId type;
+
+	public:
+		virtual ~AstNode() = default;
+
+	public:
+		inline TypeId getType() { return type; }
+		inline TypeId setType(TypeId value) { return (type = value); }
+	};
+
+	template<typename TVisitor, typename TReturn, typename... TNodes>
+	struct DispatchImpl;
+
+	template<typename TVisitor, typename TReturn, typename TFirst>
+	struct DispatchImpl<TVisitor, TReturn, TFirst>
+	{
+		static inline TReturn dispatch(TVisitor* visitor, AstNode* node)
+		{
+			if (node->getType() == type_id<TFirst>())
+				return visitor->visit(reinterpret_cast<TFirst*>(node));
+			throw std::exception();
+		}
+	};
+
+	template<typename TVisitor, typename TReturn, typename TFirst, typename... TRest>
+	struct DispatchImpl<TVisitor, TReturn, TFirst, TRest...>
+	{
+		static inline TReturn dispatch(TVisitor* visitor, AstNode* node)
+		{
+			if (node->getType() == type_id<TFirst>())
+				return visitor->visit(reinterpret_cast<TFirst*>(node));
+			return DispatchImpl<TVisitor, TReturn, TRest...>::dispatch(visitor, node);
+		}
+	};
+
+	template<typename TReturn, typename... TNodes>
+	struct VisitorImpl;
+
+	template<typename TReturn, typename TFirst>
+	struct VisitorImpl<TReturn, TFirst>
+	{
+		virtual TReturn visit(TFirst* node) = 0;
+	};
+
+	template<typename TReturn, typename TFirst, typename... TRest>
+	struct VisitorImpl<TReturn, TFirst, TRest...> : public VisitorImpl<TReturn, TRest...>
+	{
+		using VisitorImpl<TReturn, TRest...>::visit;
+		virtual TReturn visit(TFirst* node) = 0;
+	};
+
+	template<typename TReturn, typename... TNodes>
+	struct Visitor : public VisitorImpl<TReturn, TNodes...>
+	{
+		template<typename TValue>
+		inline TReturn dispatch(TValue* node)
+		{
+			return DispatchImpl<VisitorImpl<TReturn, TNodes...>, TReturn, TValue, TNodes...>::dispatch(this, node);
+		}
+	};
 }
 
 template<typename ReturnType>
@@ -66,16 +195,14 @@ using Visitor = visitor::Visitor < ReturnType,
 namespace llvm { struct Value; }
 
 #define IMPLEMENT_ACCEPT_T(ReturnType) virtual ReturnType accept(Visitor<ReturnType>* visitor) { return visitor->visit(this); }
-#define IMPLEMENT_ACCEPT() IMPLEMENT_ACCEPT_T(Type*) IMPLEMENT_ACCEPT_T(AstNode*) IMPLEMENT_ACCEPT_T(std::string) IMPLEMENT_ACCEPT_T(llvm::Value*)
+#define IMPLEMENT_ACCEPT() IMPLEMENT_ACCEPT_T(void) IMPLEMENT_ACCEPT_T(Type*) IMPLEMENT_ACCEPT_T(AstNode*) IMPLEMENT_ACCEPT_T(std::string) IMPLEMENT_ACCEPT_T(llvm::Value*)
 
-struct AstNode
+struct AstNode : public dynamic_visitor::AstNode
 {
 	size_t begin, end;
 
 	AstNode() :
 		begin(0), end(0) { }
-
-	virtual ~AstNode() { }
 
 	IMPLEMENT_ACCEPT()
 };
@@ -387,6 +514,7 @@ public:
 	TNode* make(size_t begin, size_t end, TArgs&&... args)
 	{
 		nodes.push_back(new TNode(std::forward<TArgs>(args)...));
+		nodes.back()->setType(type_id<TNode>());
 		nodes.back()->begin = begin;
 		nodes.back()->end = end;
 		return static_cast<TNode*>(nodes.back());

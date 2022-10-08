@@ -6,6 +6,8 @@
 
 #include "compiler.hpp"
 #include "util/string_switch.hpp"
+#include "parser/parser.hpp"
+#include "passes/no_op_pass.hpp"
 
 int main(int argc, char* argv[])
 {
@@ -54,6 +56,25 @@ int main(int argc, char* argv[])
 	std::ifstream ifs(input);
 	std::string source(std::istreambuf_iterator<char>(ifs), {});
 
+	AstContext astCtx;
+	TypeContext typeCtx;
+	ErrorLogger logger(source, std::cout);
+
+	Parser parser(logger, astCtx, typeCtx, source);
+	auto ast = parser.module();
+
+	NoOpPass noOpPass;
+	auto begin = std::chrono::high_resolution_clock::now();
+	for (int i = 0; i < 100000; i++)
+		noOpPass.dispatch(ast);
+	auto end = std::chrono::high_resolution_clock::now();
+
+	std::cout << "Time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - begin) << "\n";
+
+	auto node = (AstNode*)ast;
+	bool r = (typeid(*node) == typeid(int));
+
+	/*
 	CompilationOptions options = {};
 	options.targetDesc.cpuDesc = cpuDesc;
 	options.targetDesc.featureDesc = featureDesc;
@@ -63,4 +84,5 @@ int main(int argc, char* argv[])
 
 	CompilationContext ctx(options, std::cout);
 	ctx.compile((output.empty() ? std::filesystem::path(input).replace_extension(".obj").string() : output));
+	*/
 }
