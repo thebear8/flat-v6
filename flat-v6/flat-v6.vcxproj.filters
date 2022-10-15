@@ -89,7 +89,7 @@
     <ClInclude Include="passes\no_op_pass.hpp">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="util\type_id.hpp">
+    <ClInclude Include="util\visitor.hpp">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>
