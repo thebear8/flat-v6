@@ -86,3 +86,8 @@ int main(int argc, char* argv[])
 	ctx.compile((output.empty() ? std::filesystem::path(input).replace_extension(".obj").string() : output));
 	*/
 }
+
+// static_visitor 88ms
+// triple_dispatch_visitor 215ms
+// dynamic_visitor 1709ms
+// typeid_visitor 2103ms

@@ -57,10 +57,10 @@ protected:
 	virtual Type* visit(ExternFunctionDeclaration* node) override;
 	virtual Type* visit(Module* node) override;
 
-	virtual Type* visit(AstNode* node) override { return node->accept(this); }
-	virtual Type* visit(Expression* node) override { return node->accept(this); }
-	virtual Type* visit(Statement* node) override { return node->accept(this); }
-	virtual Type* visit(Declaration* node) override { return node->accept(this); }
+	virtual Type* visit(AstNode* node) override { return dispatch(node); }
+	virtual Type* visit(Expression* node) override { return dispatch(node); }
+	virtual Type* visit(Statement* node) override { return dispatch(node); }
+	virtual Type* visit(Declaration* node) override { return dispatch(node); }
 	virtual Type* visit(BoundCallExpression* node) override { throw std::exception(); }
 	virtual Type* visit(BoundIndexExpression* node) override { throw std::exception(); }
 };

@@ -59,10 +59,10 @@ protected:
 	virtual llvm::Value* visit(ExternFunctionDeclaration* node) override;
 	virtual llvm::Value* visit(Module* node) override;
 
-	virtual llvm::Value* visit(AstNode* node) override { return node->accept(this); }
-	virtual llvm::Value* visit(Expression* node) override { return node->accept(this); }
-	virtual llvm::Value* visit(Statement* node) override { return node->accept(this); }
-	virtual llvm::Value* visit(Declaration* node) override { return node->accept(this); }
+	virtual llvm::Value* visit(AstNode* node) override { return dispatch(node); }
+	virtual llvm::Value* visit(Expression* node) override { return dispatch(node); }
+	virtual llvm::Value* visit(Statement* node) override { return dispatch(node); }
+	virtual llvm::Value* visit(Declaration* node) override { return dispatch(node); }
 	virtual llvm::Value* visit(CallExpression* node) override { throw std::exception(); }
 	virtual llvm::Value* visit(IndexExpression* node) override { throw std::exception(); }
 

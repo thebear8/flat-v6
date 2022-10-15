@@ -1,36 +1,36 @@
 #pragma once
 #include "../data/ast.hpp"
 
-class NoOpPass : public Visitor<void>
+class NoOpPass : public Visitor<AstNode*>
 {
-	virtual void visit(IntegerExpression* node) override;
-	virtual void visit(BoolExpression* node) override;
-	virtual void visit(CharExpression* node) override;
-	virtual void visit(StringExpression* node) override;
-	virtual void visit(IdentifierExpression* node) override;
-	virtual void visit(StructExpression* node) override;
-	virtual void visit(UnaryExpression* node) override;
-	virtual void visit(BinaryExpression* node) override;
-	virtual void visit(CallExpression* node) override;
-	virtual void visit(BoundCallExpression* node) override;
-	virtual void visit(IndexExpression* node) override;
-	virtual void visit(BoundIndexExpression* node) override;
-	virtual void visit(FieldExpression* node) override;
+	virtual AstNode* visit(IntegerExpression* node) override;
+	virtual AstNode* visit(BoolExpression* node) override;
+	virtual AstNode* visit(CharExpression* node) override;
+	virtual AstNode* visit(StringExpression* node) override;
+	virtual AstNode* visit(IdentifierExpression* node) override;
+	virtual AstNode* visit(StructExpression* node) override;
+	virtual AstNode* visit(UnaryExpression* node) override;
+	virtual AstNode* visit(BinaryExpression* node) override;
+	virtual AstNode* visit(CallExpression* node) override;
+	virtual AstNode* visit(BoundCallExpression* node) override;
+	virtual AstNode* visit(IndexExpression* node) override;
+	virtual AstNode* visit(BoundIndexExpression* node) override;
+	virtual AstNode* visit(FieldExpression* node) override;
 
-	virtual void visit(BlockStatement* node) override;
-	virtual void visit(ExpressionStatement* node) override;
-	virtual void visit(VariableStatement* node) override;
-	virtual void visit(ReturnStatement* node) override;
-	virtual void visit(WhileStatement* node) override;
-	virtual void visit(IfStatement* node) override;
+	virtual AstNode* visit(BlockStatement* node) override;
+	virtual AstNode* visit(ExpressionStatement* node) override;
+	virtual AstNode* visit(VariableStatement* node) override;
+	virtual AstNode* visit(ReturnStatement* node) override;
+	virtual AstNode* visit(WhileStatement* node) override;
+	virtual AstNode* visit(IfStatement* node) override;
 
-	virtual void visit(StructDeclaration* node) override;
-	virtual void visit(FunctionDeclaration* node) override;
-	virtual void visit(ExternFunctionDeclaration* node) override;
-	virtual void visit(Module* node) override;
+	virtual AstNode* visit(StructDeclaration* node) override;
+	virtual AstNode* visit(FunctionDeclaration* node) override;
+	virtual AstNode* visit(ExternFunctionDeclaration* node) override;
+	virtual AstNode* visit(Module* node) override;
 
-	virtual void visit(AstNode* node) override { throw std::exception(); }
-	virtual void visit(Expression* node) override { throw std::exception(); }
-	virtual void visit(Statement* node) override { throw std::exception(); }
-	virtual void visit(Declaration* node) override { throw std::exception(); }
+	virtual AstNode* visit(AstNode* node) override { throw std::exception(); }
+	virtual AstNode* visit(Expression* node) override { throw std::exception(); }
+	virtual AstNode* visit(Statement* node) override { throw std::exception(); }
+	virtual AstNode* visit(Declaration* node) override { throw std::exception(); }
 };

@@ -1,124 +1,147 @@
 #include "no_op_pass.hpp"
 
-void NoOpPass::visit(IntegerExpression* node)
+AstNode* NoOpPass::visit(IntegerExpression* node)
 {
+	return node;
 }
 
-void NoOpPass::visit(BoolExpression* node)
+AstNode* NoOpPass::visit(BoolExpression* node)
 {
+	return node;
 }
 
-void NoOpPass::visit(CharExpression* node)
+AstNode* NoOpPass::visit(CharExpression* node)
 {
+	return node;
 }
 
-void NoOpPass::visit(StringExpression* node)
+AstNode* NoOpPass::visit(StringExpression* node)
 {
+	return node;
 }
 
-void NoOpPass::visit(IdentifierExpression* node)
+AstNode* NoOpPass::visit(IdentifierExpression* node)
 {
+	return node;
 }
 
-void NoOpPass::visit(StructExpression* node)
+AstNode* NoOpPass::visit(StructExpression* node)
 {
 	for (auto& [name, value] : node->fields)
 		dispatch(value);
+	return node;
 }
 
-void NoOpPass::visit(UnaryExpression* node)
+AstNode* NoOpPass::visit(UnaryExpression* node)
 {
 	dispatch(node->expression);
+	return node;
 }
 
-void NoOpPass::visit(BinaryExpression* node)
+AstNode* NoOpPass::visit(BinaryExpression* node)
 {
 	dispatch(node->left);
 	dispatch(node->right);
+	return node;
 }
 
-void NoOpPass::visit(CallExpression* node)
+AstNode* NoOpPass::visit(CallExpression* node)
 {
 	dispatch(node->expression);
 	for (auto& value : node->args)
 		dispatch(value);
+	return node;
 }
 
-void NoOpPass::visit(BoundCallExpression* node)
+AstNode* NoOpPass::visit(BoundCallExpression* node)
 {
 	for (auto& value : node->args)
 		dispatch(value);
+	return node;
 }
 
-void NoOpPass::visit(IndexExpression* node)
+AstNode* NoOpPass::visit(IndexExpression* node)
 {
 	dispatch(node->expression);
 	for (auto& value : node->args)
 		dispatch(value);
+	return node;
 }
 
-void NoOpPass::visit(BoundIndexExpression* node)
+AstNode* NoOpPass::visit(BoundIndexExpression* node)
 {
 	dispatch(node->expression);
 	dispatch(node->index);
+	return node;
 }
 
-void NoOpPass::visit(FieldExpression* node)
+AstNode* NoOpPass::visit(FieldExpression* node)
 {
 	dispatch(node->expression);
+	return node;
 }
 
-void NoOpPass::visit(BlockStatement* node)
+AstNode* NoOpPass::visit(BlockStatement* node)
 {
 	for (auto& statement : node->statements)
 		dispatch(statement);
+	return node;
 }
 
-void NoOpPass::visit(ExpressionStatement* node)
+AstNode* NoOpPass::visit(ExpressionStatement* node)
 {
 	dispatch(node->expression);
+	return node;
 }
 
-void NoOpPass::visit(VariableStatement* node)
+AstNode* NoOpPass::visit(VariableStatement* node)
 {
 	for (auto& [name, value] : node->items)
 		dispatch(value);
+	return node;
 }
 
-void NoOpPass::visit(ReturnStatement* node)
+AstNode* NoOpPass::visit(ReturnStatement* node)
 {
 	dispatch(node->expression);
+	return node;
 }
 
-void NoOpPass::visit(WhileStatement* node)
+AstNode* NoOpPass::visit(WhileStatement* node)
 {
 	dispatch(node->condition);
 	dispatch(node->body);
+	return node;
 }
 
-void NoOpPass::visit(IfStatement* node)
+AstNode* NoOpPass::visit(IfStatement* node)
 {
 	dispatch(node->condition);
 	dispatch(node->ifBody);
 	if (node->elseBody)
 		dispatch(node->elseBody);
+	return node;
 }
 
-void NoOpPass::visit(StructDeclaration* node)
+AstNode* NoOpPass::visit(StructDeclaration* node)
 {
+	return node;
 }
 
-void NoOpPass::visit(FunctionDeclaration* node)
+AstNode* NoOpPass::visit(FunctionDeclaration* node)
 {
 	dispatch(node->body);
+	return node;
 }
 
-void NoOpPass::visit(ExternFunctionDeclaration* node)
+AstNode* NoOpPass::visit(ExternFunctionDeclaration* node)
 {
+	return node;
 }
 
-void NoOpPass::visit(Module* node)
+AstNode* NoOpPass::visit(Module* node)
 {
 	for (auto& declaration : node->declarations)
 		dispatch(declaration);
+	return node;
 }

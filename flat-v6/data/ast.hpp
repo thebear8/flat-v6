@@ -3,6 +3,9 @@
 #include <string>
 #include <unordered_map>
 #include <typeinfo>
+#include <optional>
+#include <new>
+#include <type_traits>
 
 #include "token.hpp"
 #include "operator.hpp"
@@ -161,6 +164,118 @@ namespace dynamic_visitor
 	};
 }
 
+namespace triple_dispatch_visitor
+{
+	namespace detail
+	{
+		template<typename... TNodes>
+		struct VisitInvoker;
+
+		template<typename TFirst>
+		struct VisitInvoker<TFirst>
+		{
+			virtual void invoke(TFirst* node) = 0;
+		};
+
+		template<typename TFirst, typename... TRest>
+		struct VisitInvoker<TFirst, TRest...> : public VisitInvoker<TRest...>
+		{
+			using VisitInvoker<TRest...>::invoke;
+			virtual void invoke(TFirst* node) = 0;
+		};
+
+		template<typename TVisitInvoker, typename TReturn, typename... TNodes>
+		struct VisitorBase;
+
+		template<typename TVisitInvoker, typename TReturn, typename TFirst>
+		struct VisitorBase<TVisitInvoker, TReturn, TFirst> : public TVisitInvoker
+		{
+		protected:
+			bool valid_ = false;
+			std::aligned_storage<sizeof(TReturn), alignof(TReturn)>::type result_ = {};
+
+		public:
+			VisitorBase() { }
+
+			VisitorBase(VisitorBase&&) = delete;
+			VisitorBase(VisitorBase const&) = delete;
+			VisitorBase& operator=(VisitorBase const&) = delete;
+
+			~VisitorBase() { if (valid_) (*std::launder((TReturn*)&this->result_)).~TReturn(); }
+
+		public:
+			virtual TReturn visit(TFirst* node) = 0;
+			virtual void invoke(TFirst* node) { this->valid_ = true; ::new (&this->result_) TReturn(visit(node)); }
+		};
+
+		template<typename TVisitInvoker, typename TFirst>
+		struct VisitorBase<TVisitInvoker, void, TFirst> : public TVisitInvoker
+		{
+		public:
+			virtual void visit(TFirst* node) = 0;
+			virtual void invoke(TFirst* node) { return visit(node); }
+		};
+
+		template<typename TVisitInvoker, typename TReturn, typename TFirst, typename... TRest>
+		struct VisitorBase<TVisitInvoker, TReturn, TFirst, TRest...> : public VisitorBase<TVisitInvoker, TReturn, TRest...>
+		{
+		public:
+			using VisitorBase<TVisitInvoker, TReturn, TRest...>::visit;
+			virtual TReturn visit(TFirst* node) = 0;
+
+			using VisitorBase<TVisitInvoker, TReturn, TRest...>::invoke;
+			virtual void invoke(TFirst* node) { this->valid_ = true; ::new (std::launder((TReturn*)&this->result_)) TReturn(visit(node)); }
+		};
+
+		template<typename TVisitInvoker, typename TFirst, typename... TRest>
+		struct VisitorBase<TVisitInvoker, void, TFirst, TRest...> : VisitorBase<TVisitInvoker, void, TRest...>
+		{
+		public:
+			using VisitorBase<TVisitInvoker, void, TRest...>::visit;
+			virtual void visit(TFirst* node) = 0;
+
+			using VisitorBase<TVisitInvoker, void, TRest...>::invoke;
+			virtual void invoke(TFirst* node) { return visit(node); }
+		};
+
+		template<typename... TNodes>
+		struct AstNode
+		{
+			using VisitInvoker = detail::VisitInvoker<TNodes...>;
+			virtual void accept(VisitInvoker* visitor) = 0;
+		};
+
+		template<typename TReturn, typename... TNodes>
+		struct Visitor : public detail::VisitorBase<detail::VisitInvoker<TNodes...>, TReturn, TNodes...>
+		{
+			TReturn dispatch(AstNode<TNodes...>* node)
+			{
+				node->accept(this);
+				return *std::launder((TReturn*)&this->result_);
+			}
+		};
+
+		template<typename... TNodes>
+		struct Visitor<void, TNodes...> : public detail::VisitorBase<detail::VisitInvoker<TNodes...>, void, TNodes...>
+		{
+			void dispatch(AstNode<TNodes...>* node)
+			{
+				return node->accept(this);
+			}
+		};
+	}
+
+	template<typename... TNodes>
+	struct TripleDispatchVisitor
+	{
+		using AstNode = detail::AstNode<TNodes...>;
+
+		template<typename TReturn> 
+		using Visitor = detail::Visitor<TReturn, TNodes...>;
+	};
+}
+
+/*
 template<typename ReturnType>
 using Visitor = visitor::Visitor < ReturnType,
 	struct AstNode,
@@ -196,8 +311,108 @@ namespace llvm { struct Value; }
 
 #define IMPLEMENT_ACCEPT_T(ReturnType) virtual ReturnType accept(Visitor<ReturnType>* visitor) { return visitor->visit(this); }
 #define IMPLEMENT_ACCEPT() IMPLEMENT_ACCEPT_T(void) IMPLEMENT_ACCEPT_T(Type*) IMPLEMENT_ACCEPT_T(AstNode*) IMPLEMENT_ACCEPT_T(std::string) IMPLEMENT_ACCEPT_T(llvm::Value*)
+*/
 
-struct AstNode : public dynamic_visitor::AstNode
+/*
+template<typename ReturnType>
+using Visitor = return_state_visitor::Visitor < ReturnType,
+	struct AstNode,
+	struct Expression,
+	struct Statement,
+	struct Declaration,
+	struct IntegerExpression,
+	struct BoolExpression,
+	struct CharExpression,
+	struct StringExpression,
+	struct IdentifierExpression,
+	struct StructExpression,
+	struct UnaryExpression,
+	struct BinaryExpression,
+	struct CallExpression,
+	struct BoundCallExpression,
+	struct IndexExpression,
+	struct BoundIndexExpression,
+	struct FieldExpression,
+	struct BlockStatement,
+	struct ExpressionStatement,
+	struct VariableStatement,
+	struct ReturnStatement,
+	struct WhileStatement,
+	struct IfStatement,
+	struct StructDeclaration,
+	struct FunctionDeclaration,
+	struct ExternFunctionDeclaration,
+	struct Module
+> ;
+
+using AstNodeBase = return_state_visitor::AstNodeBase<
+	struct AstNode,
+	struct Expression,
+	struct Statement,
+	struct Declaration,
+	struct IntegerExpression,
+	struct BoolExpression,
+	struct CharExpression,
+	struct StringExpression,
+	struct IdentifierExpression,
+	struct StructExpression,
+	struct UnaryExpression,
+	struct BinaryExpression,
+	struct CallExpression,
+	struct BoundCallExpression,
+	struct IndexExpression,
+	struct BoundIndexExpression,
+	struct FieldExpression,
+	struct BlockStatement,
+	struct ExpressionStatement,
+	struct VariableStatement,
+	struct ReturnStatement,
+	struct WhileStatement,
+	struct IfStatement,
+	struct StructDeclaration,
+	struct FunctionDeclaration,
+	struct ExternFunctionDeclaration,
+	struct Module
+>;
+
+#define IMPLEMENT_ACCEPT() virtual void accept(VisitorBase* visitor) { visitor->invokeVisit(this); }
+*/
+
+using TripleDispatchVisitor = triple_dispatch_visitor::TripleDispatchVisitor<
+	struct AstNode,
+	struct Expression,
+	struct Statement,
+	struct Declaration,
+	struct IntegerExpression,
+	struct BoolExpression,
+	struct CharExpression,
+	struct StringExpression,
+	struct IdentifierExpression,
+	struct StructExpression,
+	struct UnaryExpression,
+	struct BinaryExpression,
+	struct CallExpression,
+	struct BoundCallExpression,
+	struct IndexExpression,
+	struct BoundIndexExpression,
+	struct FieldExpression,
+	struct BlockStatement,
+	struct ExpressionStatement,
+	struct VariableStatement,
+	struct ReturnStatement,
+	struct WhileStatement,
+	struct IfStatement,
+	struct StructDeclaration,
+	struct FunctionDeclaration,
+	struct ExternFunctionDeclaration,
+	struct Module
+>;
+using AstNodeBase = TripleDispatchVisitor::AstNode;
+template<typename TReturn> using Visitor = TripleDispatchVisitor::Visitor<TReturn>;
+
+#define IMPLEMENT_ACCEPT() virtual void accept(VisitInvoker* visitor) { visitor->invoke(this); }
+
+struct AstNode : public AstNodeBase
 {
 	size_t begin, end;
 
@@ -514,7 +729,7 @@ public:
 	TNode* make(size_t begin, size_t end, TArgs&&... args)
 	{
 		nodes.push_back(new TNode(std::forward<TArgs>(args)...));
-		nodes.back()->setType(type_id<TNode>());
+		//nodes.back()->setType(type_id<TNode>());
 		nodes.back()->begin = begin;
 		nodes.back()->end = end;
 		return static_cast<TNode*>(nodes.back());
