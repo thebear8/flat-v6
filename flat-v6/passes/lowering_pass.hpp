@@ -44,14 +44,7 @@ protected:
 	virtual AstNode* visit(StructDeclaration* node) override;
 	virtual AstNode* visit(FunctionDeclaration* node) override;
 	virtual AstNode* visit(ExternFunctionDeclaration* node) override;
-	virtual AstNode* visit(Module* node) override;
-
-	virtual AstNode* visit(AstNode* node) override { return dispatch(node); }
-	virtual AstNode* visit(Expression* node) override { return dispatch(node); }
-	virtual AstNode* visit(Statement* node) override { return dispatch(node); }
-	virtual AstNode* visit(Declaration* node) override { return dispatch(node); }
-	virtual AstNode* visit(BoundCallExpression* node) override { throw std::exception(); }
-	virtual AstNode* visit(BoundIndexExpression* node) override { throw std::exception(); }
+	virtual AstNode* visit(ParsedSourceFile* node) override;
 
 private:
 	template<typename Tr, typename Tv>

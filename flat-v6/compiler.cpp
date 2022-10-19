@@ -49,6 +49,11 @@ CompilationContext::CompilationContext(CompilationOptions const& options, std::o
 	typeCtx.setPointerSize(module.getDataLayout().getPointerSizeInBits());
 }
 
+void CompilationContext::parse(std::vector<std::string> const& sources)
+{
+
+}
+
 void CompilationContext::compile(std::string const& outputFile)
 {
 	std::error_code error;
@@ -63,7 +68,7 @@ void CompilationContext::compile(std::string const& outputFile)
 void CompilationContext::compile(llvm::raw_pwrite_stream& output)
 {
 	Parser parser(logger, astCtx, typeCtx, options.moduleSource);
-	auto ast = parser.module();
+	auto ast = parser.sourceFile();
 
 	SemanticPass semanticPass(logger, astCtx, typeCtx);
 	semanticPass.analyze(ast);

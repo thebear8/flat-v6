@@ -12,20 +12,15 @@ module test_module
 // This is done to support ordered modularization of code
 // and keep down the amount of import statement in comparison
 // to C++ include statements.
-// When a module is imported using an import statement without
-// any items, all entities of the imported module are accessible
-// under [MODULE_NAME].[ENTITY_NAME], for example std.vector .
-// If there are items listed in the import statement, these entities
-// are going to be inserted in the scope of the current module directly
-// If instead of a list of items, all is given after the name
-// of the module, all entities in the module will be inserted
-// into the scope of the current module
+// Examples of import statements:
+// import std                       => insert `std` into current scope => std.collections.vector
+// import std.collections           => insert `collections` into current scope => collections.vector
+// import std.collections.vector    => insert `vector` into current scope => vector
 
-import std
-import std { vector, hashmap }
-import std all
+import std.collections
 
 struct Data {
-    vec: std.vector,
-    map: std.hashmap,
+    vec: collections.vector,
+    map: collections.hashmap,
+    deque: collections.deque,
 }

@@ -1,6 +1,7 @@
 #pragma once
 #include <new>
 #include <type_traits>
+#include <typeinfo>
 
 namespace triple_dispatch_visitor
 {
@@ -42,7 +43,7 @@ namespace triple_dispatch_visitor
 			~VisitorBase() { if (valid_) (*std::launder((TReturn*)&this->result_)).~TReturn(); }
 
 		public:
-			virtual TReturn visit(TFirst* node) = 0;
+			virtual TReturn visit(TFirst* node) { throw std::exception((std::string("visit(") + typeid(TFirst).name() + ") unimplemented").c_str()); }
 			virtual void invoke(TFirst* node) { this->valid_ = true; ::new (&this->result_) TReturn(visit(node)); }
 		};
 
@@ -50,7 +51,7 @@ namespace triple_dispatch_visitor
 		struct VisitorBase<TVisitInvoker, void, TFirst> : public TVisitInvoker
 		{
 		public:
-			virtual void visit(TFirst* node) = 0;
+			virtual void visit(TFirst* node) { throw std::exception((std::string("visit(") + typeid(TFirst).name() + ") unimplemented").c_str()); }
 			virtual void invoke(TFirst* node) { return visit(node); }
 		};
 
@@ -59,7 +60,7 @@ namespace triple_dispatch_visitor
 		{
 		public:
 			using VisitorBase<TVisitInvoker, TReturn, TRest...>::visit;
-			virtual TReturn visit(TFirst* node) = 0;
+			virtual TReturn visit(TFirst* node) { throw std::exception((std::string("visit(") + typeid(TFirst).name() + ") unimplemented").c_str()); }
 
 			using VisitorBase<TVisitInvoker, TReturn, TRest...>::invoke;
 			virtual void invoke(TFirst* node) { this->valid_ = true; ::new (std::launder((TReturn*)&this->result_)) TReturn(visit(node)); }
@@ -70,7 +71,7 @@ namespace triple_dispatch_visitor
 		{
 		public:
 			using VisitorBase<TVisitInvoker, void, TRest...>::visit;
-			virtual void visit(TFirst* node) = 0;
+			virtual void visit(TFirst* node) { throw std::exception((std::string("visit(") + typeid(TFirst).name() + ") unimplemented").c_str()); }
 
 			using VisitorBase<TVisitInvoker, void, TRest...>::invoke;
 			virtual void invoke(TFirst* node) { return visit(node); }

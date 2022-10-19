@@ -2,7 +2,7 @@
 
 void SemanticPass::analyze(AstNode* program)
 {
-	visit(program);
+	dispatch(program);
 
 	for (auto& [name, structDeclaration] : structs)
 	{
@@ -20,7 +20,7 @@ void SemanticPass::analyze(AstNode* program)
 		functionResult = nullptr;
 		expectedFunctionResult = function->result;
 
-		visit(function->body);
+		dispatch(function->body);
 
 		if (!expectedFunctionResult->isVoidType() && !functionResult)
 			return logger.error(function, "Missing return statement in function " + name + ", should return " + expectedFunctionResult->toString());
@@ -160,7 +160,7 @@ Type* SemanticPass::visit(StructExpression* node)
 		return logger.error(node, "Undefined Struct Type", nullptr);
 
 	for (auto& [name, value] : node->fields)
-		visit(value);
+		dispatch(value);
 
 	auto structType = dynamic_cast<StructType*>(typeCtx.getResolvedType(node->structName));
 
@@ -203,7 +203,7 @@ Type* SemanticPass::visit(StructExpression* node)
 
 Type* SemanticPass::visit(UnaryExpression* node)
 {
-	auto value = visit(node->expression);
+	auto value = dispatch(node->expression);
 	if (unaryOperators.at(node->operation).category == OperatorCategory::UnaryArithmetic && value->isIntegerType())
 	{
 		return (node->type = value);
@@ -226,8 +226,8 @@ Type* SemanticPass::visit(UnaryExpression* node)
 
 Type* SemanticPass::visit(BinaryExpression* node)
 {
-	auto left = visit(node->left);
-	auto right = visit(node->right);
+	auto left = dispatch(node->left);
+	auto right = dispatch(node->right);
 
 	if (binaryOperators.at(node->operation).category == OperatorCategory::BinaryArithmetic && (left->isIntegerType() && right->isIntegerType()))
 	{
@@ -275,7 +275,7 @@ Type* SemanticPass::visit(CallExpression* node)
 {
 	std::vector<Type*> args;
 	for (auto arg : node->args)
-		args.push_back(visit(arg));
+		args.push_back(dispatch(arg));
 
 	if (dynamic_cast<IdentifierExpression*>(node->expression))
 	{
@@ -285,7 +285,7 @@ Type* SemanticPass::visit(CallExpression* node)
 	}
 	else
 	{
-		args.insert(args.begin(), visit(node->expression));
+		args.insert(args.begin(), dispatch(node->expression));
 		auto result = getFunctionResult("__call__", args, node);
 		return (node->type = result);
 	}
@@ -295,9 +295,9 @@ Type* SemanticPass::visit(IndexExpression* node)
 {
 	std::vector<Type*> args;
 	for (auto arg : node->args)
-		args.push_back(visit(arg));
+		args.push_back(dispatch(arg));
 
-	auto value = visit(node->expression);
+	auto value = dispatch(node->expression);
 	if (value->isArrayType() && args.size() == 1 && args.front()->isIntegerType())
 	{
 		return (node->type = dynamic_cast<ArrayType*>(value)->base);
@@ -315,7 +315,7 @@ Type* SemanticPass::visit(IndexExpression* node)
 
 Type* SemanticPass::visit(FieldExpression* node)
 {
-	auto value = visit(node->expression);
+	auto value = dispatch(node->expression);
 	if (!value->isStructType())
 		return logger.error(node, "Left side of field expression has to be of struct type", nullptr);
 
@@ -333,7 +333,7 @@ Type* SemanticPass::visit(BlockStatement* node)
 {
 	for (auto& statement : node->statements)
 	{
-		visit(statement);
+		dispatch(statement);
 	}
 
 	return nullptr;
@@ -341,7 +341,7 @@ Type* SemanticPass::visit(BlockStatement* node)
 
 Type* SemanticPass::visit(ExpressionStatement* node)
 {
-	visit(node->expression);
+	dispatch(node->expression);
 	return nullptr;
 }
 
@@ -352,7 +352,7 @@ Type* SemanticPass::visit(VariableStatement* node)
 		if (localVariables.contains(name))
 			return logger.error(node, "Variable is already defined", nullptr);
 
-		if (visit(value)->isVoidType())
+		if (dispatch(value)->isVoidType())
 			return logger.error(node, "Variable cannot have void type", nullptr);
 
 		localVariables.try_emplace(name, value->type);
@@ -363,7 +363,7 @@ Type* SemanticPass::visit(VariableStatement* node)
 
 Type* SemanticPass::visit(ReturnStatement* node)
 {
-	functionResult = visit(node->expression);
+	functionResult = dispatch(node->expression);
 	if (functionResult != expectedFunctionResult)
 	{
 		functionResult = nullptr;
@@ -375,12 +375,12 @@ Type* SemanticPass::visit(ReturnStatement* node)
 
 Type* SemanticPass::visit(WhileStatement* node)
 {
-	auto condition = visit(node->condition);
+	auto condition = dispatch(node->condition);
 	if (!condition->isBoolType())
 		return logger.error(node->condition, "While condition has to be of boolean type", nullptr);
 
 	auto prevResult = functionResult;
-	visit(node->body);
+	dispatch(node->body);
 	functionResult = prevResult;
 
 	return nullptr;
@@ -388,19 +388,19 @@ Type* SemanticPass::visit(WhileStatement* node)
 
 Type* SemanticPass::visit(IfStatement* node)
 {
-	auto condition = visit(node->condition);
+	auto condition = dispatch(node->condition);
 	if (!condition->isBoolType())
 		return logger.error(node->condition, "If condition has to be of boolean type", nullptr);
 
 	auto prevResult = functionResult;
 
 	functionResult = nullptr;
-	visit(node->ifBody);
+	dispatch(node->ifBody);
 	auto ifResult = functionResult;
 
 	functionResult = nullptr;
 	if (node->elseBody)
-		visit(node->elseBody);
+		dispatch(node->elseBody);
 	auto elseResult = functionResult;
 
 	functionResult = (((ifResult != nullptr) && (elseResult != nullptr)) ? ifResult : prevResult);
@@ -443,12 +443,16 @@ Type* SemanticPass::visit(ExternFunctionDeclaration* node)
 	return nullptr;
 }
 
-Type* SemanticPass::visit(Module* node)
+Type* SemanticPass::visit(ParsedSourceFile* node)
 {
-	for (auto& declaration : node->declarations)
-	{
-		visit((AstNode*)declaration);
-	}
+	for (auto& decl : node->structs)
+		dispatch(decl);
+
+	for (auto& decl : node->externFunctions)
+		dispatch(decl);
+
+	for (auto& decl : node->functions)
+		dispatch(decl);
 
 	return nullptr;
 }

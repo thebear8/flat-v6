@@ -46,6 +46,8 @@ ENTRY(Else) \
 ENTRY(Struct) \
 ENTRY(Function) \
 ENTRY(Extern) \
+ENTRY(Import) \
+ENTRY(Module) \
 ENTRY(Integer) \
 ENTRY(Identifier) \
 ENTRY(CharLiteral) \

@@ -27,10 +27,5 @@ class NoOpPass : public Visitor<AstNode*>
 	virtual AstNode* visit(StructDeclaration* node) override;
 	virtual AstNode* visit(FunctionDeclaration* node) override;
 	virtual AstNode* visit(ExternFunctionDeclaration* node) override;
-	virtual AstNode* visit(Module* node) override;
-
-	virtual AstNode* visit(AstNode* node) override { throw std::exception(); }
-	virtual AstNode* visit(Expression* node) override { throw std::exception(); }
-	virtual AstNode* visit(Statement* node) override { throw std::exception(); }
-	virtual AstNode* visit(Declaration* node) override { throw std::exception(); }
+	virtual AstNode* visit(ParsedSourceFile* node) override;
 };

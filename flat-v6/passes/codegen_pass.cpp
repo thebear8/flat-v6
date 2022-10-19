@@ -7,10 +7,10 @@
 void LLVMCodegenPass::compile(AstNode* ast)
 {
 	isFunctionBodyPass = false;
-	visit(ast);
+	dispatch(ast);
 
 	isFunctionBodyPass = true;
-	visit(ast);
+	dispatch(ast);
 }
 
 void LLVMCodegenPass::optimize()
@@ -103,7 +103,7 @@ llvm::Value* LLVMCodegenPass::visit(StructExpression* node)
 			if (node->fields.at(j).first == type->fields.at(i).first)
 			{
 				auto fieldName = node->fields.at(j).first;
-				auto fieldValue = visit(node->fields.at(j).second);
+				auto fieldValue = dispatch(node->fields.at(j).second);
 				auto fieldPtr = builder.CreateStructGEP(getLLVMType(type), structPtr, i, type->name + "." + fieldName + "_");
 				builder.CreateStore(fieldValue, fieldPtr);
 				break;
@@ -121,19 +121,19 @@ llvm::Value* LLVMCodegenPass::visit(UnaryExpression* node)
 {
 	if (node->operation == UnaryOperator::Positive)
 	{
-		return visit(node->expression);
+		return dispatch(node->expression);
 	}
 	else if (node->operation == UnaryOperator::Negative)
 	{
-		return builder.CreateNeg(visit(node->expression));
+		return builder.CreateNeg(dispatch(node->expression));
 	}
 	else if (node->operation == UnaryOperator::BitwiseNot)
 	{
-		return builder.CreateNot(visit(node->expression));
+		return builder.CreateNot(dispatch(node->expression));
 	}
 	else if (node->operation == UnaryOperator::LogicalNot)
 	{
-		return builder.CreateNot(visit(node->expression));
+		return builder.CreateNot(dispatch(node->expression));
 	}
 	else
 	{
@@ -149,15 +149,15 @@ llvm::Value* LLVMCodegenPass::visit(BinaryExpression* node)
 		if (!localValues.contains(name))
 			return logger.error(node, "Undefined local variable " + name, nullptr);
 
-		builder.CreateStore(visit(node->right), localValues.at(name));
+		builder.CreateStore(dispatch(node->right), localValues.at(name));
 		return builder.CreateLoad(getLLVMType(node->type), localValues.at(name), name + "_");
 	}
 	else
 	{
-		auto left = visit(node->left);
+		auto left = dispatch(node->left);
 		auto right = ((node->left->type->isSigned()) ?
-			builder.CreateSExtOrTrunc(visit(node->right), getLLVMType(node->left->type)) :
-			builder.CreateZExtOrTrunc(visit(node->right), getLLVMType(node->left->type)));
+			builder.CreateSExtOrTrunc(dispatch(node->right), getLLVMType(node->left->type)) :
+			builder.CreateZExtOrTrunc(dispatch(node->right), getLLVMType(node->left->type)));
 
 		if (node->operation == BinaryOperator::Add)
 		{
@@ -262,7 +262,7 @@ llvm::Value* LLVMCodegenPass::visit(BoundCallExpression* node)
 
 	std::vector<llvm::Value*> argValues;
 	for (auto& arg : node->args)
-		argValues.push_back(visit(arg));
+		argValues.push_back(dispatch(arg));
 
 	auto name = getMangledFunction(node->identifier, argTypes);
 	auto type = llvm::FunctionType::get(getLLVMType(node->type), llvmArgTypes, false);
@@ -287,10 +287,10 @@ llvm::Value* LLVMCodegenPass::visit(BoundIndexExpression* node)
 	auto indexes = std::vector<llvm::Value*>({
 		llvm::ConstantInt::get(llvm::Type::getInt64Ty(llvmCtx), 0),
 		llvm::ConstantInt::get(llvm::Type::getInt32Ty(llvmCtx), 1),
-		visit(node->index)
+		dispatch(node->index)
 		});
 
-	auto ptr = builder.CreateGEP(arrayType, visit(node->expression), indexes);
+	auto ptr = builder.CreateGEP(arrayType, dispatch(node->expression), indexes);
 	return builder.CreateLoad(getLLVMType(node->type), ptr);
 }
 
@@ -302,7 +302,7 @@ llvm::Value* LLVMCodegenPass::visit(FieldExpression* node)
 		if (structType->fields[i].first == node->fieldName)
 		{
 			auto value = builder.CreateAlloca(getLLVMType(structType), nullptr, structType->name + "_");
-			builder.CreateStore(visit(node->expression), value);
+			builder.CreateStore(dispatch(node->expression), value);
 			auto ptr = builder.CreateStructGEP(getLLVMType(structType), value, i);
 			return builder.CreateLoad(getLLVMType(node->type), ptr, structType->toString() + "." + node->fieldName + "_");
 		}
@@ -316,7 +316,7 @@ llvm::Value* LLVMCodegenPass::visit(BlockStatement* node)
 	auto prevLocalValues = localValues;
 
 	for (auto& statement : node->statements)
-		visit(statement);
+		dispatch(statement);
 
 	localValues = prevLocalValues;
 
@@ -325,7 +325,7 @@ llvm::Value* LLVMCodegenPass::visit(BlockStatement* node)
 
 llvm::Value* LLVMCodegenPass::visit(ExpressionStatement* node)
 {
-	visit(node->expression);
+	dispatch(node->expression);
 	return nullptr;
 }
 
@@ -337,7 +337,7 @@ llvm::Value* LLVMCodegenPass::visit(VariableStatement* node)
 			return logger.error(node, "Variable " + name + " is already defined", nullptr);
 
 		localValues.try_emplace(name, builder.CreateAlloca(getLLVMType(value->type), nullptr, name));
-		builder.CreateStore(visit(value), localValues.at(name));
+		builder.CreateStore(dispatch(value), localValues.at(name));
 	}
 
 	return nullptr;
@@ -346,7 +346,7 @@ llvm::Value* LLVMCodegenPass::visit(VariableStatement* node)
 llvm::Value* LLVMCodegenPass::visit(ReturnStatement* node)
 {
 	if (node->expression)
-		builder.CreateRet(visit(node->expression));
+		builder.CreateRet(dispatch(node->expression));
 	else
 		builder.CreateRetVoid();
 
@@ -365,11 +365,11 @@ llvm::Value* LLVMCodegenPass::visit(WhileStatement* node)
 
 	parentFunction->getBasicBlockList().push_back(conditionBlock);
 	builder.SetInsertPoint(conditionBlock);
-	builder.CreateCondBr(visit(node->condition), bodyBlock, endBlock);
+	builder.CreateCondBr(dispatch(node->condition), bodyBlock, endBlock);
 
 	parentFunction->getBasicBlockList().push_back(bodyBlock);
 	builder.SetInsertPoint(bodyBlock);
-	visit(node->body);
+	dispatch(node->body);
 	builder.CreateBr(conditionBlock);
 
 	parentFunction->getBasicBlockList().push_back(endBlock);
@@ -387,18 +387,18 @@ llvm::Value* LLVMCodegenPass::visit(IfStatement* node)
 	auto elseBlock = (hasElse ? llvm::BasicBlock::Create(llvmCtx, "if_else_block") : nullptr);
 	auto endBlock = llvm::BasicBlock::Create(llvmCtx, "if_end_block");
 
-	builder.CreateCondBr(visit(node->condition), ifBlock, (hasElse ? elseBlock : endBlock));
+	builder.CreateCondBr(dispatch(node->condition), ifBlock, (hasElse ? elseBlock : endBlock));
 
 	parentFunction->getBasicBlockList().push_back(ifBlock);
 	builder.SetInsertPoint(ifBlock);
-	visit(node->ifBody);
+	dispatch(node->ifBody);
 	builder.CreateBr(endBlock);
 
 	if (hasElse)
 	{
 		parentFunction->getBasicBlockList().push_back(elseBlock);
 		builder.SetInsertPoint(elseBlock);
-		visit(node->elseBody);
+		dispatch(node->elseBody);
 		builder.CreateBr(endBlock);
 	}
 
@@ -456,7 +456,7 @@ llvm::Value* LLVMCodegenPass::visit(FunctionDeclaration* node)
 		builder.CreateBr(bodyBlock);
 		function->getBasicBlockList().push_back(bodyBlock);
 		builder.SetInsertPoint(bodyBlock);
-		visit(node->body);
+		dispatch(node->body);
 
 		if (node->result->isVoidType() && !builder.GetInsertBlock()->getTerminator())
 			builder.CreateRetVoid();
@@ -482,10 +482,16 @@ llvm::Value* LLVMCodegenPass::visit(ExternFunctionDeclaration* node)
 	return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(Module* node)
+llvm::Value* LLVMCodegenPass::visit(ParsedSourceFile* node)
 {
-	for (auto& decl : node->declarations)
-		visit(decl);
+	for (auto& decl : node->structs)
+		dispatch(decl);
+
+	for (auto& decl : node->externFunctions)
+		dispatch(decl);
+
+	for (auto& decl : node->functions)
+		dispatch(decl);
 
 	return nullptr;
 }

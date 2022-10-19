@@ -59,6 +59,9 @@ private:
 		{ Token::Else, "else" },
 		{ Token::Struct, "struct" },
 		{ Token::Function, "fn" },
+		{ Token::Import, "import" },
+		{ Token::Module, "module" },
+		{ Token::Function, "fn" },
 		{ Token::Extern, "extern" },
 	};
 

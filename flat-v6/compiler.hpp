@@ -46,6 +46,7 @@ public:
 	CompilationContext(CompilationOptions const& options, std::ostream& logStream = std::cout);
 
 public:
+	void parse(std::vector<std::string> const& sources);
 	void compile(std::string const& outputFile);
 	void compile(llvm::raw_pwrite_stream& output);
 };

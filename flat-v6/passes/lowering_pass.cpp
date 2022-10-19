@@ -2,7 +2,7 @@
 
 AstNode* OperatorLoweringPass::process(AstNode* program)
 {
-	return visit(program);
+	return dispatch(program);
 }
 
 AstNode* OperatorLoweringPass::visit(IntegerExpression* node)
@@ -37,7 +37,7 @@ AstNode* OperatorLoweringPass::visit(StructExpression* node)
 
 AstNode* OperatorLoweringPass::visit(UnaryExpression* node)
 {
-	node->expression = checked_cast<Expression>(visit(node->expression));
+	node->expression = checked_cast<Expression>(dispatch(node->expression));
 
 	auto value = node->expression->type;
 	if (unaryOperators.at(node->operation).category == OperatorCategory::UnaryArithmetic && value->isIntegerType())
@@ -63,8 +63,8 @@ AstNode* OperatorLoweringPass::visit(UnaryExpression* node)
 
 AstNode* OperatorLoweringPass::visit(BinaryExpression* node)
 {
-	node->left = checked_cast<Expression>(visit(node->left));
-	node->right = checked_cast<Expression>(visit(node->right));
+	node->left = checked_cast<Expression>(dispatch(node->left));
+	node->right = checked_cast<Expression>(dispatch(node->right));
 
 	auto left = node->left->type;
 	auto right = node->right->type;
@@ -115,9 +115,9 @@ AstNode* OperatorLoweringPass::visit(BinaryExpression* node)
 
 AstNode* OperatorLoweringPass::visit(CallExpression* node)
 {
-	node->expression = checked_cast<Expression>(visit(node->expression));
+	node->expression = checked_cast<Expression>(dispatch(node->expression));
 	for (auto& arg : node->args)
-		arg = checked_cast<Expression>(visit(arg));
+		arg = checked_cast<Expression>(dispatch(arg));
 
 	if (dynamic_cast<IdentifierExpression*>(node->expression))
 	{
@@ -137,9 +137,9 @@ AstNode* OperatorLoweringPass::visit(CallExpression* node)
 
 AstNode* OperatorLoweringPass::visit(IndexExpression* node)
 {
-	node->expression = checked_cast<Expression>(visit(node->expression));
+	node->expression = checked_cast<Expression>(dispatch(node->expression));
 	for (auto& arg : node->args)
-		arg = checked_cast<Expression>(visit(arg));
+		arg = checked_cast<Expression>(dispatch(arg));
 
 	auto value = node->expression->type;
 	if (value->isArrayType() && node->args.size() == 1 && node->args.front()->type->isIntegerType())
@@ -166,50 +166,50 @@ AstNode* OperatorLoweringPass::visit(IndexExpression* node)
 
 AstNode* OperatorLoweringPass::visit(FieldExpression* node)
 {
-	node->expression = checked_cast<Expression>(visit(node->expression));
+	node->expression = checked_cast<Expression>(dispatch(node->expression));
 	return node;
 }
 
 AstNode* OperatorLoweringPass::visit(BlockStatement* node)
 {
 	for (auto& statement : node->statements)
-		statement = checked_cast<Statement>(visit(statement));
+		statement = checked_cast<Statement>(dispatch(statement));
 
 	return node;
 }
 
 AstNode* OperatorLoweringPass::visit(ExpressionStatement* node)
 {
-	node->expression = checked_cast<Expression>(visit(node->expression));
+	node->expression = checked_cast<Expression>(dispatch(node->expression));
 	return node;
 }
 
 AstNode* OperatorLoweringPass::visit(VariableStatement* node)
 {
 	for (auto& [name, value] : node->items)
-		value = checked_cast<Expression>(visit(value));
+		value = checked_cast<Expression>(dispatch(value));
 
 	return node;
 }
 
 AstNode* OperatorLoweringPass::visit(ReturnStatement* node)
 {
-	node->expression = checked_cast<Expression>(visit(node->expression));
+	node->expression = checked_cast<Expression>(dispatch(node->expression));
 	return node;
 }
 
 AstNode* OperatorLoweringPass::visit(WhileStatement* node)
 {
-	node->condition = checked_cast<Expression>(visit(node->condition));
-	node->body = checked_cast<Statement>(visit(node->body));
+	node->condition = checked_cast<Expression>(dispatch(node->condition));
+	node->body = checked_cast<Statement>(dispatch(node->body));
 	return node;
 }
 
 AstNode* OperatorLoweringPass::visit(IfStatement* node)
 {
-	node->condition = checked_cast<Expression>(visit(node->condition));
-	node->ifBody = checked_cast<Statement>(visit(node->ifBody));
-	node->elseBody = (node->elseBody ? checked_cast<Statement>(visit(node->elseBody)) : nullptr);
+	node->condition = checked_cast<Expression>(dispatch(node->condition));
+	node->ifBody = checked_cast<Statement>(dispatch(node->ifBody));
+	node->elseBody = (node->elseBody ? checked_cast<Statement>(dispatch(node->elseBody)) : nullptr);
 	return node;
 }
 
@@ -220,7 +220,7 @@ AstNode* OperatorLoweringPass::visit(StructDeclaration* node)
 
 AstNode* OperatorLoweringPass::visit(FunctionDeclaration* node)
 {
-	node->body = checked_cast<Statement>(visit(node->body));
+	node->body = checked_cast<Statement>(dispatch(node->body));
 	return node;
 }
 
@@ -229,10 +229,16 @@ AstNode* OperatorLoweringPass::visit(ExternFunctionDeclaration* node)
 	return node;
 }
 
-AstNode* OperatorLoweringPass::visit(Module* node)
+AstNode* OperatorLoweringPass::visit(ParsedSourceFile* node)
 {
-	for (auto& declaration : node->declarations)
-		declaration = checked_cast<Declaration>(visit(declaration));
+	for (auto& decl : node->structs)
+		decl = checked_cast<StructDeclaration>(dispatch(decl));
+
+	for (auto& decl : node->externFunctions)
+		decl = checked_cast<ExternFunctionDeclaration>(dispatch(decl));
+
+	for (auto& decl : node->functions)
+		decl = checked_cast<FunctionDeclaration>(dispatch(decl));
 
 	return node;
 }

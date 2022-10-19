@@ -139,9 +139,16 @@ AstNode* NoOpPass::visit(ExternFunctionDeclaration* node)
 	return node;
 }
 
-AstNode* NoOpPass::visit(Module* node)
+AstNode* NoOpPass::visit(ParsedSourceFile* node)
 {
-	for (auto& declaration : node->declarations)
-		dispatch(declaration);
+	for (auto& decl : node->structs)
+		dispatch(decl);
+
+	for (auto& decl : node->externFunctions)
+		dispatch(decl);
+
+	for (auto& decl : node->functions)
+		dispatch(decl);
+
 	return node;
 }
