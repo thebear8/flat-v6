@@ -32,8 +32,6 @@ using TripleDispatchVisitor = triple_dispatch_visitor::TripleDispatchVisitor<
 	struct ReturnStatement,
 	struct WhileStatement,
 	struct IfStatement,
-	struct ModuleDeclaration,
-	struct ImportDeclaration,
 	struct StructDeclaration,
 	struct FunctionDeclaration,
 	struct ExternFunctionDeclaration,
