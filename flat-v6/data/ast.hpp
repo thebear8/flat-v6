@@ -322,13 +322,10 @@ struct ParsedSourceFile : public AstNode
 {
 	std::vector<std::string> modulePath;
 	std::vector<std::vector<std::string>> importPaths;
+	std::vector<Declaration*> declarations;
 
-	std::vector<StructDeclaration*> structs;
-	std::vector<FunctionDeclaration*> functions;
-	std::vector<ExternFunctionDeclaration*> externFunctions;
-
-	ParsedSourceFile(std::vector<std::string> const& modulePath, std::vector<std::vector<std::string>> const& importPaths, std::vector<StructDeclaration*> const& structs, std::vector<FunctionDeclaration*> const& functions, std::vector<ExternFunctionDeclaration*> const& externFunctions) :
-		modulePath(modulePath), importPaths(importPaths), structs(structs), functions(functions), externFunctions(externFunctions) { }
+	ParsedSourceFile(std::vector<std::string> const& modulePath, std::vector<std::vector<std::string>> const& importPaths, std::vector<Declaration*> const& declarations) :
+		modulePath(modulePath), importPaths(importPaths), declarations(declarations) { }
 
 	IMPLEMENT_ACCEPT()
 };

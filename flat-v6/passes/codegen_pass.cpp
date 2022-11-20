@@ -484,13 +484,7 @@ llvm::Value* LLVMCodegenPass::visit(ExternFunctionDeclaration* node)
 
 llvm::Value* LLVMCodegenPass::visit(ParsedSourceFile* node)
 {
-	for (auto& decl : node->structs)
-		dispatch(decl);
-
-	for (auto& decl : node->externFunctions)
-		dispatch(decl);
-
-	for (auto& decl : node->functions)
+	for (auto& decl : node->declarations)
 		dispatch(decl);
 
 	return nullptr;

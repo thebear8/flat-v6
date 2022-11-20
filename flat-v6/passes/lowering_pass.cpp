@@ -231,14 +231,8 @@ AstNode* OperatorLoweringPass::visit(ExternFunctionDeclaration* node)
 
 AstNode* OperatorLoweringPass::visit(ParsedSourceFile* node)
 {
-	for (auto& decl : node->structs)
-		decl = checked_cast<StructDeclaration>(dispatch(decl));
-
-	for (auto& decl : node->externFunctions)
-		decl = checked_cast<ExternFunctionDeclaration>(dispatch(decl));
-
-	for (auto& decl : node->functions)
-		decl = checked_cast<FunctionDeclaration>(dispatch(decl));
+	for (auto& decl : node->declarations)
+		decl = checked_cast<Declaration>(dispatch(decl));
 
 	return node;
 }

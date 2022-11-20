@@ -447,25 +447,23 @@ ParsedSourceFile* Parser::sourceFile()
 		}
 	}
 
-	std::vector<StructDeclaration*> structs;
-	std::vector<FunctionDeclaration*> functions;
-	std::vector<ExternFunctionDeclaration*> externFunctions;
+	std::vector<Declaration*> declarations;
 	while (!match(Token::Eof)) {
 		auto begin = trim();
 		if (match(Token::Struct)) {
-			structs.push_back(structDeclaration(begin));
+			declarations.push_back(structDeclaration(begin));
 		}
 		else if (match(Token::Function)) {
-			functions.push_back(functionDeclaration(begin));
+			declarations.push_back(functionDeclaration(begin));
 		}
 		else if (match(Token::Extern)) {
-			externFunctions.push_back(externFunctionDeclaration(begin));
+			declarations.push_back(externFunctionDeclaration(begin));
 		}
 		else {
 			logger.error("Expected eiter StructDeclaration, FunctionDeclaration or ExternFunctionDeclaration");
 		}
 	}
-	return ctx.make<ParsedSourceFile>(begin, position, modulePath, imports, structs, functions, externFunctions);
+	return ctx.make<ParsedSourceFile>(begin, position, modulePath, imports, declarations);
 }
 
 Type* Parser::typeName()
