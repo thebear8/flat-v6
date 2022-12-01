@@ -78,9 +78,9 @@ namespace triple_dispatch_visitor
 		};
 
 		template<typename... TNodes>
-		struct AstNode
+		struct NodeBase
 		{
-			virtual ~AstNode() { }
+			virtual ~NodeBase() { }
 
 			using VisitInvoker = detail::VisitInvoker<TNodes...>;
 			virtual void accept(VisitInvoker* visitor) = 0;
@@ -89,7 +89,7 @@ namespace triple_dispatch_visitor
 		template<typename TReturn, typename... TNodes>
 		struct Visitor : public detail::VisitorBase<detail::VisitInvoker<TNodes...>, TReturn, TNodes...>
 		{
-			TReturn dispatch(AstNode<TNodes...>* node)
+			TReturn dispatch(NodeBase<TNodes...>* node)
 			{
 				node->accept(this);
 				return *std::launder((TReturn*)&this->result_);
@@ -99,7 +99,7 @@ namespace triple_dispatch_visitor
 		template<typename... TNodes>
 		struct Visitor<void, TNodes...> : public detail::VisitorBase<detail::VisitInvoker<TNodes...>, void, TNodes...>
 		{
-			void dispatch(AstNode<TNodes...>* node)
+			void dispatch(NodeBase<TNodes...>* node)
 			{
 				return node->accept(this);
 			}
@@ -109,7 +109,7 @@ namespace triple_dispatch_visitor
 	template<typename... TNodes>
 	struct TripleDispatchVisitor
 	{
-		using AstNode = detail::AstNode<TNodes...>;
+		using NodeBase = detail::NodeBase<TNodes...>;
 
 		template<typename TReturn>
 		using Visitor = detail::Visitor<TReturn, TNodes...>;

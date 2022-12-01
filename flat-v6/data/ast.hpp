@@ -7,6 +7,7 @@
 #include "operator.hpp"
 #include "../type/type.hpp"
 #include "../util/visitor.hpp"
+#include "../util/ast_context.hpp"
 
 using TripleDispatchVisitor = triple_dispatch_visitor::TripleDispatchVisitor<
 	struct AstNode,
@@ -38,17 +39,13 @@ using TripleDispatchVisitor = triple_dispatch_visitor::TripleDispatchVisitor<
 	struct ParsedSourceFile
 >;
 
-using AstNodeBase = TripleDispatchVisitor::AstNode;
 template<typename TReturn>
 using Visitor = TripleDispatchVisitor::Visitor<TReturn>;
 
-struct AstNode : public AstNodeBase
+using AstContext = ast_util::AstContext;
+
+struct AstNode : public ast_util::AstNodeBase, TripleDispatchVisitor::NodeBase
 {
-	size_t begin, end;
-
-	AstNode() :
-		begin(0), end(0) { }
-
 	IMPLEMENT_ACCEPT()
 };
 
@@ -328,41 +325,4 @@ struct ParsedSourceFile : public AstNode
 		modulePath(modulePath), importPaths(importPaths), declarations(declarations) { }
 
 	IMPLEMENT_ACCEPT()
-};
-
-///////////////////////////////////////////
-
-class AstContext
-{
-private:
-	std::vector<AstNode*> nodes;
-
-public:
-	AstContext() { }
-	AstContext(AstContext&&) = delete;
-	AstContext(AstContext const&) = delete;
-
-	~AstContext()
-	{
-		for (auto node : nodes)
-			delete node;
-		nodes.clear();
-	}
-
-	inline void deallocate()
-	{
-		for (auto node : nodes)
-			delete node;
-		nodes.clear();
-	}
-
-public:
-	template<typename TNode, typename... TArgs>
-	TNode* make(size_t begin, size_t end, TArgs&&... args)
-	{
-		nodes.push_back(new TNode(std::forward<TArgs>(args)...));
-		nodes.back()->begin = begin;
-		nodes.back()->end = end;
-		return static_cast<TNode*>(nodes.back());
-	}
 };
