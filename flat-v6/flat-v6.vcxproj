@@ -91,7 +91,7 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>../CLI11/include;../llvm-project/llvm/include;../llvm-project/build/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <DisableSpecificWarnings>4146;4996</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4146;4996;4100</DisableSpecificWarnings>
       <WarningLevel>Level4</WarningLevel>
       <TreatAngleIncludeAsExternal>true</TreatAngleIncludeAsExternal>
       <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
@@ -111,7 +111,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>../CLI11/include;../llvm-project/llvm/include;../llvm-project/build/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <DisableSpecificWarnings>4146;4996</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4146;4996;4100</DisableSpecificWarnings>
       <Optimization>Disabled</Optimization>
       <WarningLevel>Level4</WarningLevel>
       <TreatAngleIncludeAsExternal>true</TreatAngleIncludeAsExternal>
@@ -134,7 +134,7 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>../CLI11/include;../llvm-project/llvm/include;../llvm-project/build/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <DisableSpecificWarnings>4146;4996</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4146;4996;4100</DisableSpecificWarnings>
       <WarningLevel>Level4</WarningLevel>
       <TreatAngleIncludeAsExternal>true</TreatAngleIncludeAsExternal>
       <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
@@ -154,7 +154,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>../CLI11/include;../llvm-project/llvm/include;../llvm-project/build/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <DisableSpecificWarnings>4146;4996</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4146;4996;4100</DisableSpecificWarnings>
       <Optimization>Disabled</Optimization>
       <WarningLevel>Level4</WarningLevel>
       <TreatAngleIncludeAsExternal>true</TreatAngleIncludeAsExternal>
