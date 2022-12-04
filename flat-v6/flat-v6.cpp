@@ -1,6 +1,6 @@
 #include <iostream>
 #include <filesystem>
-#include <cli11/CLI11.hpp>
+#include <cli/CLI.hpp>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/Host.h>
 
