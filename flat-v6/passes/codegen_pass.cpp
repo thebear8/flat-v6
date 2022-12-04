@@ -46,8 +46,8 @@ llvm::Value* LLVMCodegenPass::visit(IntegerExpression* node)
 		value = value.substr(2);
 	}
 
-	auto type = llvm::IntegerType::get(llvmCtx, node->type->getBitSize());
-	return llvm::ConstantInt::get(type, value, radix);
+	auto type = llvm::IntegerType::get(llvmCtx, (unsigned int)node->type->getBitSize());
+	return llvm::ConstantInt::get(type, value, (uint8_t)radix);
 }
 
 llvm::Value* LLVMCodegenPass::visit(BoolExpression* node)
@@ -508,7 +508,7 @@ llvm::Type* LLVMCodegenPass::getLLVMType(Type* type)
 	}
 	else if (type->isIntegerType())
 	{
-		llvmTypes.try_emplace(type, llvm::Type::getIntNTy(llvmCtx, type->getBitSize()));
+		llvmTypes.try_emplace(type, llvm::Type::getIntNTy(llvmCtx, (unsigned int)type->getBitSize()));
 		return llvmTypes.at(type);
 	}
 	else if (type->isCharType())
