@@ -661,7 +661,7 @@ uint32_t LLVMCodegenPass::unescapeCodePoint(std::string const& input, size_t& po
 		if (position < input.length() && isDigit(input[position])) // octal char literal
 		{
 			size_t start = position;
-			while (position < input.length() && isDigit(position))
+			while (position < input.length() && isDigit(input[position]))
 				position++;
 
 			if ((position - start) > 3)
