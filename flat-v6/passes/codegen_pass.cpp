@@ -102,7 +102,7 @@ llvm::Value* LLVMCodegenPass::visit(StructExpression* node)
 		{
 			if (node->fields.at(j).first == type->fields.at(i).first)
 			{
-				auto fieldName = node->fields.at(j).first;
+				auto const& fieldName = node->fields.at(j).first;
 				auto fieldValue = dispatch(node->fields.at(j).second);
 				auto fieldPtr = builder.CreateStructGEP(getLLVMType(type), structPtr, i, type->name + "." + fieldName + "_");
 				builder.CreateStore(fieldValue, fieldPtr);
@@ -145,7 +145,7 @@ llvm::Value* LLVMCodegenPass::visit(BinaryExpression* node)
 {
 	if (dynamic_cast<IdentifierExpression*>(node->left))
 	{
-		auto name = dynamic_cast<IdentifierExpression*>(node->left)->value;
+		auto const& name = dynamic_cast<IdentifierExpression*>(node->left)->value;
 		if (!localValues.contains(name))
 			return logger.error(node, "Undefined local variable " + name, nullptr);
 

@@ -40,7 +40,7 @@ namespace triple_dispatch_visitor
 			VisitorBase(VisitorBase const&) = delete;
 			VisitorBase& operator=(VisitorBase const&) = delete;
 
-			~VisitorBase() { if (valid_) (*std::launder((TReturn*)&this->result_)).~TReturn(); }
+			~VisitorBase() { if (valid_) std::launder((TReturn*)&this->result_)->~TReturn(); }
 
 		public:
 			virtual TReturn visit(TFirst* node) { throw std::exception((std::string("visit(") + typeid(TFirst).name() + ") unimplemented").c_str()); }

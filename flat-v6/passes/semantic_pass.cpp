@@ -279,7 +279,7 @@ Type* SemanticPass::visit(CallExpression* node)
 
 	if (dynamic_cast<IdentifierExpression*>(node->expression))
 	{
-		auto name = dynamic_cast<IdentifierExpression*>(node->expression)->value;
+		auto const& name = dynamic_cast<IdentifierExpression*>(node->expression)->value;
 		auto result = getFunctionResult(name, args, node);
 		return (node->type = result);
 	}
