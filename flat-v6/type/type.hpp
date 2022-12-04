@@ -24,6 +24,8 @@ public:
 	{
 	}
 
+	virtual ~Type() { }
+
 public:
 	virtual size_t getBitSize() = 0;
 	virtual std::string toString() = 0;
