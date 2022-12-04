@@ -110,7 +110,7 @@ public:
 
 public:
 	CharType(TypeContext& ctx, size_t bitSize) :
-		Type(ctx), bitSize() { }
+		Type(ctx), bitSize(bitSize) { }
 
 public:
 	virtual size_t getBitSize() override { return bitSize; };
