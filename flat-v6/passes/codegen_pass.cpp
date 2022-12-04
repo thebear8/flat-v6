@@ -445,12 +445,12 @@ llvm::Value* LLVMCodegenPass::visit(FunctionDeclaration* node)
 		localValues.clear();
 		for (int i = 0; i < node->parameters.size(); i++)
 		{
-			auto& [name, type] = node->parameters.at(i);
-			if (localValues.contains(name))
-				return logger.error(node, "Parameter " + name + " is already defined", nullptr);
+			auto& [paramName, paramType] = node->parameters.at(i);
+			if (localValues.contains(paramName))
+				return logger.error(node, "Parameter " + paramName + " is already defined", nullptr);
 
-			localValues.try_emplace(name, builder.CreateAlloca(getLLVMType(type), nullptr, name + "_"));
-			builder.CreateStore(function->getArg(i), localValues.at(name));
+			localValues.try_emplace(paramName, builder.CreateAlloca(getLLVMType(paramType), nullptr, paramName + "_"));
+			builder.CreateStore(function->getArg(i), localValues.at(paramName));
 		}
 
 		builder.CreateBr(bodyBlock);

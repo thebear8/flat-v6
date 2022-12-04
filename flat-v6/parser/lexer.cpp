@@ -221,7 +221,7 @@ bool Lexer::match(Token expected)
 		return true;
 
 	position = before;
-	size_t start = trim();
+	trim();
 	token = advance();
 	if (token == Token::Error)
 		logger.error(position, "Invalid Token");
@@ -240,7 +240,7 @@ bool Lexer::expect(Token expected)
 		return true;
 
 	position = before;
-	size_t start = trim();
+	trim();
 	token = advance();
 	if (token == Token::Error)
 		logger.error(position, "Invalid Token");

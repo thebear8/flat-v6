@@ -375,10 +375,10 @@ FunctionDeclaration* Parser::functionDeclaration(size_t begin)
 	expect(Token::ParenOpen);
 	while (!match(Token::ParenClose) && !match(Token::Eof)) {
 		expect(Token::Identifier);
-		auto name = getTokenValue();
+		auto paramName = getTokenValue();
 		expect(Token::Colon);
 		auto type = typeName();
-		parameters.push_back({ name, type });
+		parameters.push_back({ paramName, type });
 		match(Token::Comma);
 	}
 
@@ -407,10 +407,10 @@ ExternFunctionDeclaration* Parser::externFunctionDeclaration(size_t begin)
 	expect(Token::ParenOpen);
 	while (!match(Token::ParenClose) && !match(Token::Eof)) {
 		expect(Token::Identifier);
-		auto name = getTokenValue();
+		auto paramName = getTokenValue();
 		expect(Token::Colon);
 		auto type = typeName();
-		parameters.push_back({ name, type });
+		parameters.push_back({ paramName, type });
 		match(Token::Comma);
 	}
 
@@ -449,15 +449,15 @@ ParsedSourceFile* Parser::sourceFile()
 
 	std::vector<Declaration*> declarations;
 	while (!match(Token::Eof)) {
-		auto begin = trim();
+		auto declBegin = trim();
 		if (match(Token::Struct)) {
-			declarations.push_back(structDeclaration(begin));
+			declarations.push_back(structDeclaration(declBegin));
 		}
 		else if (match(Token::Function)) {
-			declarations.push_back(functionDeclaration(begin));
+			declarations.push_back(functionDeclaration(declBegin));
 		}
 		else if (match(Token::Extern)) {
-			declarations.push_back(externFunctionDeclaration(begin));
+			declarations.push_back(externFunctionDeclaration(declBegin));
 		}
 		else {
 			logger.error("Expected eiter StructDeclaration, FunctionDeclaration or ExternFunctionDeclaration");

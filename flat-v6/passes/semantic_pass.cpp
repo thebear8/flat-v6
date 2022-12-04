@@ -7,8 +7,8 @@ void SemanticPass::analyze(AstNode* program)
 	for (auto& [name, structDeclaration] : structs)
 	{
 		auto structType = typeCtx.getStructType(name);
-		for (auto& [name, type] : structDeclaration->fields)
-			structType->addField(name, type);
+		for (auto& [fieldName, fieldType] : structDeclaration->fields)
+			structType->addField(fieldName, fieldType);
 	}
 
 	for (auto& [name, function] : functions)

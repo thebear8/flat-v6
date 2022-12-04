@@ -62,9 +62,9 @@ Type* TypeContext::getResolvedType(std::string const& name)
 size_t StructType::getBitSize()
 {
 	size_t bitSize = 0;
-	for (auto& [name, type] : fields)
+	for (auto& [fieldName, fieldType] : fields)
 	{
-		bitSize += type->getBitSize();
+		bitSize += fieldType->getBitSize();
 		bitSize = (size_t)(ceil(bitSize / (double)ctx.getPointerSize()) * ctx.getPointerSize()); // align bitSize to pointer size
 	}
 

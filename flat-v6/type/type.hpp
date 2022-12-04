@@ -145,7 +145,7 @@ public:
 	virtual std::string toString() override { return name; };
 	virtual bool isStructType() override { return true; }
 
-	void addField(std::string const& name, Type* type) { return fields.push_back(std::pair(name, type)); }
+	void addField(std::string const& fieldName, Type* fieldType) { return fields.push_back(std::pair(fieldName, fieldType)); }
 };
 
 class PointerType : public Type
