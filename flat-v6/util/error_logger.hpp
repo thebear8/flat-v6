@@ -16,10 +16,10 @@ public:
 		source(source), output(output) { }
 
 public:
-	void error(std::string const& message);
-	void error(AstNode* node, std::string const& message);
-	void error(size_t position, std::string const& message);
-	void error(size_t begin, size_t end, std::string const& message);
+	[[noreturn]] void error(std::string const& message);
+	[[noreturn]] void error(AstNode* node, std::string const& message);
+	[[noreturn]] void error(size_t position, std::string const& message);
+	[[noreturn]] void error(size_t begin, size_t end, std::string const& message);
 	void warning(std::string const& message);
 	void warning(AstNode* node, std::string const& message);
 	void warning(size_t position, std::string const& message);
