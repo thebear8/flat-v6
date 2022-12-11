@@ -184,6 +184,7 @@
     <ClInclude Include="compiler.hpp" />
     <ClInclude Include="data\ast.hpp" />
     <ClInclude Include="data\enum.hpp" />
+    <ClInclude Include="data\ir.hpp" />
     <ClInclude Include="data\operator.hpp" />
     <ClInclude Include="data\token.hpp" />
     <ClInclude Include="parser\lexer.hpp" />
