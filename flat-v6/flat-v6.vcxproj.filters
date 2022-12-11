@@ -98,5 +98,8 @@
     <ClInclude Include="data\ir.hpp">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="data\source_reference.hpp">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
