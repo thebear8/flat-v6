@@ -6,7 +6,9 @@
 #include <llvm/Target/TargetMachine.h>
 
 #include "util/error_logger.hpp"
+#include "util/graph_context.hpp"
 #include "data/ast.hpp"
+#include "data/ir.hpp"
 #include "type/type.hpp"
 
 struct TargetDescriptor
@@ -49,4 +51,16 @@ public:
 	void parse(std::vector<std::string> const& sources);
 	void compile(std::string const& outputFile);
 	void compile(llvm::raw_pwrite_stream& output);
+};
+
+class ModuleContext
+{
+private:
+	AstContext astCtx;
+	GraphContext irCtx;
+
+	std::string path;
+	std::vector<std::string> imports;
+	std::unordered_map<std::string, StructType*> structTypes;
+	std::unordered_map<std::string, std::vector<IRFunctionDeclaration*>> functionDeclarations;
 };
