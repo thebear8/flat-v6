@@ -518,7 +518,7 @@ llvm::Type* LLVMCodegenPass::getLLVMType(Type* type)
 	}
 	else if (type->isStringType())
 	{
-		llvmTypes.try_emplace(type, getLLVMType(typeCtx.getArrayType(typeCtx.getResolvedType("u8"))));
+		llvmTypes.try_emplace(type, getLLVMType(typeCtx.getArrayType(typeCtx.getU8())));
 		return llvmTypes.at(type);
 	}
 	else if (type->isStructType())

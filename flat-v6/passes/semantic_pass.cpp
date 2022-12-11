@@ -110,40 +110,40 @@ Type* SemanticPass::getFunctionResult(std::string const& name, std::vector<Type*
 Type* SemanticPass::visit(IntegerExpression* node)
 {
 	if (node->suffix == "")
-		return (node->type = typeCtx.getResolvedType("i32"));
+		return (node->type = typeCtx.getI32());
 	else if (node->suffix == "i8")
-		return (node->type = typeCtx.getResolvedType("i8"));
+		return (node->type = typeCtx.getI8());
 	else if (node->suffix == "i16")
-		return (node->type = typeCtx.getResolvedType("i16"));
+		return (node->type = typeCtx.getI16());
 	else if (node->suffix == "i32")
-		return (node->type = typeCtx.getResolvedType("i32"));
+		return (node->type = typeCtx.getI32());
 	else if (node->suffix == "i64")
-		return (node->type = typeCtx.getResolvedType("i64"));
+		return (node->type = typeCtx.getI64());
 	else if (node->suffix == "u8")
-		return (node->type = typeCtx.getResolvedType("u8"));
+		return (node->type = typeCtx.getU8());
 	else if (node->suffix == "u16")
-		return (node->type = typeCtx.getResolvedType("u16"));
+		return (node->type = typeCtx.getU16());
 	else if (node->suffix == "u32")
-		return (node->type = typeCtx.getResolvedType("u32"));
+		return (node->type = typeCtx.getU32());
 	else if (node->suffix == "u64")
-		return (node->type = typeCtx.getResolvedType("u64"));
+		return (node->type = typeCtx.getU64());
 	else
 		return logger.error(node, "Invalid integer literal suffix", nullptr);
 }
 
 Type* SemanticPass::visit(BoolExpression* node)
 {
-	return (node->type = typeCtx.getResolvedType("bool"));
+	return (node->type = typeCtx.getBool());
 }
 
 Type* SemanticPass::visit(CharExpression* node)
 {
-	return (node->type = typeCtx.getResolvedType("char"));
+	return (node->type = typeCtx.getChar());
 }
 
 Type* SemanticPass::visit(StringExpression* node)
 {
-	return (node->type = typeCtx.getResolvedType("str"));
+	return (node->type = typeCtx.getString());
 }
 
 Type* SemanticPass::visit(IdentifierExpression* node)
@@ -214,7 +214,7 @@ Type* SemanticPass::visit(UnaryExpression* node)
 	}
 	else if (unaryOperators.at(node->operation).category == OperatorCategory::UnaryLogic && value->isBoolType())
 	{
-		return (node->type = typeCtx.getResolvedType("bool"));
+		return (node->type = typeCtx.getBool());
 	}
 	else
 	{
@@ -239,15 +239,15 @@ Type* SemanticPass::visit(BinaryExpression* node)
 	}
 	else if (binaryOperators.at(node->operation).category == OperatorCategory::BinaryComparison && (left->isIntegerType() && right->isIntegerType()))
 	{
-		return (node->type = typeCtx.getResolvedType("bool"));
+		return (node->type = typeCtx.getBool());
 	}
 	else if (binaryOperators.at(node->operation).category == OperatorCategory::BinaryLogic && (left->isBoolType() && right->isBoolType()))
 	{
-		return (node->type = typeCtx.getResolvedType("bool"));
+		return (node->type = typeCtx.getBool());
 	}
 	else if (binaryOperators.at(node->operation).category == OperatorCategory::BinaryEquality && ((left == right) || (left->isIntegerType() && right->isIntegerType())))
 	{
-		return (node->type = typeCtx.getResolvedType("bool"));
+		return (node->type = typeCtx.getBool());
 	}
 	else if (binaryOperators.at(node->operation).category == OperatorCategory::BinaryAssign && ((left == right) || (left->isIntegerType() && right->isIntegerType())))
 	{
@@ -304,7 +304,7 @@ Type* SemanticPass::visit(IndexExpression* node)
 	}
 	if (value->isStringType() && args.size() == 1 && args.front()->isIntegerType())
 	{
-		return (node->type = typeCtx.getResolvedType("u8"));
+		return (node->type = typeCtx.getU8());
 	}
 	else
 	{

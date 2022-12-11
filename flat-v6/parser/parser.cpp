@@ -382,7 +382,7 @@ FunctionDeclaration* Parser::functionDeclaration(size_t begin)
 		match(Token::Comma);
 	}
 
-	Type* result = typeCtx.getResolvedType("void");
+	Type* result = typeCtx.getVoid();
 	if (match(Token::Colon)) {
 		result = typeName();
 	}
@@ -414,7 +414,7 @@ ExternFunctionDeclaration* Parser::externFunctionDeclaration(size_t begin)
 		match(Token::Comma);
 	}
 
-	Type* result = typeCtx.getResolvedType("void");
+	Type* result = typeCtx.getVoid();
 	if (match(Token::Colon)) {
 		result = typeName();
 	}

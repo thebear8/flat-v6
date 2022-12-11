@@ -69,6 +69,43 @@ struct Expression : public AstNode
 	IMPLEMENT_ACCEPT()
 };
 
+struct ParsedType : public AstNode
+{
+	IMPLEMENT_ACCEPT()
+};
+
+///////////////////////////////////////////
+
+struct ParsedNamedType : public ParsedType
+{
+	std::string name;
+
+	ParsedNamedType(std::string const& name) :
+		name(name) { }
+
+	IMPLEMENT_ACCEPT()
+};
+
+struct ParsedPointerType : public ParsedType
+{
+	ParsedType* base;
+
+	ParsedPointerType(ParsedType* base) :
+		base(base) { }
+
+	IMPLEMENT_ACCEPT()
+};
+
+struct ParsedArrayType : public ParsedType
+{
+	ParsedType* base;
+
+	ParsedArrayType(ParsedType* base) :
+		base(base) { }
+
+	IMPLEMENT_ACCEPT()
+};
+
 ///////////////////////////////////////////
 
 struct IntegerExpression : public Expression
@@ -279,9 +316,9 @@ struct IfStatement : public Statement
 struct StructDeclaration : public Declaration
 {
 	std::string name;
-	std::vector<std::pair<std::string, Type*>> fields;
+	std::vector<std::pair<std::string, ParsedType*>> fields;
 
-	StructDeclaration(std::string const& name, std::vector<std::pair<std::string, Type*>> const& fields) :
+	StructDeclaration(std::string const& name, std::vector<std::pair<std::string, ParsedType*>> const& fields) :
 		name(name), fields(fields) { }
 
 	IMPLEMENT_ACCEPT()
@@ -290,11 +327,11 @@ struct StructDeclaration : public Declaration
 struct FunctionDeclaration : public Declaration
 {
 	std::string name;
-	Type* result;
-	std::vector<std::pair<std::string, Type*>> parameters;
+	ParsedType* result;
+	std::vector<std::pair<std::string, ParsedType*>> parameters;
 	Statement* body;
 
-	FunctionDeclaration(std::string const& name, Type* result, std::vector<std::pair<std::string, Type*>> const& parameters, Statement* body) :
+	FunctionDeclaration(std::string const& name, ParsedType* result, std::vector<std::pair<std::string, ParsedType*>> const& parameters, Statement* body) :
 		name(name), result(result), parameters(parameters), body(body) { }
 
 	IMPLEMENT_ACCEPT()
@@ -304,10 +341,10 @@ struct ExternFunctionDeclaration : public Declaration
 {
 	std::string lib;
 	std::string name;
-	Type* result;
-	std::vector<std::pair<std::string, Type*>> parameters;
+	ParsedType* result;
+	std::vector<std::pair<std::string, ParsedType*>> parameters;
 
-	ExternFunctionDeclaration(std::string const& lib, std::string const& name, Type* result, std::vector<std::pair<std::string, Type*>> const& parameters) :
+	ExternFunctionDeclaration(std::string const& lib, std::string const& name, ParsedType* result, std::vector<std::pair<std::string, ParsedType*>> const& parameters) :
 		lib(lib), name(name), result(result), parameters(parameters) { }
 
 	IMPLEMENT_ACCEPT()
