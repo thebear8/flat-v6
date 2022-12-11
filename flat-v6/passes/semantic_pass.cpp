@@ -1,6 +1,6 @@
 #include "semantic_pass.hpp"
 
-void SemanticPass::analyze(AstNode* program)
+void SemanticPass::analyze(ASTNode* program)
 {
 	dispatch(program);
 
@@ -67,7 +67,7 @@ Type* SemanticPass::getFunctionResult(std::string const& name, std::vector<Type*
 	return nullptr;
 }
 
-Type* SemanticPass::getFunctionResult(std::string const& name, std::vector<Type*> const& args, AstNode* current)
+Type* SemanticPass::getFunctionResult(std::string const& name, std::vector<Type*> const& args, ASTNode* current)
 {
 	if (!functions.contains(name) && !externFunctions.contains(name))
 		return logger.error(current, "No function named " + name, nullptr);
@@ -107,7 +107,7 @@ Type* SemanticPass::getFunctionResult(std::string const& name, std::vector<Type*
 	return logger.error(current, "No matching overload for function " + name, nullptr);
 }
 
-Type* SemanticPass::visit(IntegerExpression* node)
+Type* SemanticPass::visit(ASTIntegerExpression* node)
 {
 	if (node->suffix == "")
 		return (node->type = typeCtx.getI32());
@@ -131,22 +131,22 @@ Type* SemanticPass::visit(IntegerExpression* node)
 		return logger.error(node, "Invalid integer literal suffix", nullptr);
 }
 
-Type* SemanticPass::visit(BoolExpression* node)
+Type* SemanticPass::visit(ASTBoolExpression* node)
 {
 	return (node->type = typeCtx.getBool());
 }
 
-Type* SemanticPass::visit(CharExpression* node)
+Type* SemanticPass::visit(ASTCharExpression* node)
 {
 	return (node->type = typeCtx.getChar());
 }
 
-Type* SemanticPass::visit(StringExpression* node)
+Type* SemanticPass::visit(ASTStringExpression* node)
 {
 	return (node->type = typeCtx.getString());
 }
 
-Type* SemanticPass::visit(IdentifierExpression* node)
+Type* SemanticPass::visit(ASTIdentifierExpression* node)
 {
 	if (!localVariables.contains(node->value))
 		return logger.error(node, "Undefined Identifier", nullptr);
@@ -154,7 +154,7 @@ Type* SemanticPass::visit(IdentifierExpression* node)
 	return (node->type = localVariables.at(node->value));
 }
 
-Type* SemanticPass::visit(StructExpression* node)
+Type* SemanticPass::visit(ASTStructExpression* node)
 {
 	if (!typeCtx.getResolvedType(node->structName))
 		return logger.error(node, "Undefined Struct Type", nullptr);
@@ -201,7 +201,7 @@ Type* SemanticPass::visit(StructExpression* node)
 	return (node->type = structType);
 }
 
-Type* SemanticPass::visit(UnaryExpression* node)
+Type* SemanticPass::visit(ASTUnaryExpression* node)
 {
 	auto value = dispatch(node->expression);
 	if (unaryOperators.at(node->operation).category == OperatorCategory::UnaryArithmetic && value->isIntegerType())
@@ -224,7 +224,7 @@ Type* SemanticPass::visit(UnaryExpression* node)
 	}
 }
 
-Type* SemanticPass::visit(BinaryExpression* node)
+Type* SemanticPass::visit(ASTBinaryExpression* node)
 {
 	auto left = dispatch(node->left);
 	auto right = dispatch(node->right);
@@ -251,7 +251,7 @@ Type* SemanticPass::visit(BinaryExpression* node)
 	}
 	else if (binaryOperators.at(node->operation).category == OperatorCategory::BinaryAssign && ((left == right) || (left->isIntegerType() && right->isIntegerType())))
 	{
-		if (!dynamic_cast<IdentifierExpression*>(node->left))
+		if (!dynamic_cast<ASTIdentifierExpression*>(node->left))
 			return logger.error(node, "Left side of assignment has to be identifier", nullptr);
 
 		if ((left->isIntegerType() && right->isIntegerType()) && (left->getBitSize() < right->getBitSize()))
@@ -271,15 +271,15 @@ Type* SemanticPass::visit(BinaryExpression* node)
 	}
 }
 
-Type* SemanticPass::visit(CallExpression* node)
+Type* SemanticPass::visit(ASTCallExpression* node)
 {
 	std::vector<Type*> args;
 	for (auto arg : node->args)
 		args.push_back(dispatch(arg));
 
-	if (dynamic_cast<IdentifierExpression*>(node->expression))
+	if (dynamic_cast<ASTIdentifierExpression*>(node->expression))
 	{
-		auto const& name = dynamic_cast<IdentifierExpression*>(node->expression)->value;
+		auto const& name = dynamic_cast<ASTIdentifierExpression*>(node->expression)->value;
 		auto result = getFunctionResult(name, args, node);
 		return (node->type = result);
 	}
@@ -291,7 +291,7 @@ Type* SemanticPass::visit(CallExpression* node)
 	}
 }
 
-Type* SemanticPass::visit(IndexExpression* node)
+Type* SemanticPass::visit(ASTIndexExpression* node)
 {
 	std::vector<Type*> args;
 	for (auto arg : node->args)
@@ -313,7 +313,7 @@ Type* SemanticPass::visit(IndexExpression* node)
 	}
 }
 
-Type* SemanticPass::visit(FieldExpression* node)
+Type* SemanticPass::visit(ASTFieldExpression* node)
 {
 	auto value = dispatch(node->expression);
 	if (!value->isStructType())
@@ -329,7 +329,7 @@ Type* SemanticPass::visit(FieldExpression* node)
 	return logger.error(node, "Struct " + structType->name + " does not have a field named " + node->fieldName, nullptr);
 }
 
-Type* SemanticPass::visit(BlockStatement* node)
+Type* SemanticPass::visit(ASTBlockStatement* node)
 {
 	for (auto& statement : node->statements)
 	{
@@ -339,13 +339,13 @@ Type* SemanticPass::visit(BlockStatement* node)
 	return nullptr;
 }
 
-Type* SemanticPass::visit(ExpressionStatement* node)
+Type* SemanticPass::visit(ASTExpressionStatement* node)
 {
 	dispatch(node->expression);
 	return nullptr;
 }
 
-Type* SemanticPass::visit(VariableStatement* node)
+Type* SemanticPass::visit(ASTVariableStatement* node)
 {
 	for (auto& [name, value] : node->items)
 	{
@@ -361,7 +361,7 @@ Type* SemanticPass::visit(VariableStatement* node)
 	return nullptr;
 }
 
-Type* SemanticPass::visit(ReturnStatement* node)
+Type* SemanticPass::visit(ASTReturnStatement* node)
 {
 	functionResult = dispatch(node->expression);
 	if (functionResult != expectedFunctionResult)
@@ -373,7 +373,7 @@ Type* SemanticPass::visit(ReturnStatement* node)
 	return nullptr;
 }
 
-Type* SemanticPass::visit(WhileStatement* node)
+Type* SemanticPass::visit(ASTWhileStatement* node)
 {
 	auto condition = dispatch(node->condition);
 	if (!condition->isBoolType())
@@ -386,7 +386,7 @@ Type* SemanticPass::visit(WhileStatement* node)
 	return nullptr;
 }
 
-Type* SemanticPass::visit(IfStatement* node)
+Type* SemanticPass::visit(ASTIfStatement* node)
 {
 	auto condition = dispatch(node->condition);
 	if (!condition->isBoolType())
@@ -408,7 +408,7 @@ Type* SemanticPass::visit(IfStatement* node)
 	return nullptr;
 }
 
-Type* SemanticPass::visit(StructDeclaration* node)
+Type* SemanticPass::visit(ASTStructDeclaration* node)
 {
 	if (structs.contains(node->name))
 		return logger.error(node, "Struct " + node->name + " is already defined", nullptr);
@@ -417,7 +417,7 @@ Type* SemanticPass::visit(StructDeclaration* node)
 	return nullptr;
 }
 
-Type* SemanticPass::visit(FunctionDeclaration* node)
+Type* SemanticPass::visit(ASTFunctionDeclaration* node)
 {
 	std::vector<Type*> args;
 	for (auto& param : node->parameters)
@@ -430,7 +430,7 @@ Type* SemanticPass::visit(FunctionDeclaration* node)
 	return nullptr;
 }
 
-Type* SemanticPass::visit(ExternFunctionDeclaration* node)
+Type* SemanticPass::visit(ASTExternFunctionDeclaration* node)
 {
 	std::vector<Type*> args;
 	for (auto& param : node->parameters)
@@ -443,7 +443,7 @@ Type* SemanticPass::visit(ExternFunctionDeclaration* node)
 	return nullptr;
 }
 
-Type* SemanticPass::visit(ParsedSourceFile* node)
+Type* SemanticPass::visit(ASTSourceFile* node)
 {
 	for (auto& decl : node->declarations)
 		dispatch(decl);

@@ -4,7 +4,7 @@
 #include <llvm/Analysis/LoopAnalysisManager.h>
 #include <llvm/Analysis/CGSCCPassManager.h>
 
-void LLVMCodegenPass::compile(AstNode* ast)
+void LLVMCodegenPass::compile(ASTNode* ast)
 {
 	isFunctionBodyPass = false;
 	dispatch(ast);
@@ -31,7 +31,7 @@ void LLVMCodegenPass::optimize()
 	mpm.run(mod, mam);
 }
 
-llvm::Value* LLVMCodegenPass::visit(IntegerExpression* node)
+llvm::Value* LLVMCodegenPass::visit(ASTIntegerExpression* node)
 {
 	auto radix = 10;
 	auto value = node->value;
@@ -50,19 +50,19 @@ llvm::Value* LLVMCodegenPass::visit(IntegerExpression* node)
 	return llvm::ConstantInt::get(type, value, (uint8_t)radix);
 }
 
-llvm::Value* LLVMCodegenPass::visit(BoolExpression* node)
+llvm::Value* LLVMCodegenPass::visit(ASTBoolExpression* node)
 {
 	auto value = ((node->value == "true") ? 1 : 0);
 	return llvm::ConstantInt::get(llvm::Type::getInt1Ty(llvmCtx), value);
 }
 
-llvm::Value* LLVMCodegenPass::visit(CharExpression* node)
+llvm::Value* LLVMCodegenPass::visit(ASTCharExpression* node)
 {
 	size_t position = 0;
 	return llvm::ConstantInt::get(llvm::Type::getInt32Ty(llvmCtx), unescapeCodePoint(node->value, position, node));
 }
 
-llvm::Value* LLVMCodegenPass::visit(StringExpression* node)
+llvm::Value* LLVMCodegenPass::visit(ASTStringExpression* node)
 {
 	std::vector<llvm::Constant*> stringBytes;
 	for (auto c : unescapeString(node->value, node))
@@ -83,7 +83,7 @@ llvm::Value* LLVMCodegenPass::visit(StringExpression* node)
 	return new llvm::GlobalVariable(mod, structType, true, llvm::GlobalValue::LinkageTypes::InternalLinkage, structValue);
 }
 
-llvm::Value* LLVMCodegenPass::visit(IdentifierExpression* node)
+llvm::Value* LLVMCodegenPass::visit(ASTIdentifierExpression* node)
 {
 	if (!localValues.contains(node->value))
 		return logger.error(node, "Undefined local variable " + node->value, nullptr);
@@ -91,7 +91,7 @@ llvm::Value* LLVMCodegenPass::visit(IdentifierExpression* node)
 	return builder.CreateLoad(getLLVMType(node->type), localValues.at(node->value), node->value + "_");
 }
 
-llvm::Value* LLVMCodegenPass::visit(StructExpression* node)
+llvm::Value* LLVMCodegenPass::visit(ASTStructExpression* node)
 {
 	auto type = dynamic_cast<StructType*>(node->type);
 	auto structPtr = builder.CreateAlloca(getLLVMType(type), nullptr, type->name + "_");
@@ -117,7 +117,7 @@ llvm::Value* LLVMCodegenPass::visit(StructExpression* node)
 	return builder.CreateLoad(getLLVMType(type), structPtr);
 }
 
-llvm::Value* LLVMCodegenPass::visit(UnaryExpression* node)
+llvm::Value* LLVMCodegenPass::visit(ASTUnaryExpression* node)
 {
 	if (node->operation == UnaryOperator::Positive)
 	{
@@ -141,11 +141,11 @@ llvm::Value* LLVMCodegenPass::visit(UnaryExpression* node)
 	}
 }
 
-llvm::Value* LLVMCodegenPass::visit(BinaryExpression* node)
+llvm::Value* LLVMCodegenPass::visit(ASTBinaryExpression* node)
 {
-	if (dynamic_cast<IdentifierExpression*>(node->left))
+	if (dynamic_cast<ASTIdentifierExpression*>(node->left))
 	{
-		auto const& name = dynamic_cast<IdentifierExpression*>(node->left)->value;
+		auto const& name = dynamic_cast<ASTIdentifierExpression*>(node->left)->value;
 		if (!localValues.contains(name))
 			return logger.error(node, "Undefined local variable " + name, nullptr);
 
@@ -250,7 +250,7 @@ llvm::Value* LLVMCodegenPass::visit(BinaryExpression* node)
 	}
 }
 
-llvm::Value* LLVMCodegenPass::visit(BoundCallExpression* node)
+llvm::Value* LLVMCodegenPass::visit(ASTBoundCallExpression* node)
 {
 	std::vector<Type*> argTypes;
 	for (auto& arg : node->args)
@@ -276,7 +276,7 @@ llvm::Value* LLVMCodegenPass::visit(BoundCallExpression* node)
 	return builder.CreateCall(function, argValues);
 }
 
-llvm::Value* LLVMCodegenPass::visit(BoundIndexExpression* node)
+llvm::Value* LLVMCodegenPass::visit(ASTBoundIndexExpression* node)
 {
 	auto fieldTypes = std::vector<llvm::Type*>({
 		llvm::Type::getInt64Ty(llvmCtx),
@@ -294,7 +294,7 @@ llvm::Value* LLVMCodegenPass::visit(BoundIndexExpression* node)
 	return builder.CreateLoad(getLLVMType(node->type), ptr);
 }
 
-llvm::Value* LLVMCodegenPass::visit(FieldExpression* node)
+llvm::Value* LLVMCodegenPass::visit(ASTFieldExpression* node)
 {
 	auto structType = dynamic_cast<StructType*>(node->expression->type);
 	for (int i = 0; i < structType->fields.size(); i++)
@@ -311,7 +311,7 @@ llvm::Value* LLVMCodegenPass::visit(FieldExpression* node)
 	return logger.error(node, "Struct " + structType->toString() + " does not have a field called " + node->fieldName, nullptr);
 }
 
-llvm::Value* LLVMCodegenPass::visit(BlockStatement* node)
+llvm::Value* LLVMCodegenPass::visit(ASTBlockStatement* node)
 {
 	auto prevLocalValues = localValues;
 
@@ -323,13 +323,13 @@ llvm::Value* LLVMCodegenPass::visit(BlockStatement* node)
 	return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(ExpressionStatement* node)
+llvm::Value* LLVMCodegenPass::visit(ASTExpressionStatement* node)
 {
 	dispatch(node->expression);
 	return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(VariableStatement* node)
+llvm::Value* LLVMCodegenPass::visit(ASTVariableStatement* node)
 {
 	for (auto& [name, value] : node->items)
 	{
@@ -343,7 +343,7 @@ llvm::Value* LLVMCodegenPass::visit(VariableStatement* node)
 	return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(ReturnStatement* node)
+llvm::Value* LLVMCodegenPass::visit(ASTReturnStatement* node)
 {
 	if (node->expression)
 		builder.CreateRet(dispatch(node->expression));
@@ -353,7 +353,7 @@ llvm::Value* LLVMCodegenPass::visit(ReturnStatement* node)
 	return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(WhileStatement* node)
+llvm::Value* LLVMCodegenPass::visit(ASTWhileStatement* node)
 {
 	auto parentFunction = builder.GetInsertBlock()->getParent();
 
@@ -378,7 +378,7 @@ llvm::Value* LLVMCodegenPass::visit(WhileStatement* node)
 	return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(IfStatement* node)
+llvm::Value* LLVMCodegenPass::visit(ASTIfStatement* node)
 {
 	auto hasElse = (node->elseBody != nullptr);
 	auto parentFunction = builder.GetInsertBlock()->getParent();
@@ -408,12 +408,12 @@ llvm::Value* LLVMCodegenPass::visit(IfStatement* node)
 	return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(StructDeclaration* node)
+llvm::Value* LLVMCodegenPass::visit(ASTStructDeclaration* node)
 {
 	return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(FunctionDeclaration* node)
+llvm::Value* LLVMCodegenPass::visit(ASTFunctionDeclaration* node)
 {
 	std::vector<Type*> params;
 	for (auto& [name, type] : node->parameters)
@@ -465,7 +465,7 @@ llvm::Value* LLVMCodegenPass::visit(FunctionDeclaration* node)
 	return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(ExternFunctionDeclaration* node)
+llvm::Value* LLVMCodegenPass::visit(ASTExternFunctionDeclaration* node)
 {
 	if (!isFunctionBodyPass)
 	{
@@ -482,7 +482,7 @@ llvm::Value* LLVMCodegenPass::visit(ExternFunctionDeclaration* node)
 	return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(ParsedSourceFile* node)
+llvm::Value* LLVMCodegenPass::visit(ASTSourceFile* node)
 {
 	for (auto& decl : node->declarations)
 		dispatch(decl);
@@ -613,7 +613,7 @@ std::string LLVMCodegenPass::getMangledFunction(std::string const& function, std
 	return output;
 }
 
-std::string LLVMCodegenPass::unescapeString(std::string const& input, AstNode* node)
+std::string LLVMCodegenPass::unescapeString(std::string const& input, ASTNode* node)
 {
 	std::string output;
 
@@ -653,7 +653,7 @@ std::string LLVMCodegenPass::unescapeString(std::string const& input, AstNode* n
 	return output;
 }
 
-uint32_t LLVMCodegenPass::unescapeCodePoint(std::string const& input, size_t& position, AstNode* node)
+uint32_t LLVMCodegenPass::unescapeCodePoint(std::string const& input, size_t& position, ASTNode* node)
 {
 	if (position < input.length() && input[position] == '\\')
 	{

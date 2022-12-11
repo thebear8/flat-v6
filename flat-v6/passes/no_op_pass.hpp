@@ -1,31 +1,31 @@
 #pragma once
 #include "../data/ast.hpp"
 
-class NoOpPass : public Visitor<AstNode*>
+class NoOpPass : public Visitor<ASTNode*>
 {
-	virtual AstNode* visit(IntegerExpression* node) override;
-	virtual AstNode* visit(BoolExpression* node) override;
-	virtual AstNode* visit(CharExpression* node) override;
-	virtual AstNode* visit(StringExpression* node) override;
-	virtual AstNode* visit(IdentifierExpression* node) override;
-	virtual AstNode* visit(StructExpression* node) override;
-	virtual AstNode* visit(UnaryExpression* node) override;
-	virtual AstNode* visit(BinaryExpression* node) override;
-	virtual AstNode* visit(CallExpression* node) override;
-	virtual AstNode* visit(BoundCallExpression* node) override;
-	virtual AstNode* visit(IndexExpression* node) override;
-	virtual AstNode* visit(BoundIndexExpression* node) override;
-	virtual AstNode* visit(FieldExpression* node) override;
+	virtual ASTNode* visit(ASTIntegerExpression* node) override;
+	virtual ASTNode* visit(ASTBoolExpression* node) override;
+	virtual ASTNode* visit(ASTCharExpression* node) override;
+	virtual ASTNode* visit(ASTStringExpression* node) override;
+	virtual ASTNode* visit(ASTIdentifierExpression* node) override;
+	virtual ASTNode* visit(ASTStructExpression* node) override;
+	virtual ASTNode* visit(ASTUnaryExpression* node) override;
+	virtual ASTNode* visit(ASTBinaryExpression* node) override;
+	virtual ASTNode* visit(ASTCallExpression* node) override;
+	virtual ASTNode* visit(ASTBoundCallExpression* node) override;
+	virtual ASTNode* visit(ASTIndexExpression* node) override;
+	virtual ASTNode* visit(ASTBoundIndexExpression* node) override;
+	virtual ASTNode* visit(ASTFieldExpression* node) override;
 
-	virtual AstNode* visit(BlockStatement* node) override;
-	virtual AstNode* visit(ExpressionStatement* node) override;
-	virtual AstNode* visit(VariableStatement* node) override;
-	virtual AstNode* visit(ReturnStatement* node) override;
-	virtual AstNode* visit(WhileStatement* node) override;
-	virtual AstNode* visit(IfStatement* node) override;
+	virtual ASTNode* visit(ASTBlockStatement* node) override;
+	virtual ASTNode* visit(ASTExpressionStatement* node) override;
+	virtual ASTNode* visit(ASTVariableStatement* node) override;
+	virtual ASTNode* visit(ASTReturnStatement* node) override;
+	virtual ASTNode* visit(ASTWhileStatement* node) override;
+	virtual ASTNode* visit(ASTIfStatement* node) override;
 
-	virtual AstNode* visit(StructDeclaration* node) override;
-	virtual AstNode* visit(FunctionDeclaration* node) override;
-	virtual AstNode* visit(ExternFunctionDeclaration* node) override;
-	virtual AstNode* visit(ParsedSourceFile* node) override;
+	virtual ASTNode* visit(ASTStructDeclaration* node) override;
+	virtual ASTNode* visit(ASTFunctionDeclaration* node) override;
+	virtual ASTNode* visit(ASTExternFunctionDeclaration* node) override;
+	virtual ASTNode* visit(ASTSourceFile* node) override;
 };

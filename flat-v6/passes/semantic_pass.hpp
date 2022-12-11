@@ -16,9 +16,9 @@ private:
 	AstContext& astCtx;
 	TypeContext& typeCtx;
 	Type* functionResult, * expectedFunctionResult;
-	std::unordered_map<std::string, StructDeclaration*> structs;
-	std::unordered_multimap<std::string, FunctionDeclaration*> functions;
-	std::unordered_multimap<std::string, ExternFunctionDeclaration*> externFunctions;
+	std::unordered_map<std::string, ASTStructDeclaration*> structs;
+	std::unordered_multimap<std::string, ASTFunctionDeclaration*> functions;
+	std::unordered_multimap<std::string, ASTExternFunctionDeclaration*> externFunctions;
 	std::unordered_map<std::string, Type*> localVariables;
 
 public:
@@ -26,34 +26,34 @@ public:
 		logger(logger), astCtx(astCtx), typeCtx(typeCtx), functionResult(nullptr), expectedFunctionResult(nullptr) { }
 
 public:
-	void analyze(AstNode* program);
+	void analyze(ASTNode* program);
 
 protected:
 	Type* getFunctionResult(std::string const& name, std::vector<Type*> const& args);
-	Type* getFunctionResult(std::string const& name, std::vector<Type*> const& args, AstNode* current);
+	Type* getFunctionResult(std::string const& name, std::vector<Type*> const& args, ASTNode* current);
 
 protected:
-	virtual Type* visit(IntegerExpression* node) override;
-	virtual Type* visit(BoolExpression* node) override;
-	virtual Type* visit(CharExpression* node) override;
-	virtual Type* visit(StringExpression* node) override;
-	virtual Type* visit(IdentifierExpression* node) override;
-	virtual Type* visit(StructExpression* node) override;
-	virtual Type* visit(UnaryExpression* node) override;
-	virtual Type* visit(BinaryExpression* node) override;
-	virtual Type* visit(CallExpression* node) override;
-	virtual Type* visit(IndexExpression* node) override;
-	virtual Type* visit(FieldExpression* node) override;
+	virtual Type* visit(ASTIntegerExpression* node) override;
+	virtual Type* visit(ASTBoolExpression* node) override;
+	virtual Type* visit(ASTCharExpression* node) override;
+	virtual Type* visit(ASTStringExpression* node) override;
+	virtual Type* visit(ASTIdentifierExpression* node) override;
+	virtual Type* visit(ASTStructExpression* node) override;
+	virtual Type* visit(ASTUnaryExpression* node) override;
+	virtual Type* visit(ASTBinaryExpression* node) override;
+	virtual Type* visit(ASTCallExpression* node) override;
+	virtual Type* visit(ASTIndexExpression* node) override;
+	virtual Type* visit(ASTFieldExpression* node) override;
 
-	virtual Type* visit(BlockStatement* node) override;
-	virtual Type* visit(ExpressionStatement* node) override;
-	virtual Type* visit(VariableStatement* node) override;
-	virtual Type* visit(ReturnStatement* node) override;
-	virtual Type* visit(WhileStatement* node) override;
-	virtual Type* visit(IfStatement* node) override;
+	virtual Type* visit(ASTBlockStatement* node) override;
+	virtual Type* visit(ASTExpressionStatement* node) override;
+	virtual Type* visit(ASTVariableStatement* node) override;
+	virtual Type* visit(ASTReturnStatement* node) override;
+	virtual Type* visit(ASTWhileStatement* node) override;
+	virtual Type* visit(ASTIfStatement* node) override;
 
-	virtual Type* visit(StructDeclaration* node) override;
-	virtual Type* visit(FunctionDeclaration* node) override;
-	virtual Type* visit(ExternFunctionDeclaration* node) override;
-	virtual Type* visit(ParsedSourceFile* node) override;
+	virtual Type* visit(ASTStructDeclaration* node) override;
+	virtual Type* visit(ASTFunctionDeclaration* node) override;
+	virtual Type* visit(ASTExternFunctionDeclaration* node) override;
+	virtual Type* visit(ASTSourceFile* node) override;
 };

@@ -8,7 +8,7 @@ void ErrorLogger::error(std::string const& message)
 	throw std::exception(message.c_str());
 }
 
-void ErrorLogger::error(AstNode* node, std::string const& message)
+void ErrorLogger::error(ASTNode* node, std::string const& message)
 {
 	return error(node->begin, node->end, message);
 }
@@ -53,7 +53,7 @@ void ErrorLogger::warning(std::string const& message)
 	throw std::exception(message.c_str());
 }
 
-void ErrorLogger::warning(AstNode* node, std::string const& message)
+void ErrorLogger::warning(ASTNode* node, std::string const& message)
 {
 	return warning(node->begin, node->end, message);
 }

@@ -31,33 +31,33 @@ public:
 		logger(logger), typeCtx(ctx), llvmCtx(llvmCtx), mod(mod), builder(llvmCtx), isFunctionBodyPass(false) { }
 
 public:
-	void compile(AstNode* ast);
+	void compile(ASTNode* ast);
 	void optimize();
 
 protected:
-	virtual llvm::Value* visit(IntegerExpression* node) override;
-	virtual llvm::Value* visit(BoolExpression* node) override;
-	virtual llvm::Value* visit(CharExpression* node) override;
-	virtual llvm::Value* visit(StringExpression* node) override;
-	virtual llvm::Value* visit(IdentifierExpression* node) override;
-	virtual llvm::Value* visit(StructExpression* node) override;
-	virtual llvm::Value* visit(UnaryExpression* node) override;
-	virtual llvm::Value* visit(BinaryExpression* node) override;
-	virtual llvm::Value* visit(BoundCallExpression* node) override;
-	virtual llvm::Value* visit(BoundIndexExpression* node) override;
-	virtual llvm::Value* visit(FieldExpression* node) override;
+	virtual llvm::Value* visit(ASTIntegerExpression* node) override;
+	virtual llvm::Value* visit(ASTBoolExpression* node) override;
+	virtual llvm::Value* visit(ASTCharExpression* node) override;
+	virtual llvm::Value* visit(ASTStringExpression* node) override;
+	virtual llvm::Value* visit(ASTIdentifierExpression* node) override;
+	virtual llvm::Value* visit(ASTStructExpression* node) override;
+	virtual llvm::Value* visit(ASTUnaryExpression* node) override;
+	virtual llvm::Value* visit(ASTBinaryExpression* node) override;
+	virtual llvm::Value* visit(ASTBoundCallExpression* node) override;
+	virtual llvm::Value* visit(ASTBoundIndexExpression* node) override;
+	virtual llvm::Value* visit(ASTFieldExpression* node) override;
 
-	virtual llvm::Value* visit(BlockStatement* node) override;
-	virtual llvm::Value* visit(ExpressionStatement* node) override;
-	virtual llvm::Value* visit(VariableStatement* node) override;
-	virtual llvm::Value* visit(ReturnStatement* node) override;
-	virtual llvm::Value* visit(WhileStatement* node) override;
-	virtual llvm::Value* visit(IfStatement* node) override;
+	virtual llvm::Value* visit(ASTBlockStatement* node) override;
+	virtual llvm::Value* visit(ASTExpressionStatement* node) override;
+	virtual llvm::Value* visit(ASTVariableStatement* node) override;
+	virtual llvm::Value* visit(ASTReturnStatement* node) override;
+	virtual llvm::Value* visit(ASTWhileStatement* node) override;
+	virtual llvm::Value* visit(ASTIfStatement* node) override;
 
-	virtual llvm::Value* visit(StructDeclaration* node) override;
-	virtual llvm::Value* visit(FunctionDeclaration* node) override;
-	virtual llvm::Value* visit(ExternFunctionDeclaration* node) override;
-	virtual llvm::Value* visit(ParsedSourceFile* node) override;
+	virtual llvm::Value* visit(ASTStructDeclaration* node) override;
+	virtual llvm::Value* visit(ASTFunctionDeclaration* node) override;
+	virtual llvm::Value* visit(ASTExternFunctionDeclaration* node) override;
+	virtual llvm::Value* visit(ASTSourceFile* node) override;
 
 private:
 	llvm::Type* getLLVMType(Type* type);
@@ -65,8 +65,8 @@ private:
 	std::string getMangledFunction(std::string const& function, std::vector<Type*> const& params);
 
 private:
-	std::string unescapeString(std::string const& input, AstNode* node);
-	uint32_t unescapeCodePoint(std::string const& value, size_t& position, AstNode* node);
+	std::string unescapeString(std::string const& input, ASTNode* node);
+	uint32_t unescapeCodePoint(std::string const& value, size_t& position, ASTNode* node);
 	bool isDigit(char c) { return (c >= '0' && c <= '9'); }
 	bool isBinaryDigit(char c) { return (c >= '0' && c <= '1'); }
 	bool isHexDigit(char c) { return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'); }

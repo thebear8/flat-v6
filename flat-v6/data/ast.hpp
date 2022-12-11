@@ -10,33 +10,33 @@
 #include "../util/ast_context.hpp"
 
 using TripleDispatchVisitor = triple_dispatch_visitor::TripleDispatchVisitor<
-	struct AstNode,
-	struct Expression,
-	struct Statement,
-	struct Declaration,
-	struct IntegerExpression,
-	struct BoolExpression,
-	struct CharExpression,
-	struct StringExpression,
-	struct IdentifierExpression,
-	struct StructExpression,
-	struct UnaryExpression,
-	struct BinaryExpression,
-	struct CallExpression,
-	struct BoundCallExpression,
-	struct IndexExpression,
-	struct BoundIndexExpression,
-	struct FieldExpression,
-	struct BlockStatement,
-	struct ExpressionStatement,
-	struct VariableStatement,
-	struct ReturnStatement,
-	struct WhileStatement,
-	struct IfStatement,
-	struct StructDeclaration,
-	struct FunctionDeclaration,
-	struct ExternFunctionDeclaration,
-	struct ParsedSourceFile
+	struct ASTNode,
+	struct ASTExpression,
+	struct ASTStatement,
+	struct ASTDeclaration,
+	struct ASTIntegerExpression,
+	struct ASTBoolExpression,
+	struct ASTCharExpression,
+	struct ASTStringExpression,
+	struct ASTIdentifierExpression,
+	struct ASTStructExpression,
+	struct ASTUnaryExpression,
+	struct ASTBinaryExpression,
+	struct ASTCallExpression,
+	struct ASTBoundCallExpression,
+	struct ASTIndexExpression,
+	struct ASTBoundIndexExpression,
+	struct ASTFieldExpression,
+	struct ASTBlockStatement,
+	struct ASTExpressionStatement,
+	struct ASTVariableStatement,
+	struct ASTReturnStatement,
+	struct ASTWhileStatement,
+	struct ASTIfStatement,
+	struct ASTStructDeclaration,
+	struct ASTFunctionDeclaration,
+	struct ASTExternFunctionDeclaration,
+	struct ASTSourceFile
 > ;
 
 template<typename TReturn>
@@ -44,32 +44,32 @@ using Visitor = TripleDispatchVisitor::Visitor<TReturn>;
 
 using AstContext = ast_util::AstContext;
 
-struct AstNode : public ast_util::AstNodeBase, TripleDispatchVisitor::NodeBase
+struct ASTNode : public ast_util::AstNodeBase, TripleDispatchVisitor::NodeBase
 {
 	IMPLEMENT_ACCEPT()
 };
 
-struct Declaration : public AstNode
+struct ASTDeclaration : public ASTNode
 {
 	IMPLEMENT_ACCEPT()
 };
 
-struct Statement : public AstNode
+struct ASTStatement : public ASTNode
 {
 	IMPLEMENT_ACCEPT()
 };
 
-struct Expression : public AstNode
+struct ASTExpression : public ASTNode
 {
 	Type* type;
 
-	Expression() :
+	ASTExpression() :
 		type(nullptr) { }
 
 	IMPLEMENT_ACCEPT()
 };
 
-struct ParsedType : public AstNode
+struct ParsedType : public ASTNode
 {
 	IMPLEMENT_ACCEPT()
 };
@@ -108,140 +108,140 @@ struct ParsedArrayType : public ParsedType
 
 ///////////////////////////////////////////
 
-struct IntegerExpression : public Expression
+struct ASTIntegerExpression : public ASTExpression
 {
 	std::string value;
 	std::string suffix;
 
-	IntegerExpression(std::string const& value, std::string const& suffix) :
+	ASTIntegerExpression(std::string const& value, std::string const& suffix) :
 		value(value), suffix(suffix) { }
 
 	IMPLEMENT_ACCEPT()
 };
 
-struct BoolExpression : public Expression
+struct ASTBoolExpression : public ASTExpression
 {
 	std::string value;
 
-	BoolExpression(std::string const& value) :
+	ASTBoolExpression(std::string const& value) :
 		value(value) { }
 
 	IMPLEMENT_ACCEPT()
 };
 
-struct CharExpression : public Expression
+struct ASTCharExpression : public ASTExpression
 {
 	std::string value;
 
-	CharExpression(std::string const& value) :
+	ASTCharExpression(std::string const& value) :
 		value(value) { }
 
 	IMPLEMENT_ACCEPT()
 };
 
-struct StringExpression : public Expression
+struct ASTStringExpression : public ASTExpression
 {
 	std::string value;
 
-	StringExpression(std::string const& value) :
+	ASTStringExpression(std::string const& value) :
 		value(value) { }
 
 	IMPLEMENT_ACCEPT()
 };
 
-struct IdentifierExpression : public Expression
+struct ASTIdentifierExpression : public ASTExpression
 {
 	std::string value;
 
-	IdentifierExpression(std::string const& value) :
+	ASTIdentifierExpression(std::string const& value) :
 		value(value) { }
 
 	IMPLEMENT_ACCEPT()
 };
 
-struct StructExpression : public Expression
+struct ASTStructExpression : public ASTExpression
 {
 	std::string structName;
-	std::vector<std::pair<std::string, Expression*>> fields;
+	std::vector<std::pair<std::string, ASTExpression*>> fields;
 
-	StructExpression(std::string const& structName, std::vector<std::pair<std::string, Expression*>> const& fields) :
+	ASTStructExpression(std::string const& structName, std::vector<std::pair<std::string, ASTExpression*>> const& fields) :
 		structName(structName), fields(fields) { }
 
 	IMPLEMENT_ACCEPT()
 };
 
-struct UnaryExpression : public Expression
+struct ASTUnaryExpression : public ASTExpression
 {
 	UnaryOperator operation;
-	Expression* expression;
+	ASTExpression* expression;
 
-	UnaryExpression(UnaryOperator operation, Expression* expression) :
+	ASTUnaryExpression(UnaryOperator operation, ASTExpression* expression) :
 		operation(operation), expression(expression) { }
 
 	IMPLEMENT_ACCEPT()
 };
 
-struct BinaryExpression : public Expression
+struct ASTBinaryExpression : public ASTExpression
 {
 	BinaryOperator operation;
-	Expression* left, * right;
+	ASTExpression* left, * right;
 
-	BinaryExpression(BinaryOperator operation, Expression* left, Expression* right) :
+	ASTBinaryExpression(BinaryOperator operation, ASTExpression* left, ASTExpression* right) :
 		operation(operation), left(left), right(right) { }
 
 	IMPLEMENT_ACCEPT()
 };
 
-struct CallExpression : public Expression
+struct ASTCallExpression : public ASTExpression
 {
-	Expression* expression;
-	std::vector<Expression*> args;
+	ASTExpression* expression;
+	std::vector<ASTExpression*> args;
 
-	CallExpression(Expression* expression, std::vector<Expression*> const& args) :
+	ASTCallExpression(ASTExpression* expression, std::vector<ASTExpression*> const& args) :
 		expression(expression), args(args) { }
 
 	IMPLEMENT_ACCEPT()
 };
 
-struct BoundCallExpression : public Expression
+struct ASTBoundCallExpression : public ASTExpression
 {
 	std::string identifier;
-	std::vector<Expression*> args;
+	std::vector<ASTExpression*> args;
 
-	BoundCallExpression(std::string identifier, std::vector<Expression*> const& args) :
+	ASTBoundCallExpression(std::string identifier, std::vector<ASTExpression*> const& args) :
 		identifier(identifier), args(args) { }
 
 	IMPLEMENT_ACCEPT()
 };
 
-struct IndexExpression : public Expression
+struct ASTIndexExpression : public ASTExpression
 {
-	Expression* expression;
-	std::vector<Expression*> args;
+	ASTExpression* expression;
+	std::vector<ASTExpression*> args;
 
-	IndexExpression(Expression* expression, std::vector<Expression*> const& args) :
+	ASTIndexExpression(ASTExpression* expression, std::vector<ASTExpression*> const& args) :
 		expression(expression), args(args) { }
 
 	IMPLEMENT_ACCEPT()
 };
 
-struct BoundIndexExpression : public Expression
+struct ASTBoundIndexExpression : public ASTExpression
 {
-	Expression* expression;
-	Expression* index;
+	ASTExpression* expression;
+	ASTExpression* index;
 
-	BoundIndexExpression(Expression* expression, Expression* index) :
+	ASTBoundIndexExpression(ASTExpression* expression, ASTExpression* index) :
 		expression(expression), index(index) { }
 
 	IMPLEMENT_ACCEPT()
 };
 
-struct FieldExpression : public Expression
+struct ASTFieldExpression : public ASTExpression
 {
-	Expression* expression;
+	ASTExpression* expression;
 	std::string fieldName;
 
-	FieldExpression(Expression* expression, std::string const& fieldName) :
+	ASTFieldExpression(ASTExpression* expression, std::string const& fieldName) :
 		expression(expression), fieldName(fieldName) { }
 
 	IMPLEMENT_ACCEPT()
@@ -249,63 +249,63 @@ struct FieldExpression : public Expression
 
 ///////////////////////////////////////////
 
-struct BlockStatement : public Statement
+struct ASTBlockStatement : public ASTStatement
 {
-	std::vector<Statement*> statements;
+	std::vector<ASTStatement*> statements;
 
-	BlockStatement(std::vector<Statement*> statements) :
+	ASTBlockStatement(std::vector<ASTStatement*> statements) :
 		statements(statements) { }
 
 	IMPLEMENT_ACCEPT()
 };
 
-struct ExpressionStatement : public Statement
+struct ASTExpressionStatement : public ASTStatement
 {
-	Expression* expression;
+	ASTExpression* expression;
 
-	ExpressionStatement(Expression* expression) :
+	ASTExpressionStatement(ASTExpression* expression) :
 		expression(expression) { }
 
 	IMPLEMENT_ACCEPT()
 };
 
-struct VariableStatement : public Statement
+struct ASTVariableStatement : public ASTStatement
 {
-	std::vector<std::pair<std::string, Expression*>> items;
+	std::vector<std::pair<std::string, ASTExpression*>> items;
 
-	VariableStatement(std::vector<std::pair<std::string, Expression*>> const& items) :
+	ASTVariableStatement(std::vector<std::pair<std::string, ASTExpression*>> const& items) :
 		items(items) { }
 
 	IMPLEMENT_ACCEPT()
 };
 
-struct ReturnStatement : public Statement
+struct ASTReturnStatement : public ASTStatement
 {
-	Expression* expression;
+	ASTExpression* expression;
 
-	ReturnStatement(Expression* expression) :
+	ASTReturnStatement(ASTExpression* expression) :
 		expression(expression) { }
 
 	IMPLEMENT_ACCEPT()
 };
 
-struct WhileStatement : public Statement
+struct ASTWhileStatement : public ASTStatement
 {
-	Expression* condition;
-	Statement* body;
+	ASTExpression* condition;
+	ASTStatement* body;
 
-	WhileStatement(Expression* condition, Statement* body) :
+	ASTWhileStatement(ASTExpression* condition, ASTStatement* body) :
 		condition(condition), body(body) { }
 
 	IMPLEMENT_ACCEPT()
 };
 
-struct IfStatement : public Statement
+struct ASTIfStatement : public ASTStatement
 {
-	Expression* condition;
-	Statement* ifBody, * elseBody;
+	ASTExpression* condition;
+	ASTStatement* ifBody, * elseBody;
 
-	IfStatement(Expression* condition, Statement* ifBody, Statement* elseBody) :
+	ASTIfStatement(ASTExpression* condition, ASTStatement* ifBody, ASTStatement* elseBody) :
 		condition(condition), ifBody(ifBody), elseBody(elseBody) { }
 
 	IMPLEMENT_ACCEPT()
@@ -313,38 +313,38 @@ struct IfStatement : public Statement
 
 ///////////////////////////////////////////
 
-struct StructDeclaration : public Declaration
+struct ASTStructDeclaration : public ASTDeclaration
 {
 	std::string name;
 	std::vector<std::pair<std::string, ParsedType*>> fields;
 
-	StructDeclaration(std::string const& name, std::vector<std::pair<std::string, ParsedType*>> const& fields) :
+	ASTStructDeclaration(std::string const& name, std::vector<std::pair<std::string, ParsedType*>> const& fields) :
 		name(name), fields(fields) { }
 
 	IMPLEMENT_ACCEPT()
 };
 
-struct FunctionDeclaration : public Declaration
+struct ASTFunctionDeclaration : public ASTDeclaration
 {
 	std::string name;
 	ParsedType* result;
 	std::vector<std::pair<std::string, ParsedType*>> parameters;
-	Statement* body;
+	ASTStatement* body;
 
-	FunctionDeclaration(std::string const& name, ParsedType* result, std::vector<std::pair<std::string, ParsedType*>> const& parameters, Statement* body) :
+	ASTFunctionDeclaration(std::string const& name, ParsedType* result, std::vector<std::pair<std::string, ParsedType*>> const& parameters, ASTStatement* body) :
 		name(name), result(result), parameters(parameters), body(body) { }
 
 	IMPLEMENT_ACCEPT()
 };
 
-struct ExternFunctionDeclaration : public Declaration
+struct ASTExternFunctionDeclaration : public ASTDeclaration
 {
 	std::string lib;
 	std::string name;
 	ParsedType* result;
 	std::vector<std::pair<std::string, ParsedType*>> parameters;
 
-	ExternFunctionDeclaration(std::string const& lib, std::string const& name, ParsedType* result, std::vector<std::pair<std::string, ParsedType*>> const& parameters) :
+	ASTExternFunctionDeclaration(std::string const& lib, std::string const& name, ParsedType* result, std::vector<std::pair<std::string, ParsedType*>> const& parameters) :
 		lib(lib), name(name), result(result), parameters(parameters) { }
 
 	IMPLEMENT_ACCEPT()
@@ -352,13 +352,13 @@ struct ExternFunctionDeclaration : public Declaration
 
 ///////////////////////////////////////////
 
-struct ParsedSourceFile : public AstNode
+struct ASTSourceFile : public ASTNode
 {
 	std::vector<std::string> modulePath;
 	std::vector<std::vector<std::string>> importPaths;
-	std::vector<Declaration*> declarations;
+	std::vector<ASTDeclaration*> declarations;
 
-	ParsedSourceFile(std::vector<std::string> const& modulePath, std::vector<std::vector<std::string>> const& importPaths, std::vector<Declaration*> const& declarations) :
+	ASTSourceFile(std::vector<std::string> const& modulePath, std::vector<std::vector<std::string>> const& importPaths, std::vector<ASTDeclaration*> const& declarations) :
 		modulePath(modulePath), importPaths(importPaths), declarations(declarations) { }
 
 	IMPLEMENT_ACCEPT()

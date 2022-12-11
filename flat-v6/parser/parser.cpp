@@ -1,6 +1,6 @@
 #include "parser.hpp"
 
-Expression* Parser::l0()
+ASTExpression* Parser::l0()
 {
 	auto begin = trim();
 	if (match(Token::ParenOpen)) {
@@ -9,21 +9,21 @@ Expression* Parser::l0()
 		return e;
 	}
 	else if (match(Token::Integer)) {
-		return ctx.make<IntegerExpression>(begin, position, getIntValue(), getIntSuffixValue());
+		return ctx.make<ASTIntegerExpression>(begin, position, getIntValue(), getIntSuffixValue());
 	}
 	else if (match(Token::True) || match(Token::False)) {
-		return ctx.make<BoolExpression>(begin, position, getTokenValue());
+		return ctx.make<ASTBoolExpression>(begin, position, getTokenValue());
 	}
 	else if (match(Token::CharLiteral)) {
-		return ctx.make<CharExpression>(begin, position, getTokenValue());
+		return ctx.make<ASTCharExpression>(begin, position, getTokenValue());
 	}
 	else if (match(Token::StringLiteral)) {
-		return ctx.make<StringExpression>(begin, position, getTokenValue());
+		return ctx.make<ASTStringExpression>(begin, position, getTokenValue());
 	}
 	else if (match(Token::Identifier)) {
 		auto identifier = getTokenValue();
 		if (match(Token::BraceOpen)) {
-			std::vector<std::pair<std::string, Expression*>> values;
+			std::vector<std::pair<std::string, ASTExpression*>> values;
 			while (!match(Token::BraceClose) && !match(Token::Eof)) {
 				expect(Token::Identifier);
 				auto name = getTokenValue();
@@ -34,10 +34,10 @@ Expression* Parser::l0()
 					break;
 				}
 			}
-			return ctx.make<StructExpression>(begin, position, identifier, values);
+			return ctx.make<ASTStructExpression>(begin, position, identifier, values);
 		}
 		else {
-			return ctx.make<IdentifierExpression>(begin, position, identifier);
+			return ctx.make<ASTIdentifierExpression>(begin, position, identifier);
 		}
 	}
 	else {
@@ -46,30 +46,30 @@ Expression* Parser::l0()
 	}
 }
 
-Expression* Parser::l1()
+ASTExpression* Parser::l1()
 {
 	auto begin = trim();
 	auto e = l0();
 	while (true) {
 		if (match(Token::ParenOpen)) {
-			std::vector<Expression*> args;
+			std::vector<ASTExpression*> args;
 			while (!match(Token::ParenClose) && !match(Token::Eof)) {
 				args.push_back(expression());
 				match(Token::Comma);
 			}
-			e = ctx.make<CallExpression>(begin, position, e, args);
+			e = ctx.make<ASTCallExpression>(begin, position, e, args);
 		}
 		else if (match(Token::BracketOpen)) {
-			std::vector<Expression*> args;
+			std::vector<ASTExpression*> args;
 			while (!match(Token::BracketClose) && !match(Token::Eof)) {
 				args.push_back(expression());
 				match(Token::Comma);
 			}
-			e = ctx.make<IndexExpression>(begin, position, e, args);
+			e = ctx.make<ASTIndexExpression>(begin, position, e, args);
 		}
 		else if (match(Token::Dot)) {
 			expect(Token::Identifier);
-			e = ctx.make<FieldExpression>(begin, position, e, getTokenValue());
+			e = ctx.make<ASTFieldExpression>(begin, position, e, getTokenValue());
 		}
 		else {
 			return e;
@@ -77,46 +77,46 @@ Expression* Parser::l1()
 	}
 }
 
-Expression* Parser::l2()
+ASTExpression* Parser::l2()
 {
 	auto begin = trim();
 	if (match(Token::Plus)) {
 		auto e = l2();
-		return ctx.make<UnaryExpression>(begin, position, UnaryOperator::Positive, e);
+		return ctx.make<ASTUnaryExpression>(begin, position, UnaryOperator::Positive, e);
 	}
 	else if (match(Token::Minus)) {
 		auto e = l2();
-		return ctx.make<UnaryExpression>(begin, position, UnaryOperator::Negative, e);
+		return ctx.make<ASTUnaryExpression>(begin, position, UnaryOperator::Negative, e);
 	}
 	else if (match(Token::LogicalNot)) {
 		auto e = l2();
-		return ctx.make<UnaryExpression>(begin, position, UnaryOperator::LogicalNot, e);
+		return ctx.make<ASTUnaryExpression>(begin, position, UnaryOperator::LogicalNot, e);
 	}
 	else if (match(Token::BitwiseNot)) {
 		auto e = l2();
-		return ctx.make<UnaryExpression>(begin, position, UnaryOperator::BitwiseNot, e);
+		return ctx.make<ASTUnaryExpression>(begin, position, UnaryOperator::BitwiseNot, e);
 	}
 	else {
 		return l1();
 	}
 }
 
-Expression* Parser::l3()
+ASTExpression* Parser::l3()
 {
 	auto begin = trim();
 	auto e = l2();
 	while (true) {
 		if (match(Token::Multiply)) {
 			auto r = l2();
-			e = ctx.make<BinaryExpression>(begin, position, BinaryOperator::Multiply, e, r);
+			e = ctx.make<ASTBinaryExpression>(begin, position, BinaryOperator::Multiply, e, r);
 		}
 		else if (match(Token::Divide)) {
 			auto r = l2();
-			e = ctx.make<BinaryExpression>(begin, position, BinaryOperator::Divide, e, r);
+			e = ctx.make<ASTBinaryExpression>(begin, position, BinaryOperator::Divide, e, r);
 		}
 		else if (match(Token::Modulo)) {
 			auto r = l2();
-			e = ctx.make<BinaryExpression>(begin, position, BinaryOperator::Modulo, e, r);
+			e = ctx.make<ASTBinaryExpression>(begin, position, BinaryOperator::Modulo, e, r);
 		}
 		else {
 			return e;
@@ -124,18 +124,18 @@ Expression* Parser::l3()
 	}
 }
 
-Expression* Parser::l4()
+ASTExpression* Parser::l4()
 {
 	auto begin = trim();
 	auto e = l3();
 	while (true) {
 		if (match(Token::Plus)) {
 			auto r = l3();
-			e = ctx.make<BinaryExpression>(begin, position, BinaryOperator::Add, e, r);
+			e = ctx.make<ASTBinaryExpression>(begin, position, BinaryOperator::Add, e, r);
 		}
 		else if (match(Token::Minus)) {
 			auto r = l3();
-			e = ctx.make<BinaryExpression>(begin, position, BinaryOperator::Subtract, e, r);
+			e = ctx.make<ASTBinaryExpression>(begin, position, BinaryOperator::Subtract, e, r);
 		}
 		else {
 			return e;
@@ -143,18 +143,18 @@ Expression* Parser::l4()
 	}
 }
 
-Expression* Parser::l5()
+ASTExpression* Parser::l5()
 {
 	auto begin = trim();
 	auto e = l4();
 	while (true) {
 		if (match(Token::ShiftLeft)) {
 			auto r = l4();
-			e = ctx.make<BinaryExpression>(begin, position, BinaryOperator::ShiftLeft, e, r);
+			e = ctx.make<ASTBinaryExpression>(begin, position, BinaryOperator::ShiftLeft, e, r);
 		}
 		else if (match(Token::ShiftRight)) {
 			auto r = l4();
-			e = ctx.make<BinaryExpression>(begin, position, BinaryOperator::ShiftRight, e, r);
+			e = ctx.make<ASTBinaryExpression>(begin, position, BinaryOperator::ShiftRight, e, r);
 		}
 		else {
 			return e;
@@ -162,22 +162,22 @@ Expression* Parser::l5()
 	}
 }
 
-Expression* Parser::l6()
+ASTExpression* Parser::l6()
 {
 	auto begin = trim();
 	auto e = l5();
 	while (true) {
 		if (match(Token::BitwiseAnd)) {
 			auto r = l5();
-			e = ctx.make<BinaryExpression>(begin, position, BinaryOperator::BitwiseAnd, e, r);
+			e = ctx.make<ASTBinaryExpression>(begin, position, BinaryOperator::BitwiseAnd, e, r);
 		}
 		else if (match(Token::BitwiseOr)) {
 			auto r = l5();
-			e = ctx.make<BinaryExpression>(begin, position, BinaryOperator::BitwiseOr, e, r);
+			e = ctx.make<ASTBinaryExpression>(begin, position, BinaryOperator::BitwiseOr, e, r);
 		}
 		else if (match(Token::BitwiseXor)) {
 			auto r = l5();
-			e = ctx.make<BinaryExpression>(begin, position, BinaryOperator::BitwiseXor, e, r);
+			e = ctx.make<ASTBinaryExpression>(begin, position, BinaryOperator::BitwiseXor, e, r);
 		}
 		else {
 			return e;
@@ -185,34 +185,34 @@ Expression* Parser::l6()
 	}
 }
 
-Expression* Parser::l7()
+ASTExpression* Parser::l7()
 {
 	auto begin = trim();
 	auto e = l6();
 	while (true) {
 		if (match(Token::Equal)) {
 			auto r = l6();
-			e = ctx.make<BinaryExpression>(begin, position, BinaryOperator::Equal, e, r);
+			e = ctx.make<ASTBinaryExpression>(begin, position, BinaryOperator::Equal, e, r);
 		}
 		else if (match(Token::NotEqual)) {
 			auto r = l6();
-			e = ctx.make<BinaryExpression>(begin, position, BinaryOperator::NotEqual, e, r);
+			e = ctx.make<ASTBinaryExpression>(begin, position, BinaryOperator::NotEqual, e, r);
 		}
 		else if (match(Token::LessThan)) {
 			auto r = l6();
-			e = ctx.make<BinaryExpression>(begin, position, BinaryOperator::LessThan, e, r);
+			e = ctx.make<ASTBinaryExpression>(begin, position, BinaryOperator::LessThan, e, r);
 		}
 		else if (match(Token::GreaterThan)) {
 			auto r = l6();
-			e = ctx.make<BinaryExpression>(begin, position, BinaryOperator::GreaterThan, e, r);
+			e = ctx.make<ASTBinaryExpression>(begin, position, BinaryOperator::GreaterThan, e, r);
 		}
 		else if (match(Token::LessOrEqual)) {
 			auto r = l6();
-			e = ctx.make<BinaryExpression>(begin, position, BinaryOperator::LessOrEqual, e, r);
+			e = ctx.make<ASTBinaryExpression>(begin, position, BinaryOperator::LessOrEqual, e, r);
 		}
 		else if (match(Token::GreaterOrEqual)) {
 			auto r = l6();
-			e = ctx.make<BinaryExpression>(begin, position, BinaryOperator::GreaterOrEqual, e, r);
+			e = ctx.make<ASTBinaryExpression>(begin, position, BinaryOperator::GreaterOrEqual, e, r);
 		}
 		else {
 			return e;
@@ -220,14 +220,14 @@ Expression* Parser::l7()
 	}
 }
 
-Expression* Parser::l8()
+ASTExpression* Parser::l8()
 {
 	auto begin = trim();
 	auto e = l7();
 	while (true) {
 		if (match(Token::LogicalAnd)) {
 			auto r = l7();
-			e = ctx.make<BinaryExpression>(begin, position, BinaryOperator::LogicalAnd, e, r);
+			e = ctx.make<ASTBinaryExpression>(begin, position, BinaryOperator::LogicalAnd, e, r);
 		}
 		else {
 			return e;
@@ -235,14 +235,14 @@ Expression* Parser::l8()
 	}
 }
 
-Expression* Parser::l9()
+ASTExpression* Parser::l9()
 {
 	auto begin = trim();
 	auto e = l8();
 	while (true) {
 		if (match(Token::LogicalOr)) {
 			auto r = l8();
-			e = ctx.make<BinaryExpression>(begin, position, BinaryOperator::LogicalOr, e, r);
+			e = ctx.make<ASTBinaryExpression>(begin, position, BinaryOperator::LogicalOr, e, r);
 		}
 		else {
 			return e;
@@ -250,66 +250,66 @@ Expression* Parser::l9()
 	}
 }
 
-Expression* Parser::l10()
+ASTExpression* Parser::l10()
 {
 	auto begin = trim();
 	auto e = l9();
 	if (match(Token::Assign)) {
 		auto r = l10();
-		return ctx.make<BinaryExpression>(begin, position, BinaryOperator::Assign, e, r);
+		return ctx.make<ASTBinaryExpression>(begin, position, BinaryOperator::Assign, e, r);
 	}
 	else {
 		return e;
 	}
 }
 
-Expression* Parser::expression()
+ASTExpression* Parser::expression()
 {
 	return l10();
 }
 
-Statement* Parser::blockStatement(size_t begin)
+ASTStatement* Parser::blockStatement(size_t begin)
 {
-	std::vector<Statement*> statements;
+	std::vector<ASTStatement*> statements;
 	while (!match(Token::BraceClose) && !match(Token::Eof)) {
 		statements.push_back(statement());
 	}
-	return ctx.make<BlockStatement>(begin, position, statements);
+	return ctx.make<ASTBlockStatement>(begin, position, statements);
 }
 
-Statement* Parser::variableStatement(size_t begin)
+ASTStatement* Parser::variableStatement(size_t begin)
 {
-	std::vector<std::pair<std::string, Expression*>> items;
+	std::vector<std::pair<std::string, ASTExpression*>> items;
 	while (match(Token::Identifier)) {
 		auto name = getTokenValue();
 		expect(Token::Assign);
 		items.push_back(std::pair(name, expression()));
 		match(Token::Comma);
 	}
-	return ctx.make<VariableStatement>(begin, position, items);
+	return ctx.make<ASTVariableStatement>(begin, position, items);
 }
 
-Statement* Parser::returnStatement(size_t begin)
+ASTStatement* Parser::returnStatement(size_t begin)
 {
 	if (match(Token::NewLine)) {
-		return ctx.make<ReturnStatement>(begin, position, nullptr);
+		return ctx.make<ASTReturnStatement>(begin, position, nullptr);
 	}
 	else {
 		auto e = expression();
-		return ctx.make<ReturnStatement>(begin, position, e);
+		return ctx.make<ASTReturnStatement>(begin, position, e);
 	}
 }
 
-Statement* Parser::whileStatement(size_t begin)
+ASTStatement* Parser::whileStatement(size_t begin)
 {
 	expect(Token::ParenOpen);
 	auto condition = expression();
 	expect(Token::ParenClose);
 	auto body = statement();
-	return ctx.make<WhileStatement>(begin, position, condition, body);
+	return ctx.make<ASTWhileStatement>(begin, position, condition, body);
 }
 
-Statement* Parser::ifStatement(size_t begin)
+ASTStatement* Parser::ifStatement(size_t begin)
 {
 	expect(Token::ParenOpen);
 	auto condition = expression();
@@ -317,14 +317,14 @@ Statement* Parser::ifStatement(size_t begin)
 	auto ifBody = statement();
 	if (match(Token::Else)) {
 		auto elseBody = statement();
-		return ctx.make<IfStatement>(begin, position, condition, ifBody, elseBody);
+		return ctx.make<ASTIfStatement>(begin, position, condition, ifBody, elseBody);
 	}
 	else {
-		return ctx.make<IfStatement>(begin, position, condition, ifBody, nullptr);
+		return ctx.make<ASTIfStatement>(begin, position, condition, ifBody, nullptr);
 	}
 }
 
-Statement* Parser::statement()
+ASTStatement* Parser::statement()
 {
 	auto begin = trim();
 	if (match(Token::BraceOpen)) {
@@ -344,11 +344,11 @@ Statement* Parser::statement()
 	}
 	else {
 		auto e = expression();
-		return ctx.make<ExpressionStatement>(begin, position, e);
+		return ctx.make<ASTExpressionStatement>(begin, position, e);
 	}
 }
 
-StructDeclaration* Parser::structDeclaration(size_t begin)
+ASTStructDeclaration* Parser::structDeclaration(size_t begin)
 {
 	expect(Token::Identifier);
 	auto structName = getTokenValue();
@@ -364,10 +364,10 @@ StructDeclaration* Parser::structDeclaration(size_t begin)
 			break;
 		}
 	}
-	return ctx.make<StructDeclaration>(begin, position, structName, fields);
+	return ctx.make<ASTStructDeclaration>(begin, position, structName, fields);
 }
 
-FunctionDeclaration* Parser::functionDeclaration(size_t begin)
+ASTFunctionDeclaration* Parser::functionDeclaration(size_t begin)
 {
 	expect(Token::Identifier);
 	auto name = getTokenValue();
@@ -390,10 +390,10 @@ FunctionDeclaration* Parser::functionDeclaration(size_t begin)
 	auto bodyBegin = trim();
 	expect(Token::BraceOpen);
 	auto body = blockStatement(bodyBegin);
-	return ctx.make<FunctionDeclaration>(begin, position, name, result, parameters, body);
+	return ctx.make<ASTFunctionDeclaration>(begin, position, name, result, parameters, body);
 }
 
-ExternFunctionDeclaration* Parser::externFunctionDeclaration(size_t begin)
+ASTExternFunctionDeclaration* Parser::externFunctionDeclaration(size_t begin)
 {
 	expect(Token::ParenOpen);
 	expect(Token::Identifier);
@@ -419,10 +419,10 @@ ExternFunctionDeclaration* Parser::externFunctionDeclaration(size_t begin)
 		result = typeName();
 	}
 
-	return ctx.make<ExternFunctionDeclaration>(begin, position, lib, name, result, parameters);
+	return ctx.make<ASTExternFunctionDeclaration>(begin, position, lib, name, result, parameters);
 }
 
-ParsedSourceFile* Parser::sourceFile()
+ASTSourceFile* Parser::sourceFile()
 {
 	auto begin = trim();
 
@@ -447,7 +447,7 @@ ParsedSourceFile* Parser::sourceFile()
 		}
 	}
 
-	std::vector<Declaration*> declarations;
+	std::vector<ASTDeclaration*> declarations;
 	while (!match(Token::Eof)) {
 		auto declBegin = trim();
 		if (match(Token::Struct)) {
@@ -463,7 +463,7 @@ ParsedSourceFile* Parser::sourceFile()
 			logger.error("Expected eiter StructDeclaration, FunctionDeclaration or ExternFunctionDeclaration");
 		}
 	}
-	return ctx.make<ParsedSourceFile>(begin, position, modulePath, imports, declarations);
+	return ctx.make<ASTSourceFile>(begin, position, modulePath, imports, declarations);
 }
 
 Type* Parser::typeName()
