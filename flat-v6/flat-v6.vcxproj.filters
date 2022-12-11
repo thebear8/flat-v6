@@ -101,5 +101,8 @@
     <ClInclude Include="data\source_reference.hpp">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="util\graph_context.hpp">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -197,6 +197,7 @@
     <ClInclude Include="type\type.hpp" />
     <ClInclude Include="util\ast_context.hpp" />
     <ClInclude Include="util\error_logger.hpp" />
+    <ClInclude Include="util\graph_context.hpp" />
     <ClInclude Include="util\string_switch.hpp" />
     <ClInclude Include="util\visitor.hpp" />
   </ItemGroup>
