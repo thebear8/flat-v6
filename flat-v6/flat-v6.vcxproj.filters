@@ -45,6 +45,9 @@
     <ClCompile Include="passes\no_op_pass.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
+    <ClCompile Include="passes\ir_pass.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="data\enum.hpp">
@@ -102,6 +105,9 @@
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="util\graph_context.hpp">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="passes\ir_pass.hpp">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>

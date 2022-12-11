@@ -9,7 +9,7 @@
 #include "../util/visitor.hpp"
 #include "../util/ast_context.hpp"
 
-using TripleDispatchVisitor = triple_dispatch_visitor::TripleDispatchVisitor<
+using ASTTripleDispatchVisitor = triple_dispatch_visitor::TripleDispatchVisitor<
 	struct ASTNode,
 	struct ASTExpression,
 	struct ASTStatement,
@@ -40,11 +40,11 @@ using TripleDispatchVisitor = triple_dispatch_visitor::TripleDispatchVisitor<
 > ;
 
 template<typename TReturn>
-using Visitor = TripleDispatchVisitor::Visitor<TReturn>;
+using ASTVisitor = ASTTripleDispatchVisitor::Visitor<TReturn>;
 
 using AstContext = ast_util::AstContext;
 
-struct ASTNode : public ast_util::AstNodeBase, TripleDispatchVisitor::NodeBase
+struct ASTNode : public ast_util::AstNodeBase, ASTTripleDispatchVisitor::NodeBase
 {
 	IMPLEMENT_ACCEPT()
 };

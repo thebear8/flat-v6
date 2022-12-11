@@ -4,7 +4,8 @@
 #include "visitor.hpp"
 
 namespace ast_util
-{
+{	
+	// DEPRECATED: Replaced by GraphContext
 	struct AstNodeBase
 	{
 		size_t begin, end;
@@ -15,6 +16,7 @@ namespace ast_util
 		virtual ~AstNodeBase() { }
 	};
 
+	// DEPRECATED: Replaced by GraphContext
 	class AstContext
 	{
 	private:

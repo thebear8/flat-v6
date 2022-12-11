@@ -9,7 +9,7 @@
 #include "../util/error_logger.hpp"
 #include "../data/operator.hpp"
 
-class SemanticPass : protected Visitor<Type*>
+class SemanticPass : protected ASTVisitor<Type*>
 {
 private:
 	ErrorLogger& logger;

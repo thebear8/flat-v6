@@ -7,7 +7,7 @@
 #include "../util/error_logger.hpp"
 #include "../data/operator.hpp"
 
-class OperatorLoweringPass : protected Visitor<ASTNode*>
+class OperatorLoweringPass : protected ASTVisitor<ASTNode*>
 {
 private:
 	ErrorLogger& logger;

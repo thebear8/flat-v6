@@ -12,7 +12,7 @@
 #include "../util/error_logger.hpp"
 #include "../data/operator.hpp"
 
-class LLVMCodegenPass : protected Visitor<llvm::Value*>
+class LLVMCodegenPass : protected ASTVisitor<llvm::Value*>
 {
 private:
 	ErrorLogger& logger;
