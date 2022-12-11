@@ -69,38 +69,38 @@ struct ASTExpression : public ASTNode
 	IMPLEMENT_ACCEPT()
 };
 
-struct ParsedType : public ASTNode
+struct ASTType : public ASTNode
 {
 	IMPLEMENT_ACCEPT()
 };
 
 ///////////////////////////////////////////
 
-struct ParsedNamedType : public ParsedType
+struct ASTNamedType : public ASTType
 {
 	std::string name;
 
-	ParsedNamedType(std::string const& name) :
+	ASTNamedType(std::string const& name) :
 		name(name) { }
 
 	IMPLEMENT_ACCEPT()
 };
 
-struct ParsedPointerType : public ParsedType
+struct ASTPointerType : public ASTType
 {
-	ParsedType* base;
+	ASTType* base;
 
-	ParsedPointerType(ParsedType* base) :
+	ASTPointerType(ASTType* base) :
 		base(base) { }
 
 	IMPLEMENT_ACCEPT()
 };
 
-struct ParsedArrayType : public ParsedType
+struct ASTArrayType : public ASTType
 {
-	ParsedType* base;
+	ASTType* base;
 
-	ParsedArrayType(ParsedType* base) :
+	ASTArrayType(ASTType* base) :
 		base(base) { }
 
 	IMPLEMENT_ACCEPT()
@@ -316,9 +316,9 @@ struct ASTIfStatement : public ASTStatement
 struct ASTStructDeclaration : public ASTDeclaration
 {
 	std::string name;
-	std::vector<std::pair<std::string, ParsedType*>> fields;
+	std::vector<std::pair<std::string, ASTType*>> fields;
 
-	ASTStructDeclaration(std::string const& name, std::vector<std::pair<std::string, ParsedType*>> const& fields) :
+	ASTStructDeclaration(std::string const& name, std::vector<std::pair<std::string, ASTType*>> const& fields) :
 		name(name), fields(fields) { }
 
 	IMPLEMENT_ACCEPT()
@@ -327,11 +327,11 @@ struct ASTStructDeclaration : public ASTDeclaration
 struct ASTFunctionDeclaration : public ASTDeclaration
 {
 	std::string name;
-	ParsedType* result;
-	std::vector<std::pair<std::string, ParsedType*>> parameters;
+	ASTType* result;
+	std::vector<std::pair<std::string, ASTType*>> parameters;
 	ASTStatement* body;
 
-	ASTFunctionDeclaration(std::string const& name, ParsedType* result, std::vector<std::pair<std::string, ParsedType*>> const& parameters, ASTStatement* body) :
+	ASTFunctionDeclaration(std::string const& name, ASTType* result, std::vector<std::pair<std::string, ASTType*>> const& parameters, ASTStatement* body) :
 		name(name), result(result), parameters(parameters), body(body) { }
 
 	IMPLEMENT_ACCEPT()
@@ -341,10 +341,10 @@ struct ASTExternFunctionDeclaration : public ASTDeclaration
 {
 	std::string lib;
 	std::string name;
-	ParsedType* result;
-	std::vector<std::pair<std::string, ParsedType*>> parameters;
+	ASTType* result;
+	std::vector<std::pair<std::string, ASTType*>> parameters;
 
-	ASTExternFunctionDeclaration(std::string const& lib, std::string const& name, ParsedType* result, std::vector<std::pair<std::string, ParsedType*>> const& parameters) :
+	ASTExternFunctionDeclaration(std::string const& lib, std::string const& name, ASTType* result, std::vector<std::pair<std::string, ASTType*>> const& parameters) :
 		lib(lib), name(name), result(result), parameters(parameters) { }
 
 	IMPLEMENT_ACCEPT()
