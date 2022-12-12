@@ -43,10 +43,12 @@ struct IRExpression : public IRNode
 
 struct IRIntegerExpression : public IRExpression
 {
+	bool isSigned;
+	size_t width, radix;
 	std::string value;
 
-	IRIntegerExpression(std::string const& value) :
-		value(value) {}
+	IRIntegerExpression(bool isSigned, size_t width, size_t radix, std::string const& value) :
+		isSigned(isSigned), width(width), radix(radix), value(value) {}
 
 	IMPLEMENT_ACCEPT()
 };
@@ -73,9 +75,9 @@ struct IRCharExpression : public IRExpression
 
 struct IRStringExpression : public IRExpression
 {
-	std::string value;
+	std::vector<uint8_t> value;
 
-	IRStringExpression(std::string const& value) :
+	IRStringExpression(std::vector<uint8_t> const& value) :
 		value(value) {}
 
 	IMPLEMENT_ACCEPT()

@@ -80,4 +80,11 @@ public:
 
 		return value;
 	}
+
+	TValue OrThrow()
+	{
+		if (!result.has_value())
+			throw std::exception("StringSwitch with no matching case");
+		return std::move(*result);
+	}
 };

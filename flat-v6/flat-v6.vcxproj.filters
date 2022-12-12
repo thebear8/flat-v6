@@ -48,6 +48,12 @@
     <ClCompile Include="passes\ir_pass.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
+    <ClCompile Include="passes\module_extraction_pass.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="passes\struct_extraction_pass.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="data\enum.hpp">
@@ -108,6 +114,12 @@
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="passes\ir_pass.hpp">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="passes\module_extraction_pass.hpp">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="passes\struct_extraction_pass.hpp">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>

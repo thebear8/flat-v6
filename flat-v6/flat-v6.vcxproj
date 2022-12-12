@@ -178,6 +178,8 @@
     <ClCompile Include="passes\lowering_pass.cpp" />
     <ClCompile Include="passes\no_op_pass.cpp" />
     <ClCompile Include="passes\semantic_pass.cpp" />
+    <ClCompile Include="passes\module_extraction_pass.cpp" />
+    <ClCompile Include="passes\struct_extraction_pass.cpp" />
     <ClCompile Include="type\type.cpp" />
     <ClCompile Include="util\error_logger.cpp" />
   </ItemGroup>
@@ -196,6 +198,8 @@
     <ClInclude Include="passes\lowering_pass.hpp" />
     <ClInclude Include="passes\no_op_pass.hpp" />
     <ClInclude Include="passes\semantic_pass.hpp" />
+    <ClInclude Include="passes\module_extraction_pass.hpp" />
+    <ClInclude Include="passes\struct_extraction_pass.hpp" />
     <ClInclude Include="type\type.hpp" />
     <ClInclude Include="util\ast_context.hpp" />
     <ClInclude Include="util\error_logger.hpp" />

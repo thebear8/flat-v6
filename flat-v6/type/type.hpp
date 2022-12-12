@@ -41,6 +41,7 @@ public:
 	virtual bool isSigned() { return false; }
 };
 
+//DEPRECATED: Use CompilationContext instead
 class TypeContext
 {
 private:

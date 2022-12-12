@@ -6,6 +6,7 @@
 class IRPass : public ASTVisitor<IRNode*>
 {
 private:
+	ErrorLogger& logger;
 	GraphContext& irCtx;
 
 	virtual IRNode* visit(ASTIntegerExpression* node) override;
@@ -33,4 +34,30 @@ private:
 	virtual IRNode* visit(ASTFunctionDeclaration* node) override;
 	virtual IRNode* visit(ASTExternFunctionDeclaration* node) override;
 	virtual IRNode* visit(ASTSourceFile* node) override;
+
+private:
+	std::vector<uint8_t> unescapeStringUTF8(std::string const& input, ASTNode* node);
+	uint32_t unescapeCodePoint(std::string const& value, size_t& position, ASTNode* node);
+	bool isDigit(char c) { return (c >= '0' && c <= '9'); }
+	bool isBinaryDigit(char c) { return (c >= '0' && c <= '1'); }
+	bool isHexDigit(char c) { return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'); }
+	bool isLetter(char c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'); }
+	bool isWhitespace(char c) { return (c == ' ' || c == '\t' || c == '\r' || c == '\n'); }
+	bool isIdentifier(char c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || (c == '_'); }
+
+private:
+	std::unordered_map<char, uint32_t> escapeChars =
+	{
+		{ 'a', '\a' },
+		{ 'b', '\b' },
+		{ 'f', '\f' },
+		{ 'n', '\n' },
+		{ 'r', '\r' },
+		{ 't', '\t' },
+		{ 'v', '\v' },
+		{ '\\', '\\' },
+		{ '\'', '\'' },
+		{ '\"', '\"' },
+		{ '\?', '\?' },
+	};
 };

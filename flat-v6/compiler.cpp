@@ -16,6 +16,8 @@
 #include "passes/lowering_pass.hpp"
 #include "passes/codegen_pass.hpp"
 
+#include "util/string_switch.hpp"
+
 CompilationContext::CompilationContext(CompilationOptions const& options, std::ostream& logStream) :
 	options(options),
 	logger(options.moduleSource, logStream),
@@ -47,6 +49,12 @@ CompilationContext::CompilationContext(CompilationOptions const& options, std::o
 	module.setTargetTriple(options.targetDesc.targetTriple);
 
 	typeCtx.setPointerSize(module.getDataLayout().getPointerSizeInBits());
+}
+
+CompilationContext::~CompilationContext()
+{
+	for (auto const& entry : modules)
+		delete entry.second;
 }
 
 void CompilationContext::parse(std::vector<std::string> const& sources)
@@ -86,4 +94,34 @@ void CompilationContext::compile(llvm::raw_pwrite_stream& output)
 
 	passManager.run(module);
 	output.flush();
+}
+
+Type* CompilationContext::lookupBuiltinType(std::string const& name)
+{
+	return StringSwitch<Type*>(name)
+		.Case("void", typeCtx.getVoid())
+		.Case("bool", typeCtx.getBool())
+		.Case("i8", typeCtx.getI8())
+		.Case("i16", typeCtx.getI16())
+		.Case("i32", typeCtx.getI32())
+		.Case("i64", typeCtx.getI64())
+		.Case("u8", typeCtx.getU8())
+		.Case("u16", typeCtx.getU16())
+		.Case("u32", typeCtx.getU32())
+		.Case("u64", typeCtx.getU64())
+		.Case("char", typeCtx.getChar())
+		.Case("string", typeCtx.getString())
+		.Default(nullptr);
+}
+
+ModuleContext* CompilationContext::getModule(std::string const& name)
+{
+	if (!modules.contains(name))
+		modules.try_emplace(name, new ModuleContext(*this, name));
+	return modules.at(name);
+}
+
+Type* ModuleContext::lookupType(std::string const& name)
+{
+	auto builtin = compilationCtx.lookupBuiltinType(name);
 }
