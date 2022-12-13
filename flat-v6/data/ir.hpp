@@ -215,7 +215,7 @@ struct IRWhileStatement : public IRStatement
 struct IRIfStatement : public IRStatement
 {
 	IRExpression* condition;
-	IRStatement* ifBody, elseBody;
+	IRStatement* ifBody, *elseBody;
 
 	IRIfStatement(IRExpression* condition, IRStatement* ifBody, IRStatement* elseBody) :
 		condition(condition), ifBody(ifBody), elseBody(elseBody) {}
