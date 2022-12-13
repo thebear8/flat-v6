@@ -96,7 +96,7 @@ void CompilationContext::compile(llvm::raw_pwrite_stream& output)
 	output.flush();
 }
 
-Type* CompilationContext::lookupBuiltinType(std::string const& name)
+Type* CompilationContext::getBuiltinType(std::string const& name)
 {
 	return StringSwitch<Type*>(name)
 		.Case("void", typeCtx.getVoid())
@@ -114,6 +114,21 @@ Type* CompilationContext::lookupBuiltinType(std::string const& name)
 		.Default(nullptr);
 }
 
+IntegerType* CompilationContext::getIntegerType(size_t width, bool isSigned)
+{
+	return typeCtx.getIntegerType(width, isSigned);
+}
+
+PointerType* CompilationContext::getPointerType(Type* base)
+{
+	return typeCtx.getPointerType(base);
+}
+
+ArrayType* CompilationContext::getArrayType(Type* base)
+{
+	return typeCtx.getArrayType(base);
+}
+
 ModuleContext* CompilationContext::getModule(std::string const& name)
 {
 	if (!modules.contains(name))
@@ -121,7 +136,42 @@ ModuleContext* CompilationContext::getModule(std::string const& name)
 	return modules.at(name);
 }
 
-Type* ModuleContext::lookupType(std::string const& name)
+Type* ModuleContext::getBuiltinOrStructType(std::string const& name)
 {
-	auto builtin = compilationCtx.lookupBuiltinType(name);
+	auto builtin = compCtx.getBuiltinType(name);
+	if (builtin)
+		return builtin;
+
+	if (structTypes.contains(name))
+		return structTypes.at(name);
+
+	for (auto const& importName : imports)
+	{
+		auto mod = compCtx.getModule(importName);
+		if (mod->structTypes.contains(name))
+			return mod->structTypes.at(name);
+	}
+
+	return nullptr;
+}
+
+Type* ModuleContext::getType(ASTType* type)
+{
+	assert(type && "Type cannot be null");
+
+	if (auto namedType = dynamic_cast<ASTNamedType*>(type); namedType)
+		return getBuiltinOrStructType(namedType->name);
+	else if (auto pointerType = dynamic_cast<ASTPointerType*>(type); pointerType)
+		return compCtx.getPointerType(getType(pointerType->base));
+	else if (auto arrayType = dynamic_cast<ASTArrayType*>(type); arrayType)
+		return compCtx.getArrayType(getType(arrayType->base));
+
+	assert("Invalid ASTType*");
+}
+
+StructType* ModuleContext::getStructType(std::string const& name)
+{
+	if (!structTypes.contains(name))
+		structTypes.try_emplace(name, new StructType(compCtx.typeCtx, name));
+	return structTypes.at(name);
 }

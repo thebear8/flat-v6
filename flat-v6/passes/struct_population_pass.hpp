@@ -4,7 +4,7 @@
 #include "../data/ir.hpp"
 #include "../compiler.hpp"
 
-class StructExtractionPass : public ASTVisitor<void>
+class StructPopulationPass : public ASTVisitor<void>
 {
 private:
 	ErrorLogger& logger;
