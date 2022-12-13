@@ -8,7 +8,32 @@
 #include "../util/visitor.hpp"
 
 using IRTripleDispatchVisitor = triple_dispatch_visitor::TripleDispatchVisitor<
-	struct IRNode
+	struct IRNode,
+	struct IRDeclaration,
+	struct IRStatement,
+	struct IRExpression,
+	struct IRStatement,
+	struct IRIntegerExpression,
+	struct IRBoolExpression,
+	struct IRCharExpression,
+	struct IRStringExpression,
+	struct IRIdentifierExpression,
+	struct IRStructExpression,
+	struct IRUnaryExpression,
+	struct IRBinaryExpression,
+	struct IRCallExpression,
+	struct IRIndexExpression,
+	struct IRFieldExpression,
+	struct IRBlockStatement,
+	struct IRExpressionStatement,
+	struct IRVariableStatement,
+	struct IRReturnStatement,
+	struct IRWhileStatement,
+	struct IRIfStatement,
+	struct IRStructDeclaration,
+	struct IRFunctionDeclaration,
+	struct IRExternFunctionDeclaration,
+	struct IRSourceFile
 >;
 
 template<typename TReturn>

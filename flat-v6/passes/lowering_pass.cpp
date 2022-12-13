@@ -1,43 +1,43 @@
 #include "lowering_pass.hpp"
 
-ASTNode* OperatorLoweringPass::process(ASTNode* program)
+IRSourceFile* OperatorLoweringPass::process(IRSourceFile* program)
 {
-	return dispatch(program);
+	return (IRSourceFile*)dispatch(program);
 }
 
-ASTNode* OperatorLoweringPass::visit(ASTIntegerExpression* node)
+IRNode* OperatorLoweringPass::visit(IRIntegerExpression* node)
 {
 	return node;
 }
 
-ASTNode* OperatorLoweringPass::visit(ASTBoolExpression* node)
+IRNode* OperatorLoweringPass::visit(IRBoolExpression* node)
 {
 	return node;
 }
 
-ASTNode* OperatorLoweringPass::visit(ASTCharExpression* node)
+IRNode* OperatorLoweringPass::visit(IRCharExpression* node)
 {
 	return node;
 }
 
-ASTNode* OperatorLoweringPass::visit(ASTStringExpression* node)
+IRNode* OperatorLoweringPass::visit(IRStringExpression* node)
 {
 	return node;
 }
 
-ASTNode* OperatorLoweringPass::visit(ASTIdentifierExpression* node)
+IRNode* OperatorLoweringPass::visit(IRIdentifierExpression* node)
 {
 	return node;
 }
 
-ASTNode* OperatorLoweringPass::visit(ASTStructExpression* node)
+IRNode* OperatorLoweringPass::visit(IRStructExpression* node)
 {
 	return node;
 }
 
-ASTNode* OperatorLoweringPass::visit(ASTUnaryExpression* node)
+IRNode* OperatorLoweringPass::visit(IRUnaryExpression* node)
 {
-	node->expression = checked_cast<ASTExpression>(dispatch(node->expression));
+	node->expression = checked_cast<IRExpression>(dispatch(node->expression));
 
 	auto value = node->expression->type;
 	if (unaryOperators.at(node->operation).category == OperatorCategory::UnaryArithmetic && value->isIntegerType())
@@ -54,17 +54,18 @@ ASTNode* OperatorLoweringPass::visit(ASTUnaryExpression* node)
 	}
 	else
 	{
-		std::vector<ASTExpression*> args = std::vector<ASTExpression*>({ node->expression });
-		auto newNode = astCtx.make<ASTBoundCallExpression>(node->begin, node->end, unaryOperators.at(node->operation).name, args);
-		newNode->type = node->type;
-		return newNode;
+		auto args = std::vector({ node->expression });
+		auto identifier = modCtx.irCtx.make(IRIdentifierExpression(unaryOperators.at(node->operation).name));
+		auto call = irCtx.make(IRCallExpression(identifier, args));
+		call->type = node->type;
+		return call;
 	}
 }
 
-ASTNode* OperatorLoweringPass::visit(ASTBinaryExpression* node)
+IRNode* OperatorLoweringPass::visit(IRBinaryExpression* node)
 {
-	node->left = checked_cast<ASTExpression>(dispatch(node->left));
-	node->right = checked_cast<ASTExpression>(dispatch(node->right));
+	node->left = checked_cast<IRExpression>(dispatch(node->left));
+	node->right = checked_cast<IRExpression>(dispatch(node->right));
 
 	auto left = node->left->type;
 	auto right = node->right->type;
@@ -97,142 +98,130 @@ ASTNode* OperatorLoweringPass::visit(ASTBinaryExpression* node)
 	{
 		if (node->operation == BinaryOperator::Assign)
 		{
-			auto wrapArgs = std::vector<ASTExpression*>({ node->left, node->right });
-			auto wrappedRight = astCtx.make<ASTBoundCallExpression>(node->begin, node->end, binaryOperators.at(BinaryOperator::Assign).name, wrapArgs);
-			auto newNode = astCtx.make<ASTBinaryExpression>(node->begin, node->end, BinaryOperator::Assign, node->left, wrappedRight);
-			newNode->type = node->type;
-			return newNode;
+			auto args = std::vector({ node->left, node->right });
+			auto identifier = irCtx.make(IRIdentifierExpression(binaryOperators.at(BinaryOperator::Assign).name));
+			auto assignCall = irCtx.make(IRCallExpression(identifier, args));
+			assignCall->type = node->type;
+
+			auto assign = irCtx.make(IRBinaryExpression(BinaryOperator::Assign, node->left, assignCall));
+			assign->type = node->type;
+			return assign;
 		}
 		else
 		{
-			auto args = std::vector<ASTExpression*>({ node->left, node->right });
-			auto newNode = astCtx.make<ASTBoundCallExpression>(node->begin, node->end, binaryOperators.at(node->operation).name, args);
-			newNode->type = node->type;
-			return newNode;
+			auto args = std::vector({ node->left, node->right });
+			auto identifier = irCtx.make(IRIdentifierExpression(binaryOperators.at(node->operation).name));
+			auto call = irCtx.make(IRCallExpression(identifier, args));
+			call->type = node->type;
+			return call;
 		}
 	}
 }
 
-ASTNode* OperatorLoweringPass::visit(ASTCallExpression* node)
+IRNode* OperatorLoweringPass::visit(IRCallExpression* node)
 {
-	node->expression = checked_cast<ASTExpression>(dispatch(node->expression));
+	node->expression = checked_cast<IRExpression>(dispatch(node->expression));
 	for (auto& arg : node->args)
-		arg = checked_cast<ASTExpression>(dispatch(arg));
+		arg = checked_cast<IRExpression>(dispatch(arg));
 
-	if (dynamic_cast<ASTIdentifierExpression*>(node->expression))
-	{
-		auto newNode = astCtx.make<ASTBoundCallExpression>(node->begin, node->end, dynamic_cast<ASTIdentifierExpression*>(node->expression)->value, node->args);
-		newNode->type = node->type;
-		return newNode;
-	}
-	else
-	{
-		auto args = node->args;
-		args.insert(args.begin(), node->expression);
-		auto newNode = astCtx.make<ASTBoundCallExpression>(node->begin, node->end, "__call__", args);
-		newNode->type = node->type;
-		return newNode;
-	}
+	if (dynamic_cast<IRIdentifierExpression*>(node->expression))
+		return node;
+
+	auto args = node->args;
+	args.insert(args.begin(), node->expression);
+	auto identifier = irCtx.make(IRIdentifierExpression("__call__"));
+	auto call = irCtx.make(IRCallExpression(identifier, args));
+	call->type = node->type;
+	return call;
 }
 
-ASTNode* OperatorLoweringPass::visit(ASTIndexExpression* node)
+IRNode* OperatorLoweringPass::visit(IRIndexExpression* node)
 {
-	node->expression = checked_cast<ASTExpression>(dispatch(node->expression));
+	node->expression = checked_cast<IRExpression>(dispatch(node->expression));
 	for (auto& arg : node->args)
-		arg = checked_cast<ASTExpression>(dispatch(arg));
+		arg = checked_cast<IRExpression>(dispatch(arg));
 
 	auto value = node->expression->type;
-	if (value->isArrayType() && node->args.size() == 1 && node->args.front()->type->isIntegerType())
-	{
-		auto newNode = astCtx.make<ASTBoundIndexExpression>(node->begin, node->end, node->expression, node->args.front());
-		newNode->type = node->type;
-		return newNode;
-	}
-	if (value->isStringType() && node->args.size() == 1 && node->args.front()->type->isIntegerType())
-	{
-		auto newNode = astCtx.make<ASTBoundIndexExpression>(node->begin, node->end, node->expression, node->args.front());
-		newNode->type = node->type;
-		return newNode;
-	}
-	else
-	{
-		auto args = node->args;
-		args.insert(args.begin(), node->expression);
-		auto newNode = astCtx.make<ASTBoundCallExpression>(node->begin, node->end, "__index__", args);
-		newNode->type = node->type;
-		return newNode;
-	}
+	if ((value->isArrayType() || value->isStringType()) && node->args.size() == 1 && node->args.front()->type->isIntegerType())
+		return node;
+
+	auto args = node->args;
+	args.insert(args.begin(), node->expression);
+	auto identifier = irCtx.make(IRIdentifierExpression("__index"));
+	auto call = irCtx.make(IRCallExpression(identifier, args));
+	call->type = node->type;
+	return call;
 }
 
-ASTNode* OperatorLoweringPass::visit(ASTFieldExpression* node)
+IRNode* OperatorLoweringPass::visit(IRFieldExpression* node)
 {
-	node->expression = checked_cast<ASTExpression>(dispatch(node->expression));
+	node->expression = checked_cast<IRExpression>(dispatch(node->expression));
 	return node;
 }
 
-ASTNode* OperatorLoweringPass::visit(ASTBlockStatement* node)
+IRNode* OperatorLoweringPass::visit(IRBlockStatement* node)
 {
 	for (auto& statement : node->statements)
-		statement = checked_cast<ASTStatement>(dispatch(statement));
+		statement = checked_cast<IRStatement>(dispatch(statement));
 
 	return node;
 }
 
-ASTNode* OperatorLoweringPass::visit(ASTExpressionStatement* node)
+IRNode* OperatorLoweringPass::visit(IRExpressionStatement* node)
 {
-	node->expression = checked_cast<ASTExpression>(dispatch(node->expression));
+	node->expression = checked_cast<IRExpression>(dispatch(node->expression));
 	return node;
 }
 
-ASTNode* OperatorLoweringPass::visit(ASTVariableStatement* node)
+IRNode* OperatorLoweringPass::visit(IRVariableStatement* node)
 {
 	for (auto& [name, value] : node->items)
-		value = checked_cast<ASTExpression>(dispatch(value));
+		value = checked_cast<IRExpression>(dispatch(value));
 
 	return node;
 }
 
-ASTNode* OperatorLoweringPass::visit(ASTReturnStatement* node)
+IRNode* OperatorLoweringPass::visit(IRReturnStatement* node)
 {
-	node->expression = checked_cast<ASTExpression>(dispatch(node->expression));
+	node->expression = checked_cast<IRExpression>(dispatch(node->expression));
 	return node;
 }
 
-ASTNode* OperatorLoweringPass::visit(ASTWhileStatement* node)
+IRNode* OperatorLoweringPass::visit(IRWhileStatement* node)
 {
-	node->condition = checked_cast<ASTExpression>(dispatch(node->condition));
-	node->body = checked_cast<ASTStatement>(dispatch(node->body));
+	node->condition = checked_cast<IRExpression>(dispatch(node->condition));
+	node->body = checked_cast<IRStatement>(dispatch(node->body));
 	return node;
 }
 
-ASTNode* OperatorLoweringPass::visit(ASTIfStatement* node)
+IRNode* OperatorLoweringPass::visit(IRIfStatement* node)
 {
-	node->condition = checked_cast<ASTExpression>(dispatch(node->condition));
-	node->ifBody = checked_cast<ASTStatement>(dispatch(node->ifBody));
-	node->elseBody = (node->elseBody ? checked_cast<ASTStatement>(dispatch(node->elseBody)) : nullptr);
+	node->condition = checked_cast<IRExpression>(dispatch(node->condition));
+	node->ifBody = checked_cast<IRStatement>(dispatch(node->ifBody));
+	node->elseBody = (node->elseBody ? checked_cast<IRStatement>(dispatch(node->elseBody)) : nullptr);
 	return node;
 }
 
-ASTNode* OperatorLoweringPass::visit(ASTStructDeclaration* node)
-{
-	return node;
-}
-
-ASTNode* OperatorLoweringPass::visit(ASTFunctionDeclaration* node)
-{
-	node->body = checked_cast<ASTStatement>(dispatch(node->body));
-	return node;
-}
-
-ASTNode* OperatorLoweringPass::visit(ASTExternFunctionDeclaration* node)
+IRNode* OperatorLoweringPass::visit(IRStructDeclaration* node)
 {
 	return node;
 }
 
-ASTNode* OperatorLoweringPass::visit(ASTSourceFile* node)
+IRNode* OperatorLoweringPass::visit(IRFunctionDeclaration* node)
+{
+	node->body = checked_cast<IRStatement>(dispatch(node->body));
+	return node;
+}
+
+IRNode* OperatorLoweringPass::visit(IRExternFunctionDeclaration* node)
+{
+	return node;
+}
+
+IRNode* OperatorLoweringPass::visit(IRSourceFile* node)
 {
 	for (auto& decl : node->declarations)
-		decl = checked_cast<ASTDeclaration>(dispatch(decl));
+		decl = checked_cast<IRDeclaration>(dispatch(decl));
 
 	return node;
 }

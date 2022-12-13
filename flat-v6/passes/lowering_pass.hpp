@@ -3,48 +3,50 @@
 #include <string_view>
 #include <ostream>
 
-#include "../data/ast.hpp"
+#include "../data/ir.hpp"
 #include "../util/error_logger.hpp"
 #include "../data/operator.hpp"
+#include "../compiler.hpp"
 
-class OperatorLoweringPass : protected ASTVisitor<ASTNode*>
+class OperatorLoweringPass : protected IRVisitor<IRNode*>
 {
 private:
 	ErrorLogger& logger;
-	AstContext& astCtx;
-	TypeContext& typeCtx;
+	CompilationContext& compCtx;
+	ModuleContext& modCtx;
+	GraphContext& irCtx;
 
 public:
-	OperatorLoweringPass(ErrorLogger& logger, AstContext& astCtx, TypeContext& ctx) :
-		logger(logger), astCtx(astCtx), typeCtx(ctx) { }
+	OperatorLoweringPass(ErrorLogger& logger, CompilationContext& compCtx, ModuleContext& modCtx, GraphContext& irCtx) :
+		logger(logger), compCtx(compCtx), modCtx(modCtx), irCtx(irCtx) { }
 
 public:
-	ASTNode* process(ASTNode* program);
+	IRSourceFile* process(IRSourceFile* source);
 
 protected:
-	virtual ASTNode* visit(ASTIntegerExpression* node) override;
-	virtual ASTNode* visit(ASTBoolExpression* node) override;
-	virtual ASTNode* visit(ASTCharExpression* node) override;
-	virtual ASTNode* visit(ASTStringExpression* node) override;
-	virtual ASTNode* visit(ASTIdentifierExpression* node) override;
-	virtual ASTNode* visit(ASTStructExpression* node) override;
-	virtual ASTNode* visit(ASTUnaryExpression* node) override;
-	virtual ASTNode* visit(ASTBinaryExpression* node) override;
-	virtual ASTNode* visit(ASTCallExpression* node) override;
-	virtual ASTNode* visit(ASTIndexExpression* node) override;
-	virtual ASTNode* visit(ASTFieldExpression* node) override;
+	virtual IRNode* visit(IRIntegerExpression* node) override;
+	virtual IRNode* visit(IRBoolExpression* node) override;
+	virtual IRNode* visit(IRCharExpression* node) override;
+	virtual IRNode* visit(IRStringExpression* node) override;
+	virtual IRNode* visit(IRIdentifierExpression* node) override;
+	virtual IRNode* visit(IRStructExpression* node) override;
+	virtual IRNode* visit(IRUnaryExpression* node) override;
+	virtual IRNode* visit(IRBinaryExpression* node) override;
+	virtual IRNode* visit(IRCallExpression* node) override;
+	virtual IRNode* visit(IRIndexExpression* node) override;
+	virtual IRNode* visit(IRFieldExpression* node) override;
 
-	virtual ASTNode* visit(ASTBlockStatement* node) override;
-	virtual ASTNode* visit(ASTExpressionStatement* node) override;
-	virtual ASTNode* visit(ASTVariableStatement* node) override;
-	virtual ASTNode* visit(ASTReturnStatement* node) override;
-	virtual ASTNode* visit(ASTWhileStatement* node) override;
-	virtual ASTNode* visit(ASTIfStatement* node) override;
+	virtual IRNode* visit(IRBlockStatement* node) override;
+	virtual IRNode* visit(IRExpressionStatement* node) override;
+	virtual IRNode* visit(IRVariableStatement* node) override;
+	virtual IRNode* visit(IRReturnStatement* node) override;
+	virtual IRNode* visit(IRWhileStatement* node) override;
+	virtual IRNode* visit(IRIfStatement* node) override;
 
-	virtual ASTNode* visit(ASTStructDeclaration* node) override;
-	virtual ASTNode* visit(ASTFunctionDeclaration* node) override;
-	virtual ASTNode* visit(ASTExternFunctionDeclaration* node) override;
-	virtual ASTNode* visit(ASTSourceFile* node) override;
+	virtual IRNode* visit(IRStructDeclaration* node) override;
+	virtual IRNode* visit(IRFunctionDeclaration* node) override;
+	virtual IRNode* visit(IRExternFunctionDeclaration* node) override;
+	virtual IRNode* visit(IRSourceFile* node) override;
 
 private:
 	template<typename Tr, typename Tv>
