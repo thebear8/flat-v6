@@ -353,7 +353,7 @@ ASTStructDeclaration* Parser::structDeclaration(size_t begin)
 	expect(Token::Identifier);
 	auto structName = getTokenValue();
 	expect(Token::BraceOpen);
-	std::vector<std::pair<std::string, Type*>> fields;
+	std::vector<std::pair<std::string, ASTType*>> fields;
 	while (!match(Token::BraceClose) && !match(Token::Eof)) {
 		expect(Token::Identifier);
 		auto name = getTokenValue();
@@ -371,7 +371,7 @@ ASTFunctionDeclaration* Parser::functionDeclaration(size_t begin)
 {
 	expect(Token::Identifier);
 	auto name = getTokenValue();
-	std::vector<std::pair<std::string, Type*>> parameters;
+	std::vector<std::pair<std::string, ASTType*>> parameters;
 	expect(Token::ParenOpen);
 	while (!match(Token::ParenClose) && !match(Token::Eof)) {
 		expect(Token::Identifier);
@@ -382,10 +382,9 @@ ASTFunctionDeclaration* Parser::functionDeclaration(size_t begin)
 		match(Token::Comma);
 	}
 
-	Type* result = typeCtx.getVoid();
-	if (match(Token::Colon)) {
-		result = typeName();
-	}
+	ASTType* result =  ((!match(Token::Colon) ? 
+			ctx.make<ASTNamedType>(position, position, "void")
+			: typeName()));
 
 	auto bodyBegin = trim();
 	expect(Token::BraceOpen);
@@ -403,7 +402,7 @@ ASTExternFunctionDeclaration* Parser::externFunctionDeclaration(size_t begin)
 	expect(Token::Function);
 	expect(Token::Identifier);
 	auto name = getTokenValue();
-	std::vector<std::pair<std::string, Type*>> parameters;
+	std::vector<std::pair<std::string, ASTType*>> parameters;
 	expect(Token::ParenOpen);
 	while (!match(Token::ParenClose) && !match(Token::Eof)) {
 		expect(Token::Identifier);
@@ -414,10 +413,9 @@ ASTExternFunctionDeclaration* Parser::externFunctionDeclaration(size_t begin)
 		match(Token::Comma);
 	}
 
-	Type* result = typeCtx.getVoid();
-	if (match(Token::Colon)) {
-		result = typeName();
-	}
+	ASTType* result = ((!match(Token::Colon) ?
+		ctx.make<ASTNamedType>(position, position, "void")
+		: typeName()));
 
 	return ctx.make<ASTExternFunctionDeclaration>(begin, position, lib, name, result, parameters);
 }
@@ -466,16 +464,17 @@ ASTSourceFile* Parser::sourceFile()
 	return ctx.make<ASTSourceFile>(begin, position, modulePath, imports, declarations);
 }
 
-Type* Parser::typeName()
+ASTType* Parser::typeName()
 {
+	auto begin = trim();
 	expect(Token::Identifier);
-	Type* type = (typeCtx.getResolvedType(getTokenValue()) ? typeCtx.getResolvedType(getTokenValue()) : typeCtx.getStructType(getTokenValue()));
+	ASTType* type = ctx.make<ASTNamedType>(begin, position, getTokenValue());
 	while (true) {
 		if (match(Token::Multiply)) {
-			type = typeCtx.getPointerType(type);
+			type = ctx.make<ASTPointerType>(begin, position, type);
 		}
 		else if (match(Token::BracketOpen) && match(Token::BracketClose)) {
-			type = typeCtx.getArrayType(type);
+			type = ctx.make<ASTArrayType>(begin, position, type);
 		}
 		else {
 			return type;

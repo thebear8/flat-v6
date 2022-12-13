@@ -1,18 +1,16 @@
 #pragma once
 #include "lexer.hpp"
 #include "../data/ast.hpp"
-#include "../type/type.hpp"
 
 class Parser : protected Lexer
 {
 private:
 	ErrorLogger& logger;
 	AstContext& ctx;
-	TypeContext& typeCtx;
 
 public:
-	Parser(ErrorLogger& logger, AstContext& ctx, TypeContext& typeCtx, std::string_view input) :
-		Lexer(logger, input), logger(logger), ctx(ctx), typeCtx(typeCtx) { }
+	Parser(ErrorLogger& logger, AstContext& ctx, std::string_view input) :
+		Lexer(logger, input), logger(logger), ctx(ctx) { }
 
 public:
 	ASTExpression* l0();
@@ -41,5 +39,5 @@ public:
 
 	ASTSourceFile* sourceFile();
 
-	Type* typeName();
+	ASTType* typeName();
 };
