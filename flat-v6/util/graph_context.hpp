@@ -12,6 +12,9 @@ private:
     template<typename TNode>
     struct TNodeContainer : public NodeContainer, public TNode
     {
+        TNodeContainer(TNode&& value) :
+            TNode(std::forward<TNode>(value)) { }
+
         TNode* get() { return this; }
     };
 
@@ -20,17 +23,11 @@ private:
 
 public:
     template<typename TNode>
-    TNode* allocate()
-    {
-        auto node = new TNodeContainer<TNode>();
-        m_nodes.push_back(node);
-        return node->get();
-    }
-
-    template<typename TNode>
     TNode* make(TNode&& node)
     {
-        return new (allocate<TNode>()) TNode(std::move(node));
+        auto container = new TNodeContainer<TNode>(std::forward<TNode>(node));
+        m_nodes.push_back(container);
+        return container->get();
     }
 
     ~GraphContext()
