@@ -4,10 +4,10 @@ void StructExtractionPass::visit(ASTStructDeclaration* node)
 {
 	assert(moduleCtx && "moduleCtx cannot be null");
 
-	if (moduleCtx->structTypes.contains(node->name))
+	if (modCtx.structTypes.contains(node->name))
 		return logger.error(node, "Struct " + node->name + " is already defined in module " + moduleCtx->name);
 
-	moduleCtx->getStructType(node->name);
+	modCtx.getStructType(node->name);
 }
 
 void StructExtractionPass::visit(ASTSourceFile* node)
@@ -16,14 +16,13 @@ void StructExtractionPass::visit(ASTSourceFile* node)
 	for (auto const& segment : node->modulePath)
 		name += ((name.empty()) ? "" : ".") + segment;
 
-	moduleCtx = compilationCtx.getModule(name);
 	for (auto const& importPath : node->importPaths)
 	{
 		std::string importName;
 		for (auto const& segment : importPath)
 			importName += ((importName.empty()) ? "" : ".") + segment;
-		if (!moduleCtx->imports.contains(importName))
-			moduleCtx->imports.emplace(importName);
+		if (!modCtx.imports.contains(importName))
+			modCtx.imports.emplace(importName);
 	}
 
 	for (auto declaration : node->declarations)

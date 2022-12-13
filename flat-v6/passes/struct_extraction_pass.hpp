@@ -8,9 +8,12 @@ class StructExtractionPass : public ASTVisitor<void>
 {
 private:
 	ErrorLogger& logger;
-	GraphContext& irCtx;
-	CompilationContext& compilationCtx;
-	ModuleContext* moduleCtx;
+	CompilationContext& compCtx;
+	ModuleContext& modCtx;
+
+public:
+	StructExtractionPass(ErrorLogger& logger, CompilationContext& compCtx, ModuleContext& modCtx) :
+		logger(logger), compCtx(compCtx), modCtx(modCtx) { }
 
 	virtual void visit(ASTStructDeclaration* node) override;
 	virtual void visit(ASTFunctionDeclaration* node) override { }
