@@ -4,13 +4,13 @@
 #include <llvm/Analysis/LoopAnalysisManager.h>
 #include <llvm/Analysis/CGSCCPassManager.h>
 
-void LLVMCodegenPass::compile(ASTNode* ast)
+void LLVMCodegenPass::process(IRSourceFile* source)
 {
 	isFunctionBodyPass = false;
-	dispatch(ast);
+	dispatch(source);
 
 	isFunctionBodyPass = true;
-	dispatch(ast);
+	dispatch(source);
 }
 
 void LLVMCodegenPass::optimize()
@@ -31,41 +31,27 @@ void LLVMCodegenPass::optimize()
 	mpm.run(mod, mam);
 }
 
-llvm::Value* LLVMCodegenPass::visit(ASTIntegerExpression* node)
+llvm::Value* LLVMCodegenPass::visit(IRIntegerExpression* node)
 {
-	auto radix = 10;
-	auto value = node->value;
-	if (value.starts_with("0x"))
-	{
-		radix = 16;
-		value = value.substr(2);
-	}
-	else if (value.starts_with("0b"))
-	{
-		radix = 2;
-		value = value.substr(2);
-	}
-
-	auto type = llvm::IntegerType::get(llvmCtx, (unsigned int)node->type->getBitSize());
-	return llvm::ConstantInt::get(type, value, (uint8_t)radix);
+	auto type = llvm::IntegerType::get(llvmCtx, (unsigned int)node->width);
+	return llvm::ConstantInt::get(type, node->value, (uint8_t)node->radix);
 }
 
-llvm::Value* LLVMCodegenPass::visit(ASTBoolExpression* node)
+llvm::Value* LLVMCodegenPass::visit(IRBoolExpression* node)
 {
-	auto value = ((node->value == "true") ? 1 : 0);
-	return llvm::ConstantInt::get(llvm::Type::getInt1Ty(llvmCtx), value);
+	return llvm::ConstantInt::get(llvm::Type::getInt1Ty(llvmCtx), node->value);
 }
 
-llvm::Value* LLVMCodegenPass::visit(ASTCharExpression* node)
+llvm::Value* LLVMCodegenPass::visit(IRCharExpression* node)
 {
 	size_t position = 0;
-	return llvm::ConstantInt::get(llvm::Type::getInt32Ty(llvmCtx), unescapeCodePoint(node->value, position, node));
+	return llvm::ConstantInt::get(llvm::Type::getInt32Ty(llvmCtx), node->value);
 }
 
-llvm::Value* LLVMCodegenPass::visit(ASTStringExpression* node)
+llvm::Value* LLVMCodegenPass::visit(IRStringExpression* node)
 {
 	std::vector<llvm::Constant*> stringBytes;
-	for (auto c : unescapeString(node->value, node))
+	for (auto c : node->value)
 		stringBytes.push_back(llvm::ConstantInt::get(llvm::Type::getInt8Ty(llvmCtx), c));
 
 	auto fieldTypes = std::vector<llvm::Type*>({
@@ -83,15 +69,13 @@ llvm::Value* LLVMCodegenPass::visit(ASTStringExpression* node)
 	return new llvm::GlobalVariable(mod, structType, true, llvm::GlobalValue::LinkageTypes::InternalLinkage, structValue);
 }
 
-llvm::Value* LLVMCodegenPass::visit(ASTIdentifierExpression* node)
+llvm::Value* LLVMCodegenPass::visit(IRIdentifierExpression* node)
 {
-	if (!localValues.contains(node->value))
-		return logger.error(node, "Undefined local variable " + node->value, nullptr);
-
+	assert(localValues.contains(node->value) && "Undefined local Variable in identifier expression");
 	return builder.CreateLoad(getLLVMType(node->type), localValues.at(node->value), node->value + "_");
 }
 
-llvm::Value* LLVMCodegenPass::visit(ASTStructExpression* node)
+llvm::Value* LLVMCodegenPass::visit(IRStructExpression* node)
 {
 	auto type = dynamic_cast<StructType*>(node->type);
 	auto structPtr = builder.CreateAlloca(getLLVMType(type), nullptr, type->name + "_");
@@ -109,15 +93,14 @@ llvm::Value* LLVMCodegenPass::visit(ASTStructExpression* node)
 				break;
 			}
 
-			if (j == node->fields.size())
-				return logger.error(node, "No initializer for field " + type->fields.at(i).first, nullptr);
+			assert(0 && "No initializer for field in struct expression");
 		}
 	}
 
 	return builder.CreateLoad(getLLVMType(type), structPtr);
 }
 
-llvm::Value* LLVMCodegenPass::visit(ASTUnaryExpression* node)
+llvm::Value* LLVMCodegenPass::visit(IRUnaryExpression* node)
 {
 	if (node->operation == UnaryOperator::Positive)
 	{
@@ -137,17 +120,16 @@ llvm::Value* LLVMCodegenPass::visit(ASTUnaryExpression* node)
 	}
 	else
 	{
-		return logger.error(node, "Invalid Unary operator", nullptr);
+		assert(0 && "Invalid operator in unary expression");
 	}
 }
 
-llvm::Value* LLVMCodegenPass::visit(ASTBinaryExpression* node)
+llvm::Value* LLVMCodegenPass::visit(IRBinaryExpression* node)
 {
-	if (dynamic_cast<ASTIdentifierExpression*>(node->left))
+	if (dynamic_cast<IRIdentifierExpression*>(node->left))
 	{
-		auto const& name = dynamic_cast<ASTIdentifierExpression*>(node->left)->value;
-		if (!localValues.contains(name))
-			return logger.error(node, "Undefined local variable " + name, nullptr);
+		auto const& name = dynamic_cast<IRIdentifierExpression*>(node->left)->value;
+		assert(localValues.contains(name) && "Undefined local variable");
 
 		builder.CreateStore(dispatch(node->right), localValues.at(name));
 		return builder.CreateLoad(getLLVMType(node->type), localValues.at(name), name + "_");
@@ -245,12 +227,12 @@ llvm::Value* LLVMCodegenPass::visit(ASTBinaryExpression* node)
 		}
 		else
 		{
-			return logger.error(node, "Invalid binary expression", nullptr);
+			assert(0 && "Invalid operator in binary expression");
 		}
 	}
 }
 
-llvm::Value* LLVMCodegenPass::visit(ASTBoundCallExpression* node)
+llvm::Value* LLVMCodegenPass::visit(IRCallExpression* node)
 {
 	std::vector<Type*> argTypes;
 	for (auto& arg : node->args)
@@ -264,20 +246,24 @@ llvm::Value* LLVMCodegenPass::visit(ASTBoundCallExpression* node)
 	for (auto& arg : node->args)
 		argValues.push_back(dispatch(arg));
 
-	auto name = getMangledFunction(node->identifier, argTypes);
-	auto type = llvm::FunctionType::get(getLLVMType(node->type), llvmArgTypes, false);
-	auto function = (mod.getFunction(name) ? mod.getFunction(name) : mod.getFunction(node->identifier));
-	if (!function)
-		return logger.error(node, "No matching function named " + name + " found", nullptr);
+	auto identifierExpression = dynamic_cast<IRIdentifierExpression*>(node->expression);
+	assert(identifierExpression && "Operand of call expression has to be identifier expression");
 
-	if (function->getFunctionType() != type)
-		return logger.error(node, "Type of function " + name + " does not match", nullptr);
+	auto name = getMangledFunction(identifierExpression->value, argTypes);
+	auto type = llvm::FunctionType::get(getLLVMType(node->type), llvmArgTypes, false);
+	auto function = (mod.getFunction(name) ? mod.getFunction(name) : mod.getFunction(identifierExpression->value));
+	assert(function && "No matching function for call expression in llvm module found");
+	assert(function->getFunctionType() == type, "Type of found function does not match");
 
 	return builder.CreateCall(function, argValues);
 }
 
-llvm::Value* LLVMCodegenPass::visit(ASTBoundIndexExpression* node)
+llvm::Value* LLVMCodegenPass::visit(IRIndexExpression* node)
 {
+	assert(node->args.size() == 1 && "Index expression must have exactly one operand");
+	assert(node->args.front()->type->isIntegerType() && "Index of index expression must be of integer type");
+	assert((node->expression->type->isArrayType() || node->expression->type->isStringType()) && "Operand of index expression must be of string or array type");
+
 	auto fieldTypes = std::vector<llvm::Type*>({
 		llvm::Type::getInt64Ty(llvmCtx),
 		llvm::ArrayType::get(getLLVMType(node->type), 0)
@@ -287,14 +273,14 @@ llvm::Value* LLVMCodegenPass::visit(ASTBoundIndexExpression* node)
 	auto indexes = std::vector<llvm::Value*>({
 		llvm::ConstantInt::get(llvm::Type::getInt64Ty(llvmCtx), 0),
 		llvm::ConstantInt::get(llvm::Type::getInt32Ty(llvmCtx), 1),
-		dispatch(node->index)
+		dispatch(node->args.front())
 		});
 
 	auto ptr = builder.CreateGEP(arrayType, dispatch(node->expression), indexes);
 	return builder.CreateLoad(getLLVMType(node->type), ptr);
 }
 
-llvm::Value* LLVMCodegenPass::visit(ASTFieldExpression* node)
+llvm::Value* LLVMCodegenPass::visit(IRFieldExpression* node)
 {
 	auto structType = dynamic_cast<StructType*>(node->expression->type);
 	for (int i = 0; i < structType->fields.size(); i++)
@@ -308,10 +294,10 @@ llvm::Value* LLVMCodegenPass::visit(ASTFieldExpression* node)
 		}
 	}
 
-	return logger.error(node, "Struct " + structType->toString() + " does not have a field called " + node->fieldName, nullptr);
+	assert(0 && "Unknown struct field in field expression");
 }
 
-llvm::Value* LLVMCodegenPass::visit(ASTBlockStatement* node)
+llvm::Value* LLVMCodegenPass::visit(IRBlockStatement* node)
 {
 	auto prevLocalValues = localValues;
 
@@ -323,18 +309,17 @@ llvm::Value* LLVMCodegenPass::visit(ASTBlockStatement* node)
 	return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(ASTExpressionStatement* node)
+llvm::Value* LLVMCodegenPass::visit(IRExpressionStatement* node)
 {
 	dispatch(node->expression);
 	return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(ASTVariableStatement* node)
+llvm::Value* LLVMCodegenPass::visit(IRVariableStatement* node)
 {
 	for (auto& [name, value] : node->items)
 	{
-		if (localValues.contains(name))
-			return logger.error(node, "Variable " + name + " is already defined", nullptr);
+		assert(!localValues.contains(name) && "Local variable already defined");
 
 		localValues.try_emplace(name, builder.CreateAlloca(getLLVMType(value->type), nullptr, name));
 		builder.CreateStore(dispatch(value), localValues.at(name));
@@ -343,7 +328,7 @@ llvm::Value* LLVMCodegenPass::visit(ASTVariableStatement* node)
 	return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(ASTReturnStatement* node)
+llvm::Value* LLVMCodegenPass::visit(IRReturnStatement* node)
 {
 	if (node->expression)
 		builder.CreateRet(dispatch(node->expression));
@@ -353,7 +338,7 @@ llvm::Value* LLVMCodegenPass::visit(ASTReturnStatement* node)
 	return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(ASTWhileStatement* node)
+llvm::Value* LLVMCodegenPass::visit(IRWhileStatement* node)
 {
 	auto parentFunction = builder.GetInsertBlock()->getParent();
 
@@ -378,7 +363,7 @@ llvm::Value* LLVMCodegenPass::visit(ASTWhileStatement* node)
 	return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(ASTIfStatement* node)
+llvm::Value* LLVMCodegenPass::visit(IRIfStatement* node)
 {
 	auto hasElse = (node->elseBody != nullptr);
 	auto parentFunction = builder.GetInsertBlock()->getParent();
@@ -408,15 +393,15 @@ llvm::Value* LLVMCodegenPass::visit(ASTIfStatement* node)
 	return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(ASTStructDeclaration* node)
+llvm::Value* LLVMCodegenPass::visit(IRStructDeclaration* node)
 {
 	return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(ASTFunctionDeclaration* node)
+llvm::Value* LLVMCodegenPass::visit(IRFunctionDeclaration* node)
 {
 	std::vector<Type*> params;
-	for (auto& [name, type] : node->parameters)
+	for (auto& [name, type] : node->params)
 		params.push_back(type);
 
 	std::vector<llvm::Type*> llvmParams;
@@ -433,8 +418,7 @@ llvm::Value* LLVMCodegenPass::visit(ASTFunctionDeclaration* node)
 	else
 	{
 		auto function = mod.getFunction(name);
-		if (!function)
-			return logger.error(node, "Function " + name + " is undefined", nullptr);
+		assert(function && "Function is not defined in llvm module");
 
 		auto entryBlock = llvm::BasicBlock::Create(llvmCtx, "entry");
 		auto bodyBlock = llvm::BasicBlock::Create(llvmCtx, "body");
@@ -443,11 +427,10 @@ llvm::Value* LLVMCodegenPass::visit(ASTFunctionDeclaration* node)
 		builder.SetInsertPoint(entryBlock);
 
 		localValues.clear();
-		for (int i = 0; i < node->parameters.size(); i++)
+		for (int i = 0; i < node->params.size(); i++)
 		{
-			auto& [paramName, paramType] = node->parameters.at(i);
-			if (localValues.contains(paramName))
-				return logger.error(node, "Parameter " + paramName + " is already defined", nullptr);
+			auto& [paramName, paramType] = node->params.at(i);
+			assert(!localValues.contains(paramName) && "Local variable for parameter already defined");
 
 			localValues.try_emplace(paramName, builder.CreateAlloca(getLLVMType(paramType), nullptr, paramName + "_"));
 			builder.CreateStore(function->getArg(i), localValues.at(paramName));
@@ -465,7 +448,7 @@ llvm::Value* LLVMCodegenPass::visit(ASTFunctionDeclaration* node)
 	return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(ASTExternFunctionDeclaration* node)
+llvm::Value* LLVMCodegenPass::visit(IRExternFunctionDeclaration* node)
 {
 	if (!isFunctionBodyPass)
 	{
@@ -482,7 +465,7 @@ llvm::Value* LLVMCodegenPass::visit(ASTExternFunctionDeclaration* node)
 	return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(ASTSourceFile* node)
+llvm::Value* LLVMCodegenPass::visit(IRSourceFile* node)
 {
 	for (auto& decl : node->declarations)
 		dispatch(decl);
@@ -611,119 +594,4 @@ std::string LLVMCodegenPass::getMangledFunction(std::string const& function, std
 		output += getMangledType(param);
 
 	return output;
-}
-
-std::string LLVMCodegenPass::unescapeString(std::string const& input, ASTNode* node)
-{
-	std::string output;
-
-	size_t position = 0;
-	while (position < input.length())
-	{
-		uint32_t cp = unescapeCodePoint(input, position, node);
-		if (cp < 0x7F)
-		{
-			output += (char)cp;
-		}
-		else if (cp <= 0x07FF)
-		{
-			output += (char)(((cp >> 6) & 0x1F) | 0xC0);
-			output += (char)(((cp >> 0) & 0x3F) | 0x80);
-		}
-		else if (cp <= 0xFFFF)
-		{
-			output += (char)(((cp >> 12) & 0x0F) | 0xE0);
-			output += (char)(((cp >> 6) & 0x3F) | 0x80);
-			output += (char)(((cp >> 0) & 0x3F) | 0x80);
-		}
-		else if (cp <= 0x10FFFF)
-		{
-			output += (char)(((cp >> 18) & 0x07) | 0xF0);
-			output += (char)(((cp >> 12) & 0x3F) | 0x80);
-			output += (char)(((cp >> 6) & 0x3F) | 0x80);
-			output += (char)(((cp >> 0) & 0x3F) | 0x80);
-		}
-		else
-		{
-			return logger.error(node, "Invalid Unicode code point", "");
-		}
-	}
-
-	output += (char)0;
-	return output;
-}
-
-uint32_t LLVMCodegenPass::unescapeCodePoint(std::string const& input, size_t& position, ASTNode* node)
-{
-	if (position < input.length() && input[position] == '\\')
-	{
-		position++;
-		if (position < input.length() && isDigit(input[position])) // octal char literal
-		{
-			size_t start = position;
-			while (position < input.length() && isDigit(input[position]))
-				position++;
-
-			if ((position - start) > 3)
-				return logger.error(node, "Octal char literal cannot have more than three digits", 0);
-
-			return std::stoul(input.substr(start, (position - start)), nullptr, 8);
-		}
-		else if (position < input.length() && input[position] == 'x') // hex char literal
-		{
-			position++;
-			size_t start = position;
-			while (position < input.length() && isDigit(input[position]))
-				position++;
-
-			if ((position - start) == 0)
-				return logger.error(node, "Hex char literal cannot have zero digits", 0);
-
-			return std::stoul(input.substr(start, (position - start)), nullptr, 16);
-		}
-		else if (position < input.length() && input[position] == 'u') // 0xhhhh unicode code point
-		{
-			position++;
-			size_t start = position;
-			while (position < input.length() && isDigit(input[position]))
-				position++;
-
-			if ((position - start) != 4)
-				logger.error(node, "2 byte Unicode code point (\\u) must have 4 digits", "");
-
-			return std::stoul(input.substr(start, (position - start)), nullptr, 16);
-		}
-		else if (position < input.length() && input[position] == 'U') // 0xhhhhhhhh unicode code point
-		{
-			position++;
-			size_t start = position;
-			while (position < input.length() && isDigit(input[position]))
-				position++;
-
-			if ((position - start) != 8)
-				logger.error(node, "4 byte Unicode code point (\\U) must have 8 digits", "");
-
-			return std::stoul(input.substr(start, (position - start)), nullptr, 16);
-		}
-		else if (position < input.length())
-		{
-			if (!escapeChars.contains(input[position]))
-				return logger.error(node, "Invalid escape sequence", 0);
-
-			position++;
-			return escapeChars.at(input[position]);
-		}
-		else
-		{
-			return logger.error(node, "Incomplete escape sequence", 0);
-		}
-	}
-	else if (position < input.length())
-	{
-		return input[position++];
-	}
-	else
-	{
-		return logger.error(node, "Unexpected end of char sequence", 0);
-	}
 }
