@@ -2,12 +2,8 @@
 
 void StructExtractionPass::visit(ASTStructDeclaration* node)
 {
-	assert(modCtx && "moduleCtx cannot be null");
-
-	if (modCtx.structTypes.contains(node->name))
+	if(!modCtx.createStruct(node->name))
 		return logger.error(node, "Struct " + node->name + " is already defined in module " + modCtx.name);
-
-	modCtx.getStructType(node->name);
 }
 
 void StructExtractionPass::visit(ASTSourceFile* node)

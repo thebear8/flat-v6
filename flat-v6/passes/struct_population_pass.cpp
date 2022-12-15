@@ -2,9 +2,7 @@
 
 void StructPopulationPass::visit(ASTStructDeclaration* node)
 {
-	assert(moduleCtx && "moduleCtx cannot be null");
-
-	auto structType = modCtx.getStructType(node->name);
+	auto structType = modCtx.getStruct(node->name);
 	assert(structType && "structType cannot be null");
 
 	for (auto const& [fieldName, fieldType] : node->fields)

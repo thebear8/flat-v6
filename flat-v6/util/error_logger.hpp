@@ -26,7 +26,14 @@ public:
 	void warning(size_t begin, size_t end, std::string const& message);
 
 	template<typename ReturnType>
-	ReturnType error(ASTNode* node, std::string const& message, ReturnType&& returnValue)
+	[[noreturn]] ReturnType error(std::string const& message, ReturnType&& returnValue)
+	{
+		error(message);
+		return std::forward<ReturnType>(returnValue);
+	}
+
+	template<typename ReturnType>
+	[[noreturn]] ReturnType error(ASTNode* node, std::string const& message, ReturnType&& returnValue)
 	{
 		error(node, message);
 		return std::forward<ReturnType>(returnValue);

@@ -169,9 +169,51 @@ Type* ModuleContext::getType(ASTType* type)
 	assert("Invalid ASTType*");
 }
 
-StructType* ModuleContext::getStructType(std::string const& name)
+StructType* ModuleContext::createStruct(std::string const& name)
+{
+	if (structTypes.contains(name))
+		return nullptr;
+
+	structTypes.try_emplace(name, new StructType(compCtx.typeCtx, name));
+	return structTypes.at(name);
+}
+
+StructType* ModuleContext::getStruct(std::string const& name)
 {
 	if (!structTypes.contains(name))
 		structTypes.try_emplace(name, new StructType(compCtx.typeCtx, name));
 	return structTypes.at(name);
+}
+
+IRFunctionDeclaration* ModuleContext::addFunction(IRFunctionDeclaration* function)
+{
+	if (functionDeclarations.contains(name))
+		functionDeclarations.try_emplace(name, std::vector<IRFunctionDeclaration*>());
+	auto& collection = functionDeclarations.at(name);
+
+	for (auto candidate : collection)
+	{
+		if (function->params.size() == candidate->params.size()
+			&& std::equal(function->params.begin(), function->params.end(), candidate->params.begin()))
+			return nullptr;
+	}
+
+	collection.push_back(function);
+	return function;
+}
+
+IRFunctionDeclaration* ModuleContext::getFunction(std::string const& name, std::vector<Type*> const& params)
+{
+	if (!functionDeclarations.contains(name))
+		functionDeclarations.try_emplace(name, std::vector<IRFunctionDeclaration*>());
+	auto& collection = functionDeclarations.at(name);
+
+	for (auto candidate : collection)
+	{
+		if (params.size() == candidate->params.size()
+			&& std::equal(params.begin(), params.end(), candidate->params.begin()))
+			return candidate;
+	}
+
+	return nullptr;
 }

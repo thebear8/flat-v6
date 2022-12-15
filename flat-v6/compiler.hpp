@@ -112,8 +112,24 @@ public:
 	/// @return The Type that represents the given ASTType
 	Type* getType(ASTType* type);
 
-	/// @brief Get or create a struct type
+	/// @brief Create a struct type with specified name
 	/// @param name The name of the struct type
-	/// @return The retrieved or created StructType
-	StructType* getStructType(std::string const& name);
+	/// @return The created struct type or nullptr if the struct type already exists
+	StructType* createStruct(std::string const& name);
+
+	/// @brief Get a struct type
+	/// @param name Name of the struct type
+	/// @return The retrieved struct type or nullptr if the struct type does not exist
+	StructType* getStruct(std::string const& name);
+
+	/// @brief Add a function with specified name and params to the module
+	/// @param function The function to add
+	/// @return The added function or nullptr if a function with the same name and parameters already exists
+	IRFunctionDeclaration* addFunction(IRFunctionDeclaration* function);
+
+	/// @brief Get a function with specified name and params
+	/// @param name Name of the function
+	/// @param params Parameters of the function
+	/// @return The retrieved function or nullptr if the function does not exist
+	IRFunctionDeclaration* getFunction(std::string const& name, std::vector<Type*> const& params);
 };

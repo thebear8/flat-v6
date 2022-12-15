@@ -32,7 +32,6 @@ using IRTripleDispatchVisitor = triple_dispatch_visitor::TripleDispatchVisitor<
 	struct IRIfStatement,
 	struct IRStructDeclaration,
 	struct IRFunctionDeclaration,
-	struct IRExternFunctionDeclaration,
 	struct IRSourceFile
 >;
 
@@ -263,26 +262,17 @@ struct IRStructDeclaration : public IRDeclaration
 
 struct IRFunctionDeclaration : public IRDeclaration
 {
+	std::string lib;
 	std::string name;
 	Type* result;
 	std::vector<std::pair<std::string, Type*>> params;
 	IRStatement* body;
 
 	IRFunctionDeclaration(std::string const& name, Type* result, std::vector<std::pair<std::string, Type*>> const& params, IRStatement* body) :
-		name(name), result(result), params(params), body(body) {}
+		lib(""), name(name), result(result), params(params), body(body) {}
 
-	IMPLEMENT_ACCEPT()
-};
-
-struct IRExternFunctionDeclaration : public IRDeclaration
-{
-	std::string lib;
-	std::string name;
-	Type* result;
-	std::vector<std::pair<std::string, Type*>> params;
-
-	IRExternFunctionDeclaration(std::string const& lib, std::string const& name, Type* result, std::vector<std::pair<std::string, Type*>> const& params) :
-		lib(lib), name(name), result(result), params(params) {}
+	IRFunctionDeclaration(std::string const& lib, std::string const& name, Type* result, std::vector<std::pair<std::string, Type*>> const& params) :
+		lib(lib), name(name), result(result), params(params), body(nullptr) {}
 
 	IMPLEMENT_ACCEPT()
 };

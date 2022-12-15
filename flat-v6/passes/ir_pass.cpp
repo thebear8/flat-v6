@@ -207,7 +207,7 @@ IRNode* IRPass::visit(ASTExternFunctionDeclaration* node)
 		params.push_back({ name, modCtx.getType(type) });
 
 	return irCtx.make(
-		IRExternFunctionDeclaration(
+		IRFunctionDeclaration(
 			node->lib,
 			node->name,
 			modCtx.getType(node->result),

@@ -209,12 +209,7 @@ IRNode* OperatorLoweringPass::visit(IRStructDeclaration* node)
 
 IRNode* OperatorLoweringPass::visit(IRFunctionDeclaration* node)
 {
-	node->body = checked_cast<IRStatement>(dispatch(node->body));
-	return node;
-}
-
-IRNode* OperatorLoweringPass::visit(IRExternFunctionDeclaration* node)
-{
+	node->body = ((node->body) ? checked_cast<IRStatement>(dispatch(node->body)) : nullptr);
 	return node;
 }
 
