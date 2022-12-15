@@ -10,7 +10,7 @@
 #include "../data/operator.hpp"
 #include "../compiler.hpp"
 
-class SemanticPass : protected IRVisitor<Type*>
+class SemanticPass : IRVisitor<Type*>
 {
 private:
 	ErrorLogger& logger;
@@ -30,11 +30,7 @@ public:
 public:
 	void analyze(IRSourceFile* source);
 
-protected:
-	Type* getFunctionResult(std::string const& name, std::vector<Type*> const& args);
-	Type* getFunctionResult(std::string const& name, std::vector<Type*> const& args, ASTNode* current);
-
-protected:
+private:
 	virtual Type* visit(IRIntegerExpression* node) override;
 	virtual Type* visit(IRBoolExpression* node) override;
 	virtual Type* visit(IRCharExpression* node) override;

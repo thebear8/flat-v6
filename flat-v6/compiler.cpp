@@ -185,6 +185,20 @@ StructType* ModuleContext::getStruct(std::string const& name)
 	return structTypes.at(name);
 }
 
+StructType* ModuleContext::resolveStruct(std::string const& name)
+{
+	if (auto structType = getStruct(name))
+		return structType;
+
+	for (auto const& imp : imports)
+	{
+		if (auto structType = compCtx.getModule(imp)->getStruct(name))
+			return structType;
+	}
+
+	return nullptr;
+}
+
 IRFunctionDeclaration* ModuleContext::addFunction(IRFunctionDeclaration* function)
 {
 	if (functionDeclarations.contains(name))
@@ -213,6 +227,20 @@ IRFunctionDeclaration* ModuleContext::getFunction(std::string const& name, std::
 		if (params.size() == candidate->params.size()
 			&& std::equal(params.begin(), params.end(), candidate->params.begin()))
 			return candidate;
+	}
+
+	return nullptr;
+}
+
+IRFunctionDeclaration* ModuleContext::resolveFunction(std::string const& name, std::vector<Type*> const& params)
+{
+	if (auto function = getFunction(name, params))
+		return function;
+
+	for (auto const& imp : imports)
+	{
+		if (auto function = compCtx.getModule(imp)->getFunction(name, params))
+			return function;
 	}
 
 	return nullptr;

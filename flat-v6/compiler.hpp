@@ -84,6 +84,54 @@ public:
 	/// @param base Element type
 	/// @return Retrieved or created ArrayType
 	ArrayType* getArrayType(Type* base);
+
+	/// @brief Get void type
+	/// @return Type representing void
+	VoidType* getVoid() { return typeCtx.getVoid(); }
+
+	/// @brief Get bool type
+	/// @return Type representing bool
+	BoolType* getBool() { return typeCtx.getBool(); }
+
+	/// @brief Get i8 type
+	/// @return IntegerType representing i8
+	IntegerType* getI8() { return typeCtx.getI8(); }
+
+	/// @brief Get u8 type
+	/// @return IntegerType representing u8
+	IntegerType* getU8() { return typeCtx.getU8(); }
+
+	/// @brief Get i16 type
+	/// @return IntegerType representing i16
+	IntegerType* getI16() { return typeCtx.getI16(); }
+
+	/// @brief Get u16 type
+	/// @return IntegerType representing u16
+	IntegerType* getU16() { return typeCtx.getU16(); }
+
+	/// @brief Get i32 type
+	/// @return IntegerType representing i32
+	IntegerType* getI32() { return typeCtx.getI32(); }
+
+	/// @brief Get u32 type
+	/// @return IntegerType representing u32
+	IntegerType* getU32() { return typeCtx.getU32(); }
+
+	/// @brief Get i64 type
+	/// @return IntegerType representing i64
+	IntegerType* getI64() { return typeCtx.getI64(); }
+
+	/// @brief Get u64 type
+	/// @return IntegerType representing u64
+	IntegerType* getU64() { return typeCtx.getU64(); }
+
+	/// @brief Get char type
+	/// @return Type representing char
+	CharType* getChar() { return typeCtx.getChar(); }
+
+	/// @brief Get string type
+	/// @return Type representing string
+	StringType* getString() { return typeCtx.getString(); }
 };
 
 class ModuleContext
@@ -122,6 +170,11 @@ public:
 	/// @return The retrieved struct type or nullptr if the struct type does not exist
 	StructType* getStruct(std::string const& name);
 
+	/// @brief Resolve a struct type with specified name in the context of the module. The module is searched first, then the imports.
+	/// @param name Name of the struct type
+	/// @return The retrieved struct type or nullptr if the struct type does not exist
+	StructType* resolveStruct(std::string const& name);
+
 	/// @brief Add a function with specified name and params to the module
 	/// @param function The function to add
 	/// @return The added function or nullptr if a function with the same name and parameters already exists
@@ -132,4 +185,10 @@ public:
 	/// @param params Parameters of the function
 	/// @return The retrieved function or nullptr if the function does not exist
 	IRFunctionDeclaration* getFunction(std::string const& name, std::vector<Type*> const& params);
+
+	/// @brief Resolve a function with specified name and params in the context of the module. The module is searched first, then the imports.
+	/// @param name Name of the function
+	/// @param params Parameters of the function
+	/// @return The resolved function or nullptr if the function does not exist
+	IRFunctionDeclaration* resolveFunction(std::string const& name, std::vector<Type*> const& params);
 };

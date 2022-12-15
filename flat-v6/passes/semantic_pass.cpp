@@ -1,168 +1,46 @@
 #include "semantic_pass.hpp"
 
-void SemanticPass::analyze(ASTNode* program)
+void SemanticPass::analyze(IRSourceFile* program)
 {
 	dispatch(program);
-
-	for (auto& [name, structDeclaration] : structs)
-	{
-		auto structType = typeCtx.getStructType(name);
-		for (auto& [fieldName, fieldType] : structDeclaration->fields)
-			structType->addField(fieldName, fieldType);
-	}
-
-	for (auto& [name, function] : functions)
-	{
-		localVariables.clear();
-		for (auto& param : function->parameters)
-			localVariables.try_emplace(param.first, param.second);
-
-		functionResult = nullptr;
-		expectedFunctionResult = function->result;
-
-		dispatch(function->body);
-
-		if (!expectedFunctionResult->isVoidType() && !functionResult)
-			return logger.error(function, "Missing return statement in function " + name + ", should return " + expectedFunctionResult->toString());
-	}
 }
 
-Type* SemanticPass::getFunctionResult(std::string const& name, std::vector<Type*> const& args)
+Type* SemanticPass::visit(IRIntegerExpression* node)
 {
-	if (!functions.contains(name) && !externFunctions.contains(name))
-		return nullptr;
-
-	for (auto [it, end] = functions.equal_range(name); it != end; ++it)
-	{
-		auto function = it->second;
-		if (function->parameters.size() != args.size())
-			continue;
-
-		for (int i = 0; i < function->parameters.size(); i++)
-		{
-			if (function->parameters[i].second != args[i])
-				break;
-
-			if (i == function->parameters.size() - 1)
-				return function->result;
-		}
-	}
-
-	for (auto [it, end] = externFunctions.equal_range(name); it != end; ++it)
-	{
-		auto function = it->second;
-		if (function->parameters.size() != args.size())
-			continue;
-
-		for (int i = 0; i < function->parameters.size(); i++)
-		{
-			if (function->parameters[i].second != args[i])
-				break;
-
-			if (i == function->parameters.size() - 1)
-				return function->result;
-		}
-	}
-
-	return nullptr;
+	return (node->type = compCtx.getIntegerType(node->width, node->isSigned));
 }
 
-Type* SemanticPass::getFunctionResult(std::string const& name, std::vector<Type*> const& args, ASTNode* current)
+Type* SemanticPass::visit(IRBoolExpression* node)
 {
-	if (!functions.contains(name) && !externFunctions.contains(name))
-		return logger.error(current, "No function named " + name, nullptr);
-
-	for (auto [it, end] = functions.equal_range(name); it != end; ++it)
-	{
-		auto function = it->second;
-		if (function->parameters.size() != args.size())
-			continue;
-
-		for (int i = 0; i < function->parameters.size(); i++)
-		{
-			if (function->parameters[i].second != args[i])
-				break;
-
-			if (i == function->parameters.size() - 1)
-				return function->result;
-		}
-	}
-
-	for (auto [it, end] = externFunctions.equal_range(name); it != end; ++it)
-	{
-		auto function = it->second;
-		if (function->parameters.size() != args.size())
-			continue;
-
-		for (int i = 0; i < function->parameters.size(); i++)
-		{
-			if (function->parameters[i].second != args[i])
-				break;
-
-			if (i == function->parameters.size() - 1)
-				return function->result;
-		}
-	}
-
-	return logger.error(current, "No matching overload for function " + name, nullptr);
+	return (node->type = compCtx.getBool());
 }
 
-Type* SemanticPass::visit(ASTIntegerExpression* node)
+Type* SemanticPass::visit(IRCharExpression* node)
 {
-	if (node->suffix == "")
-		return (node->type = typeCtx.getI32());
-	else if (node->suffix == "i8")
-		return (node->type = typeCtx.getI8());
-	else if (node->suffix == "i16")
-		return (node->type = typeCtx.getI16());
-	else if (node->suffix == "i32")
-		return (node->type = typeCtx.getI32());
-	else if (node->suffix == "i64")
-		return (node->type = typeCtx.getI64());
-	else if (node->suffix == "u8")
-		return (node->type = typeCtx.getU8());
-	else if (node->suffix == "u16")
-		return (node->type = typeCtx.getU16());
-	else if (node->suffix == "u32")
-		return (node->type = typeCtx.getU32());
-	else if (node->suffix == "u64")
-		return (node->type = typeCtx.getU64());
-	else
-		return logger.error(node, "Invalid integer literal suffix", nullptr);
+	return (node->type = compCtx.getChar());
 }
 
-Type* SemanticPass::visit(ASTBoolExpression* node)
+Type* SemanticPass::visit(IRStringExpression* node)
 {
-	return (node->type = typeCtx.getBool());
+	return (node->type = compCtx.getString());
 }
 
-Type* SemanticPass::visit(ASTCharExpression* node)
-{
-	return (node->type = typeCtx.getChar());
-}
-
-Type* SemanticPass::visit(ASTStringExpression* node)
-{
-	return (node->type = typeCtx.getString());
-}
-
-Type* SemanticPass::visit(ASTIdentifierExpression* node)
+Type* SemanticPass::visit(IRIdentifierExpression* node)
 {
 	if (!localVariables.contains(node->value))
-		return logger.error(node, "Undefined Identifier", nullptr);
+		return logger.error("Undefined Identifier", nullptr);
 
 	return (node->type = localVariables.at(node->value));
 }
 
-Type* SemanticPass::visit(ASTStructExpression* node)
+Type* SemanticPass::visit(IRStructExpression* node)
 {
-	if (!typeCtx.getResolvedType(node->structName))
-		return logger.error(node, "Undefined Struct Type", nullptr);
+	auto structType = modCtx.resolveStruct(node->structName);
+	if (!structType)
+		return logger.error("Undefined Struct Type " + node->structName, nullptr);
 
 	for (auto& [name, value] : node->fields)
 		dispatch(value);
-
-	auto structType = dynamic_cast<StructType*>(typeCtx.getResolvedType(node->structName));
 
 	for (auto& [name, value] : node->fields)
 	{
@@ -172,12 +50,12 @@ Type* SemanticPass::visit(ASTStructExpression* node)
 			if (fieldName == name)
 			{
 				if (fieldType != value->type)
-					return logger.error(value, "Field " + name + " has type " + fieldType->toString() + ", value type is " + value->type->toString(), nullptr);
+					return logger.error("Field " + name + " has type " + fieldType->toString() + ", value type is " + value->type->toString(), nullptr);
 				break;
 			}
 
 			if (i == structType->fields.size() - 1)
-				return logger.error(node, "Struct " + structType->name + " does not contain a field called " + name, nullptr);
+				return logger.error("Struct " + structType->name + " does not contain a field called " + name, nullptr);
 		}
 	}
 
@@ -189,19 +67,19 @@ Type* SemanticPass::visit(ASTStructExpression* node)
 			if (name == fieldName)
 			{
 				if (value->type != fieldType)
-					return logger.error(value, "Field " + name + " has type " + fieldType->toString() + ", value type is " + value->type->toString(), nullptr);
+					return logger.error("Field " + name + " has type " + fieldType->toString() + ", value type is " + value->type->toString(), nullptr);
 				break;
 			}
 
 			if (i == node->fields.size() - 1)
-				return logger.error(node, "No initializer for field " + fieldName + ": " + fieldType->toString(), nullptr);
+				return logger.error("No initializer for field " + fieldName + ": " + fieldType->toString(), nullptr);
 		}
 	}
 
 	return (node->type = structType);
 }
 
-Type* SemanticPass::visit(ASTUnaryExpression* node)
+Type* SemanticPass::visit(IRUnaryExpression* node)
 {
 	auto value = dispatch(node->expression);
 	if (unaryOperators.at(node->operation).category == OperatorCategory::UnaryArithmetic && value->isIntegerType())
@@ -214,17 +92,20 @@ Type* SemanticPass::visit(ASTUnaryExpression* node)
 	}
 	else if (unaryOperators.at(node->operation).category == OperatorCategory::UnaryLogic && value->isBoolType())
 	{
-		return (node->type = typeCtx.getBool());
+		return (node->type = compCtx.getBool());
 	}
 	else
 	{
-		std::vector<Type*> args = std::vector<Type*>({ value });
-		auto result = getFunctionResult(unaryOperators.at(node->operation).name, args, node);
-		return (node->type = result);
+		auto args = std::vector({ value });
+		auto function = modCtx.resolveFunction(unaryOperators.at(node->operation).name, args);
+		if (!function)
+			return logger.error("No matching operator function " + unaryOperators.at(node->operation).name + " for type " + value->toString(), nullptr);
+
+		return (node->type = function->result);
 	}
 }
 
-Type* SemanticPass::visit(ASTBinaryExpression* node)
+Type* SemanticPass::visit(IRBinaryExpression* node)
 {
 	auto left = dispatch(node->left);
 	auto right = dispatch(node->right);
@@ -239,59 +120,66 @@ Type* SemanticPass::visit(ASTBinaryExpression* node)
 	}
 	else if (binaryOperators.at(node->operation).category == OperatorCategory::BinaryComparison && (left->isIntegerType() && right->isIntegerType()))
 	{
-		return (node->type = typeCtx.getBool());
+		return (node->type = compCtx.getBool());
 	}
 	else if (binaryOperators.at(node->operation).category == OperatorCategory::BinaryLogic && (left->isBoolType() && right->isBoolType()))
 	{
-		return (node->type = typeCtx.getBool());
+		return (node->type = compCtx.getBool());
 	}
 	else if (binaryOperators.at(node->operation).category == OperatorCategory::BinaryEquality && ((left == right) || (left->isIntegerType() && right->isIntegerType())))
 	{
-		return (node->type = typeCtx.getBool());
+		return (node->type = compCtx.getBool());
 	}
 	else if (binaryOperators.at(node->operation).category == OperatorCategory::BinaryAssign && ((left == right) || (left->isIntegerType() && right->isIntegerType())))
 	{
-		if (!dynamic_cast<ASTIdentifierExpression*>(node->left))
-			return logger.error(node, "Left side of assignment has to be identifier", nullptr);
+		if (!dynamic_cast<IRIdentifierExpression*>(node->left))
+			return logger.error("Left side of assignment has to be identifier", nullptr);
 
 		if ((left->isIntegerType() && right->isIntegerType()) && (left->getBitSize() < right->getBitSize()))
-			logger.warning(node, "Narrowing conversion from " + left->toString() + " to " + right->toString());
+			logger.warning("Narrowing conversion from " + left->toString() + " to " + right->toString());
 
 		return (node->type = left);
 	}
 	else
 	{
-		std::vector<Type*> args = std::vector<Type*>({ left, right });
-		auto result = getFunctionResult(binaryOperators.at(node->operation).name, args, node);
+		auto args = std::vector({ left, right });
+		auto function = modCtx.resolveFunction(binaryOperators.at(node->operation).name, args);
+		if (!function)
+			return logger.error("No matching operator function " + binaryOperators.at(node->operation).name + " for types " + left->toString() + ", " + right->toString(), nullptr);
 
-		if (binaryOperators.at(node->operation).category == OperatorCategory::BinaryAssign && left != right)
-			return logger.error(node, "Assignment operator overload function has to return a value that has the type of the left operand", nullptr);
+		if (binaryOperators.at(node->operation).category == OperatorCategory::BinaryAssign && function->result != left)
+			return logger.error("Assignment operator overload function has to return a value that has the type of the left operand", nullptr);
 
-		return (node->type = result);
+		return (node->type = function->result);
 	}
 }
 
-Type* SemanticPass::visit(ASTCallExpression* node)
+Type* SemanticPass::visit(IRCallExpression* node)
 {
 	std::vector<Type*> args;
 	for (auto arg : node->args)
 		args.push_back(dispatch(arg));
 
-	if (dynamic_cast<ASTIdentifierExpression*>(node->expression))
+	if (auto identifierExpression = dynamic_cast<IRIdentifierExpression*>(node->expression))
 	{
-		auto const& name = dynamic_cast<ASTIdentifierExpression*>(node->expression)->value;
-		auto result = getFunctionResult(name, args, node);
-		return (node->type = result);
+		auto function = modCtx.resolveFunction(identifierExpression->value, args);
+		if (!function)
+			return logger.error("No matching function " + identifierExpression->value, nullptr);
+
+		return (node->type = function->result);
 	}
 	else
 	{
 		args.insert(args.begin(), dispatch(node->expression));
-		auto result = getFunctionResult("__call__", args, node);
-		return (node->type = result);
+		auto function = modCtx.resolveFunction("__call__", args);
+		if (!function)
+			return logger.error("No matching operator function __call__ for type " + args.front()->toString(), nullptr);
+
+		return (node->type = function->result);
 	}
 }
 
-Type* SemanticPass::visit(ASTIndexExpression* node)
+Type* SemanticPass::visit(IRIndexExpression* node)
 {
 	std::vector<Type*> args;
 	for (auto arg : node->args)
@@ -304,20 +192,24 @@ Type* SemanticPass::visit(ASTIndexExpression* node)
 	}
 	if (value->isStringType() && args.size() == 1 && args.front()->isIntegerType())
 	{
-		return (node->type = typeCtx.getU8());
+		return (node->type = compCtx.getU8());
 	}
 	else
 	{
 		args.insert(args.begin(), value);
-		return (node->type = getFunctionResult("__index__", args, node));
+		auto function = modCtx.resolveFunction("__index__", args);
+		if (!function)
+			return logger.error("No matching operator function __index__ for type " + args.front()->toString(), nullptr);
+		
+		return (node->type = function->result);
 	}
 }
 
-Type* SemanticPass::visit(ASTFieldExpression* node)
+Type* SemanticPass::visit(IRFieldExpression* node)
 {
 	auto value = dispatch(node->expression);
 	if (!value->isStructType())
-		return logger.error(node, "Left side of field expression has to be of struct type", nullptr);
+		return logger.error("Left side of field expression has to be of struct type", nullptr);
 
 	auto structType = dynamic_cast<StructType*>(value);
 	for (int i = 0; i < structType->fields.size(); i++)
@@ -326,34 +218,32 @@ Type* SemanticPass::visit(ASTFieldExpression* node)
 			return (node->type = structType->fields[i].second);
 	}
 
-	return logger.error(node, "Struct " + structType->name + " does not have a field named " + node->fieldName, nullptr);
+	return logger.error("Struct " + structType->name + " does not have a field named " + node->fieldName, nullptr);
 }
 
-Type* SemanticPass::visit(ASTBlockStatement* node)
+Type* SemanticPass::visit(IRBlockStatement* node)
 {
 	for (auto& statement : node->statements)
-	{
 		dispatch(statement);
-	}
 
 	return nullptr;
 }
 
-Type* SemanticPass::visit(ASTExpressionStatement* node)
+Type* SemanticPass::visit(IRExpressionStatement* node)
 {
 	dispatch(node->expression);
 	return nullptr;
 }
 
-Type* SemanticPass::visit(ASTVariableStatement* node)
+Type* SemanticPass::visit(IRVariableStatement* node)
 {
 	for (auto& [name, value] : node->items)
 	{
 		if (localVariables.contains(name))
-			return logger.error(node, "Variable is already defined", nullptr);
+			return logger.error("Variable is already defined", nullptr);
 
 		if (dispatch(value)->isVoidType())
-			return logger.error(node, "Variable cannot have void type", nullptr);
+			return logger.error("Variable cannot have void type", nullptr);
 
 		localVariables.try_emplace(name, value->type);
 	}
@@ -361,23 +251,23 @@ Type* SemanticPass::visit(ASTVariableStatement* node)
 	return nullptr;
 }
 
-Type* SemanticPass::visit(ASTReturnStatement* node)
+Type* SemanticPass::visit(IRReturnStatement* node)
 {
 	functionResult = dispatch(node->expression);
 	if (functionResult != expectedFunctionResult)
 	{
 		functionResult = nullptr;
-		return logger.error(node->expression, "Return expression has to be of function result type", nullptr);
+		return logger.error("Return expression has to be of function result type", nullptr);
 	}
 
 	return nullptr;
 }
 
-Type* SemanticPass::visit(ASTWhileStatement* node)
+Type* SemanticPass::visit(IRWhileStatement* node)
 {
 	auto condition = dispatch(node->condition);
 	if (!condition->isBoolType())
-		return logger.error(node->condition, "While condition has to be of boolean type", nullptr);
+		return logger.error("While condition has to be of boolean type", nullptr);
 
 	auto prevResult = functionResult;
 	dispatch(node->body);
@@ -386,11 +276,11 @@ Type* SemanticPass::visit(ASTWhileStatement* node)
 	return nullptr;
 }
 
-Type* SemanticPass::visit(ASTIfStatement* node)
+Type* SemanticPass::visit(IRIfStatement* node)
 {
 	auto condition = dispatch(node->condition);
 	if (!condition->isBoolType())
-		return logger.error(node->condition, "If condition has to be of boolean type", nullptr);
+		return logger.error("If condition has to be of boolean type", nullptr);
 
 	auto prevResult = functionResult;
 
@@ -408,42 +298,32 @@ Type* SemanticPass::visit(ASTIfStatement* node)
 	return nullptr;
 }
 
-Type* SemanticPass::visit(ASTStructDeclaration* node)
+Type* SemanticPass::visit(IRStructDeclaration* node)
 {
-	if (structs.contains(node->name))
-		return logger.error(node, "Struct " + node->name + " is already defined", nullptr);
-
-	structs.try_emplace(node->name, node);
 	return nullptr;
 }
 
-Type* SemanticPass::visit(ASTFunctionDeclaration* node)
+Type* SemanticPass::visit(IRFunctionDeclaration* node)
 {
-	std::vector<Type*> args;
-	for (auto& param : node->parameters)
-		args.push_back(param.second);
+	if (!node->body)
+		return nullptr;
 
-	if (getFunctionResult(node->name, args))
-		return logger.error(node, "Function " + node->name + " is already declared with the same parameters", nullptr);
+	localVariables.clear();
+	for (auto& param : node->params)
+		localVariables.try_emplace(param.first, param.second);
 
-	functions.emplace(node->name, node);
+	functionResult = nullptr;
+	expectedFunctionResult = node->result;
+
+	dispatch(node->body);
+
+	if (!expectedFunctionResult->isVoidType() && !functionResult)
+		return logger.error("Missing return statement in function " + node->name + ", should return " + expectedFunctionResult->toString(), nullptr);
+
 	return nullptr;
 }
 
-Type* SemanticPass::visit(ASTExternFunctionDeclaration* node)
-{
-	std::vector<Type*> args;
-	for (auto& param : node->parameters)
-		args.push_back(param.second);
-
-	if (getFunctionResult(node->name, args))
-		return logger.error(node, "Function " + node->name + " is already declared with the same parameters", nullptr);
-
-	externFunctions.emplace(node->name, node);
-	return nullptr;
-}
-
-Type* SemanticPass::visit(ASTSourceFile* node)
+Type* SemanticPass::visit(IRSourceFile* node)
 {
 	for (auto& decl : node->declarations)
 		dispatch(decl);
