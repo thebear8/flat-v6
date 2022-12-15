@@ -18,9 +18,6 @@ private:
 	ModuleContext& modCtx;
 
 	Type* functionResult, * expectedFunctionResult;
-	std::unordered_map<std::string, ASTStructDeclaration*> structs;
-	std::unordered_multimap<std::string, ASTFunctionDeclaration*> functions;
-	std::unordered_multimap<std::string, ASTExternFunctionDeclaration*> externFunctions;
 	std::unordered_map<std::string, Type*> localVariables;
 
 public:
