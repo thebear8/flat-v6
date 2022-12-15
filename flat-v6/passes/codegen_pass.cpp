@@ -253,7 +253,7 @@ llvm::Value* LLVMCodegenPass::visit(IRCallExpression* node)
 	auto type = llvm::FunctionType::get(getLLVMType(node->type), llvmArgTypes, false);
 	auto function = (mod.getFunction(name) ? mod.getFunction(name) : mod.getFunction(identifierExpression->value));
 	assert(function && "No matching function for call expression in llvm module found");
-	assert(function->getFunctionType() == type, "Type of found function does not match");
+	assert(function->getFunctionType() == type && "Type of found function does not match");
 
 	return builder.CreateCall(function, argValues);
 }
