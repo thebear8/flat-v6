@@ -74,7 +74,8 @@ IRNode* IRPass::visit(ASTUnaryExpression* node)
 	return irCtx.make(
 		IRUnaryExpression(
 			node->operation,
-			(IRExpression*)dispatch(node->expression)
+			(IRExpression*)dispatch(node->expression),
+			nullptr
 		));
 }
 
@@ -84,7 +85,8 @@ IRNode* IRPass::visit(ASTBinaryExpression* node)
 		IRBinaryExpression(
 			node->operation,
 			(IRExpression*)dispatch(node->left),
-			(IRExpression*)dispatch(node->right)
+			(IRExpression*)dispatch(node->right),
+			nullptr
 		));
 }
 
@@ -97,7 +99,8 @@ IRNode* IRPass::visit(ASTCallExpression* node)
 	return irCtx.make(
 		IRCallExpression(
 			(IRExpression*)dispatch(node->expression),
-			args
+			args,
+			nullptr
 		));
 }
 
@@ -110,7 +113,8 @@ IRNode* IRPass::visit(ASTIndexExpression* node)
 	return irCtx.make(
 		IRIndexExpression(
 			(IRExpression*)dispatch(node->expression),
-			args
+			args,
+			nullptr
 		));
 }
 

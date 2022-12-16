@@ -33,7 +33,9 @@ struct CompilationOptions
 class ModuleContext;
 class CompilationContext
 {
-public:
+	friend class ModuleContext;
+
+private:
 	CompilationOptions options;
 
 	ErrorLogger logger;
@@ -42,19 +44,18 @@ public:
 
 	std::unordered_map<std::string, ModuleContext*> modules;
 
-private:
 	llvm::LLVMContext llvmCtx;
 	llvm::Module module;
 	llvm::Target const * target;
 	llvm::TargetMachine* targetMachine;
+	std::unordered_map<IRFunctionDeclaration*, llvm::Function*> llvmFunctions;
 
 public:
 	CompilationContext(CompilationOptions const& options, std::ostream& logStream = std::cout);
 	~CompilationContext();
 
 public:
-	void parse(std::vector<std::string> const& sources);
-	void compile(std::string const& outputFile);
+	void compile(std::string const& sourceDir);
 	void compile(llvm::raw_pwrite_stream& output);
 
 public:
@@ -63,6 +64,17 @@ public:
 	/// @param name The module name
 	/// @return Retrieved or created ModuleContext
 	ModuleContext* getModule(std::string const& name);
+
+	/// @brief Add an llvm::Function for an IR function. This doesn't actually belong in CompilationContext, but is here for now for lack of a better place.
+	/// @param function The IR function to add an llvm::Function for
+	/// @param llvmFunction The llvm::Function to add
+	/// @return The added llvm::Function or nullptr if the function already exists
+	llvm::Function* addLLVMFunction(IRFunctionDeclaration* function, llvm::Function* llvmFunction);
+
+	/// @brief Get an llvm::Function for an IR function. This doesn't actually belong in CompilationContext, but is here for now for lack of a better place.
+	/// @param function The IR function to get an llvm::Function for
+	/// @return The retrieved llvm::Function or nullptr on failure
+	llvm::Function* getLLVMFunction(IRFunctionDeclaration* function);
 
 	/// @brief Lookup a builtin type
 	/// @param name Type name
@@ -149,6 +161,8 @@ public:
 public:
 	ModuleContext(CompilationContext& compCtx, std::string const& name) :
 		compCtx(compCtx), name(name) { }
+
+	~ModuleContext();
 
 	/// @brief Lookup a builtin type or struct type
 	/// @param name Name of the type to get

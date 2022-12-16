@@ -11,24 +11,25 @@
 #include "../data/ir.hpp"
 #include "../util/error_logger.hpp"
 #include "../data/operator.hpp"
+#include "../compiler.hpp"
 
 class LLVMCodegenPass : protected IRVisitor<llvm::Value*>
 {
 private:
 	ErrorLogger& logger;
-	TypeContext& typeCtx;
+	CompilationContext& compCtx;
+	ModuleContext& modCtx;
 
 	llvm::LLVMContext& llvmCtx;
 	llvm::Module& mod;
 	llvm::IRBuilder<> builder;
 
-	bool isFunctionBodyPass;
 	std::unordered_map<Type*, llvm::Type*> llvmTypes;
 	std::unordered_map<std::string, llvm::Value*> localValues;
 
 public:
-	LLVMCodegenPass(ErrorLogger& logger, TypeContext& ctx, llvm::LLVMContext& llvmCtx, llvm::Module& mod) :
-		logger(logger), typeCtx(ctx), llvmCtx(llvmCtx), mod(mod), builder(llvmCtx), isFunctionBodyPass(false) { }
+	LLVMCodegenPass(ErrorLogger& logger, CompilationContext& compCtx, ModuleContext& modCtx, llvm::LLVMContext& llvmCtx, llvm::Module& mod) :
+		logger(logger), compCtx(compCtx), modCtx(modCtx), llvmCtx(llvmCtx), mod(mod), builder(llvmCtx) { }
 
 public:
 	void process(IRSourceFile* source);
@@ -60,6 +61,6 @@ protected:
 
 private:
 	llvm::Type* getLLVMType(Type* type);
-	std::string getMangledType(Type* type);
-	std::string getMangledFunction(std::string const& function, std::vector<Type*> const& params);
+	std::string getMangledTypeName(Type* type);
+	std::string getMangledFunctionName(std::string const& function, std::vector<Type*> const& params);
 };

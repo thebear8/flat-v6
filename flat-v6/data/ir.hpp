@@ -132,9 +132,10 @@ struct IRUnaryExpression : public IRExpression
 {
 	UnaryOperator operation;
 	IRExpression* expression;
+	IRFunctionDeclaration* target;
 
-	IRUnaryExpression(UnaryOperator operation, IRExpression* expression) :
-		operation(operation), expression(expression) {}
+	IRUnaryExpression(UnaryOperator operation, IRExpression* expression, IRFunctionDeclaration* target) :
+		operation(operation), expression(expression), target(target) {}
 
 	IMPLEMENT_ACCEPT()
 };
@@ -143,9 +144,10 @@ struct IRBinaryExpression : public IRExpression
 {
 	BinaryOperator operation;
 	IRExpression* left, * right;
+	IRFunctionDeclaration* target;
 
-	IRBinaryExpression(BinaryOperator operation, IRExpression* left, IRExpression* right) : 
-		operation(operation), left(left), right(right) {}
+	IRBinaryExpression(BinaryOperator operation, IRExpression* left, IRExpression* right, IRFunctionDeclaration* target) :
+		operation(operation), left(left), right(right), target(target) {}
 
 	IMPLEMENT_ACCEPT()
 };
@@ -154,9 +156,10 @@ struct IRCallExpression : public IRExpression
 {
 	IRExpression* expression;
 	std::vector<IRExpression*> args;
+	IRFunctionDeclaration* target;
 
-	IRCallExpression(IRExpression* expression, std::vector<IRExpression*> const& args) :
-		expression(expression), args(args) {}
+	IRCallExpression(IRExpression* expression, std::vector<IRExpression*> const& args, IRFunctionDeclaration* target) :
+		expression(expression), args(args), target(target) {}
 
 	IMPLEMENT_ACCEPT()
 };
@@ -165,9 +168,10 @@ struct IRIndexExpression : public IRExpression
 {
 	IRExpression* expression;
 	std::vector<IRExpression*> args;
+	IRFunctionDeclaration* target;
 
-	IRIndexExpression(IRExpression* expression, std::vector<IRExpression*> const& args) :
-		expression(expression), args(args) {}
+	IRIndexExpression(IRExpression* expression, std::vector<IRExpression*> const& args, IRFunctionDeclaration* target) :
+		expression(expression), args(args), target(target) {}
 
 	IMPLEMENT_ACCEPT()
 };

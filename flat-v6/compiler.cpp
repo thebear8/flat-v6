@@ -1,5 +1,8 @@
 #include "compiler.hpp"
 
+#include <filesystem>
+#include <fstream>
+
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Verifier.h>
 #include <llvm/Support/Host.h>
@@ -12,6 +15,8 @@
 #include "data/ast.hpp"
 #include "type/type.hpp"
 #include "parser/parser.hpp"
+#include "passes/struct_extraction_pass.hpp"
+#include "passes/struct_population_pass.hpp"
 #include "passes/semantic_pass.hpp"
 #include "passes/lowering_pass.hpp"
 #include "passes/codegen_pass.hpp"
@@ -53,24 +58,23 @@ CompilationContext::CompilationContext(CompilationOptions const& options, std::o
 
 CompilationContext::~CompilationContext()
 {
-	for (auto const& entry : modules)
-		delete entry.second;
+	for (auto const& [name, mod] : modules)
+		delete mod;
 }
 
-void CompilationContext::parse(std::vector<std::string> const& sources)
+void CompilationContext::compile(std::string const& sourceDir)
 {
+	for (auto const& entry : std::filesystem::recursive_directory_iterator(sourceDir))
+	{
+		if (!entry.is_regular_file() || entry.path().extension() != ".fl")
+			continue;
 
-}
+		std::ifstream inputStream(entry.path());
+		std::string input(std::istreambuf_iterator<char>(inputStream), {});
 
-void CompilationContext::compile(std::string const& outputFile)
-{
-	std::error_code error;
-	llvm::raw_fd_ostream ofs(outputFile, error);
-	if (error)
-		logger.error("Cannot open output file " + outputFile);
-
-	compile(ofs);
-	ofs.close();
+		Parser parser(logger, astCtx, input);
+		auto sourceFile = parser.sourceFile();
+	}
 }
 
 void CompilationContext::compile(llvm::raw_pwrite_stream& output)
@@ -94,6 +98,28 @@ void CompilationContext::compile(llvm::raw_pwrite_stream& output)
 
 	passManager.run(module);
 	output.flush();
+}
+
+ModuleContext* CompilationContext::getModule(std::string const& name)
+{
+	if (!modules.contains(name))
+		modules.try_emplace(name, new ModuleContext(*this, name));
+	return modules.at(name);
+}
+
+llvm::Function* CompilationContext::addLLVMFunction(IRFunctionDeclaration* function, llvm::Function* llvmFunction)
+{
+	if (llvmFunctions.contains(function))
+		return nullptr;
+	llvmFunctions.try_emplace(function, llvmFunction);
+	return llvmFunctions.at(function);
+}
+
+llvm::Function* CompilationContext::getLLVMFunction(IRFunctionDeclaration* function)
+{
+	if (!llvmFunctions.contains(function))
+		return nullptr;
+	return llvmFunctions.at(function);
 }
 
 Type* CompilationContext::getBuiltinType(std::string const& name)
@@ -129,11 +155,10 @@ ArrayType* CompilationContext::getArrayType(Type* base)
 	return typeCtx.getArrayType(base);
 }
 
-ModuleContext* CompilationContext::getModule(std::string const& name)
+ModuleContext::~ModuleContext()
 {
-	if (!modules.contains(name))
-		modules.try_emplace(name, new ModuleContext(*this, name));
-	return modules.at(name);
+	for (auto const& [structName, structType] : structTypes)
+		delete structType;
 }
 
 Type* ModuleContext::getBuiltinOrStructType(std::string const& name)

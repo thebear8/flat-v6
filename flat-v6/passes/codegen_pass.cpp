@@ -6,10 +6,31 @@
 
 void LLVMCodegenPass::process(IRSourceFile* source)
 {
-	isFunctionBodyPass = false;
-	dispatch(source);
+	for (auto& [functionName, collection] : modCtx.functionDeclarations)
+	{
+		for (auto function : collection)
+		{
+			std::vector<Type*> params;
+			for (auto& [name, type] : function->params)
+				params.push_back(type);
 
-	isFunctionBodyPass = true;
+			std::vector<llvm::Type*> llvmParams;
+			for (auto& param : params)
+				llvmParams.push_back(getLLVMType(param));
+
+			auto type = llvm::FunctionType::get(getLLVMType(function->result), llvmParams, false);
+			auto name = ((function->body) ? getMangledFunctionName(function->name, params) : function->name);
+			auto llvmFunction = llvm::Function::Create(type, llvm::GlobalValue::LinkageTypes::ExternalLinkage, name, mod);
+			compCtx.addLLVMFunction(function, llvmFunction);
+
+			if (!function->body)
+			{
+				llvmFunction->setCallingConv(llvm::CallingConv::Win64);
+				llvmFunction->setDLLStorageClass(llvm::GlobalValue::DLLStorageClassTypes::DLLImportStorageClass);
+			}
+		}
+	}
+
 	dispatch(source);
 }
 
@@ -234,28 +255,17 @@ llvm::Value* LLVMCodegenPass::visit(IRBinaryExpression* node)
 
 llvm::Value* LLVMCodegenPass::visit(IRCallExpression* node)
 {
-	std::vector<Type*> argTypes;
+	auto target = node->target;
+	assert(target && "Target of call expression is undefined");
+
+	auto function = compCtx.getLLVMFunction(target);
+	assert(function && "LLVM Function object for target of call expression is undefined");
+
+	std::vector<llvm::Value*> args;
 	for (auto& arg : node->args)
-		argTypes.push_back(arg->type);
+		args.push_back(dispatch(arg));
 
-	std::vector<llvm::Type*> llvmArgTypes;
-	for (auto& arg : node->args)
-		llvmArgTypes.push_back(getLLVMType(arg->type));
-
-	std::vector<llvm::Value*> argValues;
-	for (auto& arg : node->args)
-		argValues.push_back(dispatch(arg));
-
-	auto identifierExpression = dynamic_cast<IRIdentifierExpression*>(node->expression);
-	assert(identifierExpression && "Operand of call expression has to be identifier expression");
-
-	auto name = getMangledFunction(identifierExpression->value, argTypes);
-	auto type = llvm::FunctionType::get(getLLVMType(node->type), llvmArgTypes, false);
-	auto function = (mod.getFunction(name) ? mod.getFunction(name) : mod.getFunction(identifierExpression->value));
-	assert(function && "No matching function for call expression in llvm module found");
-	assert(function->getFunctionType() == type && "Type of found function does not match");
-
-	return builder.CreateCall(function, argValues);
+	return builder.CreateCall(function, args);
 }
 
 llvm::Value* LLVMCodegenPass::visit(IRIndexExpression* node)
@@ -400,67 +410,32 @@ llvm::Value* LLVMCodegenPass::visit(IRStructDeclaration* node)
 
 llvm::Value* LLVMCodegenPass::visit(IRFunctionDeclaration* node)
 {
-	std::vector<Type*> params;
-	for (auto& [name, type] : node->params)
-		params.push_back(type);
+	auto function = compCtx.getLLVMFunction(node);
+	assert(function && "No matching llvm function object for function declaration");
 
-	std::vector<llvm::Type*> llvmParams;
-	for (auto& param : params)
-		llvmParams.push_back(getLLVMType(param));
+	auto entryBlock = llvm::BasicBlock::Create(llvmCtx, "entry");
+	auto bodyBlock = llvm::BasicBlock::Create(llvmCtx, "body");
 
-	auto name = getMangledFunction(node->name, params);
-	auto type = llvm::FunctionType::get(getLLVMType(node->result), llvmParams, false);
+	function->getBasicBlockList().push_back(entryBlock);
+	builder.SetInsertPoint(entryBlock);
 
-	if (!isFunctionBodyPass)
+	localValues.clear();
+	for (int i = 0; i < node->params.size(); i++)
 	{
-		llvm::Function::Create(type, llvm::GlobalValue::LinkageTypes::ExternalLinkage, name, mod);
-	}
-	else
-	{
-		auto function = mod.getFunction(name);
-		assert(function && "Function is not defined in llvm module");
+		auto& [paramName, paramType] = node->params.at(i);
+		assert(!localValues.contains(paramName) && "Local variable for parameter already defined");
 
-		auto entryBlock = llvm::BasicBlock::Create(llvmCtx, "entry");
-		auto bodyBlock = llvm::BasicBlock::Create(llvmCtx, "body");
-
-		function->getBasicBlockList().push_back(entryBlock);
-		builder.SetInsertPoint(entryBlock);
-
-		localValues.clear();
-		for (int i = 0; i < node->params.size(); i++)
-		{
-			auto& [paramName, paramType] = node->params.at(i);
-			assert(!localValues.contains(paramName) && "Local variable for parameter already defined");
-
-			localValues.try_emplace(paramName, builder.CreateAlloca(getLLVMType(paramType), nullptr, paramName + "_"));
-			builder.CreateStore(function->getArg(i), localValues.at(paramName));
-		}
-
-		builder.CreateBr(bodyBlock);
-		function->getBasicBlockList().push_back(bodyBlock);
-		builder.SetInsertPoint(bodyBlock);
-		dispatch(node->body);
-
-		if (node->result->isVoidType() && !builder.GetInsertBlock()->getTerminator())
-			builder.CreateRetVoid();
+		localValues.try_emplace(paramName, builder.CreateAlloca(getLLVMType(paramType), nullptr, paramName + "_"));
+		builder.CreateStore(function->getArg(i), localValues.at(paramName));
 	}
 
-	return nullptr;
-}
+	builder.CreateBr(bodyBlock);
+	function->getBasicBlockList().push_back(bodyBlock);
+	builder.SetInsertPoint(bodyBlock);
+	dispatch(node->body);
 
-llvm::Value* LLVMCodegenPass::visit(IRExternFunctionDeclaration* node)
-{
-	if (!isFunctionBodyPass)
-	{
-		std::vector<llvm::Type*> llvmParams;
-		for (auto& [name, type] : node->parameters)
-			llvmParams.push_back(getLLVMType(type));
-
-		auto type = llvm::FunctionType::get(getLLVMType(node->result), llvmParams, false);
-		auto function = llvm::Function::Create(type, llvm::GlobalValue::LinkageTypes::ExternalLinkage, node->name, mod);
-		function->setCallingConv(llvm::CallingConv::Win64);
-		function->setDLLStorageClass(llvm::GlobalValue::DLLStorageClassTypes::DLLImportStorageClass);
-	}
+	if (node->result->isVoidType() && !builder.GetInsertBlock()->getTerminator())
+		builder.CreateRetVoid();
 
 	return nullptr;
 }
@@ -501,7 +476,7 @@ llvm::Type* LLVMCodegenPass::getLLVMType(Type* type)
 	}
 	else if (type->isStringType())
 	{
-		llvmTypes.try_emplace(type, getLLVMType(typeCtx.getArrayType(typeCtx.getU8())));
+		llvmTypes.try_emplace(type, getLLVMType(compCtx.getArrayType(compCtx.getU8())));
 		return llvmTypes.at(type);
 	}
 	else if (type->isStructType())
@@ -538,7 +513,7 @@ llvm::Type* LLVMCodegenPass::getLLVMType(Type* type)
 	}
 }
 
-std::string LLVMCodegenPass::getMangledType(Type* type)
+std::string LLVMCodegenPass::getMangledTypeName(Type* type)
 {
 	if (type->isVoidType())
 	{
@@ -566,7 +541,7 @@ std::string LLVMCodegenPass::getMangledType(Type* type)
 		auto output = "S_" + structType->name + "_";
 
 		for (auto& [fieldName, fieldType] : structType->fields)
-			output += getMangledType(fieldType);
+			output += getMangledTypeName(fieldType);
 
 		output += "_";
 		return output;
@@ -574,12 +549,12 @@ std::string LLVMCodegenPass::getMangledType(Type* type)
 	else if (type->isPointerType())
 	{
 		auto ptrType = dynamic_cast<PointerType*>(type);
-		return "P_" + getMangledType(ptrType->base) + "_";
+		return "P_" + getMangledTypeName(ptrType->base) + "_";
 	}
 	else if (type->isArrayType())
 	{
 		auto arrType = dynamic_cast<ArrayType*>(type);
-		return "A_" + getMangledType(arrType->base) + "_";
+		return "A_" + getMangledTypeName(arrType->base) + "_";
 	}
 	else
 	{
@@ -587,11 +562,11 @@ std::string LLVMCodegenPass::getMangledType(Type* type)
 	}
 }
 
-std::string LLVMCodegenPass::getMangledFunction(std::string const& function, std::vector<Type*> const& params)
+std::string LLVMCodegenPass::getMangledFunctionName(std::string const& function, std::vector<Type*> const& params)
 {
 	auto output = function + "@";
 	for (auto& param : params)
-		output += getMangledType(param);
+		output += getMangledTypeName(param);
 
 	return output;
 }

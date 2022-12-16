@@ -101,6 +101,7 @@ Type* SemanticPass::visit(IRUnaryExpression* node)
 		if (!function)
 			return logger.error("No matching operator function " + unaryOperators.at(node->operation).name + " for type " + value->toString(), nullptr);
 
+		node->target = function;
 		return (node->type = function->result);
 	}
 }
@@ -150,6 +151,7 @@ Type* SemanticPass::visit(IRBinaryExpression* node)
 		if (binaryOperators.at(node->operation).category == OperatorCategory::BinaryAssign && function->result != left)
 			return logger.error("Assignment operator overload function has to return a value that has the type of the left operand", nullptr);
 
+		node->target = function;
 		return (node->type = function->result);
 	}
 }
@@ -166,6 +168,7 @@ Type* SemanticPass::visit(IRCallExpression* node)
 		if (!function)
 			return logger.error("No matching function " + identifierExpression->value, nullptr);
 
+		node->target = function;
 		return (node->type = function->result);
 	}
 	else
@@ -175,6 +178,7 @@ Type* SemanticPass::visit(IRCallExpression* node)
 		if (!function)
 			return logger.error("No matching operator function __call__ for type " + args.front()->toString(), nullptr);
 
+		node->target = function;
 		return (node->type = function->result);
 	}
 }
@@ -201,6 +205,7 @@ Type* SemanticPass::visit(IRIndexExpression* node)
 		if (!function)
 			return logger.error("No matching operator function __index__ for type " + args.front()->toString(), nullptr);
 		
+		node->target = function;
 		return (node->type = function->result);
 	}
 }
