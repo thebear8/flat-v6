@@ -1,5 +1,10 @@
 #include "struct_population_pass.hpp"
 
+void StructPopulationPass::process(ASTSourceFile* sourceFile)
+{
+	return dispatch(sourceFile);
+}
+
 void StructPopulationPass::visit(ASTStructDeclaration* node)
 {
 	auto structType = modCtx.getStruct(node->name);

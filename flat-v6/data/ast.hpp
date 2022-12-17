@@ -354,11 +354,11 @@ struct ASTExternFunctionDeclaration : public ASTDeclaration
 
 struct ASTSourceFile : public ASTNode
 {
-	std::vector<std::string> modulePath;
-	std::vector<std::vector<std::string>> importPaths;
+	std::string modulePath;
+	std::vector<std::string> importPaths;
 	std::vector<ASTDeclaration*> declarations;
 
-	ASTSourceFile(std::vector<std::string> const& modulePath, std::vector<std::vector<std::string>> const& importPaths, std::vector<ASTDeclaration*> const& declarations) :
+	ASTSourceFile(std::string const& modulePath, std::vector<std::string> const& importPaths, std::vector<ASTDeclaration*> const& declarations) :
 		modulePath(modulePath), importPaths(importPaths), declarations(declarations) { }
 
 	IMPLEMENT_ACCEPT()

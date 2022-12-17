@@ -285,11 +285,11 @@ struct IRFunctionDeclaration : public IRDeclaration
 
 struct IRSourceFile : public IRNode
 {
-	std::vector<std::string> path;
-	std::vector<std::vector<std::string>> imports;
+	std::string path;
+	std::vector<std::string> imports;
 	std::vector<IRDeclaration*> declarations;
 
-	IRSourceFile(std::vector<std::string> const& path, std::vector<std::vector<std::string>> const& imports, std::vector<IRDeclaration*> declarations) :
+	IRSourceFile(std::string const& path, std::vector<std::string> const& imports, std::vector<IRDeclaration*> declarations) :
 		path(path), imports(imports), declarations() {}
 
 	IMPLEMENT_ACCEPT()

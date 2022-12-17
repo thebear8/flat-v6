@@ -45,7 +45,7 @@ private:
 	std::unordered_map<std::string, ModuleContext*> modules;
 
 	llvm::LLVMContext llvmCtx;
-	llvm::Module module;
+	llvm::Module llvmMod;
 	llvm::Target const * target;
 	llvm::TargetMachine* targetMachine;
 	std::unordered_map<IRFunctionDeclaration*, llvm::Function*> llvmFunctions;
@@ -55,8 +55,7 @@ public:
 	~CompilationContext();
 
 public:
-	void compile(std::string const& sourceDir);
-	void compile(llvm::raw_pwrite_stream& output);
+	void compile(std::string const& sourceDir, llvm::raw_pwrite_stream& output);
 
 public:
 

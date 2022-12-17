@@ -11,12 +11,16 @@
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Target/TargetOptions.h>
 #include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Passes/PassBuilder.h>
+#include <llvm/Analysis/LoopAnalysisManager.h>
+#include <llvm/Analysis/CGSCCPassManager.h>
 
 #include "data/ast.hpp"
 #include "type/type.hpp"
 #include "parser/parser.hpp"
 #include "passes/struct_extraction_pass.hpp"
 #include "passes/struct_population_pass.hpp"
+#include "passes/ir_pass.hpp"
 #include "passes/semantic_pass.hpp"
 #include "passes/lowering_pass.hpp"
 #include "passes/codegen_pass.hpp"
@@ -29,7 +33,7 @@ CompilationContext::CompilationContext(CompilationOptions const& options, std::o
 	astCtx(),
 	typeCtx(),
 	llvmCtx(),
-	module(options.moduleName, llvmCtx),
+	llvmMod(options.moduleName, llvmCtx),
 	target(nullptr),
 	targetMachine(nullptr)
 {
@@ -50,10 +54,10 @@ CompilationContext::CompilationContext(CompilationOptions const& options, std::o
 	if (!targetMachine)
 		logger.error("Can't create TargetMachine");
 
-	module.setDataLayout(targetMachine->createDataLayout());
-	module.setTargetTriple(options.targetDesc.targetTriple);
+	llvmMod.setDataLayout(targetMachine->createDataLayout());
+	llvmMod.setTargetTriple(options.targetDesc.targetTriple);
 
-	typeCtx.setPointerSize(module.getDataLayout().getPointerSizeInBits());
+	typeCtx.setPointerSize(llvmMod.getDataLayout().getPointerSizeInBits());
 }
 
 CompilationContext::~CompilationContext()
@@ -62,8 +66,10 @@ CompilationContext::~CompilationContext()
 		delete mod;
 }
 
-void CompilationContext::compile(std::string const& sourceDir)
+void CompilationContext::compile(std::string const& sourceDir, llvm::raw_pwrite_stream& output)
 {
+	std::vector<ASTSourceFile*> astSourceFiles;
+
 	for (auto const& entry : std::filesystem::recursive_directory_iterator(sourceDir))
 	{
 		if (!entry.is_regular_file() || entry.path().extension() != ".fl")
@@ -73,30 +79,51 @@ void CompilationContext::compile(std::string const& sourceDir)
 		std::string input(std::istreambuf_iterator<char>(inputStream), {});
 
 		Parser parser(logger, astCtx, input);
-		auto sourceFile = parser.sourceFile();
+		astSourceFiles.push_back(parser.sourceFile());
 	}
-}
 
-void CompilationContext::compile(llvm::raw_pwrite_stream& output)
-{
-	Parser parser(logger, astCtx, typeCtx, options.moduleSource);
-	auto ast = parser.sourceFile();
+	for (auto sf : astSourceFiles)
+		StructExtractionPass(logger, *this, *getModule(sf->modulePath)).process(sf);
 
-	SemanticPass semanticPass(logger, astCtx, typeCtx);
-	semanticPass.analyze(ast);
+	for (auto sf : astSourceFiles)
+		StructPopulationPass(logger, *this, *getModule(sf->modulePath)).process(sf);
 
-	OperatorLoweringPass loweringPass(logger, astCtx, typeCtx);
-	loweringPass.process(ast);
+	std::vector<IRSourceFile*> irSourceFiles;
 
-	LLVMCodegenPass codegenPass(logger, typeCtx, llvmCtx, module);
-	codegenPass.compile(ast);
-	codegenPass.optimize();
+	for (auto sf : astSourceFiles)
+		irSourceFiles.push_back(
+			IRPass(logger, *this, *getModule(sf->modulePath), getModule(sf->modulePath)->irCtx).process(sf)
+		);
+
+	for (auto sf : irSourceFiles)
+		SemanticPass(logger, *this, *getModule(sf->path)).analyze(sf);
+
+	for (auto sf : irSourceFiles)
+		OperatorLoweringPass(logger, *this, *getModule(sf->path), getModule(sf->path)->irCtx).process(sf);
+
+	for (auto sf : irSourceFiles)
+		LLVMCodegenPass(logger, *this, *getModule(sf->path), llvmCtx, llvmMod).process(sf);
+
+	llvm::LoopAnalysisManager lam;
+	llvm::FunctionAnalysisManager fam;
+	llvm::CGSCCAnalysisManager cgam;
+	llvm::ModuleAnalysisManager mam;
+
+	llvm::PassBuilder pb;
+	pb.registerModuleAnalyses(mam);
+	pb.registerCGSCCAnalyses(cgam);
+	pb.registerFunctionAnalyses(fam);
+	pb.registerLoopAnalyses(lam);
+	pb.crossRegisterProxies(lam, fam, cgam, mam);
+
+	auto mpm = pb.buildPerModuleDefaultPipeline(llvm::OptimizationLevel::O1);
+	mpm.run(llvmMod, mam);
 
 	llvm::legacy::PassManager passManager;
 	if (targetMachine->addPassesToEmitFile(passManager, output, nullptr, llvm::CodeGenFileType::CGFT_ObjectFile))
 		logger.error("TargetMachine cannot emit object files");
 
-	passManager.run(module);
+	passManager.run(llvmMod);
 	output.flush();
 }
 
@@ -161,19 +188,19 @@ ModuleContext::~ModuleContext()
 		delete structType;
 }
 
-Type* ModuleContext::getBuiltinOrStructType(std::string const& name)
+Type* ModuleContext::getBuiltinOrStructType(std::string const& typeName)
 {
-	auto builtin = compCtx.getBuiltinType(name);
+	auto builtin = compCtx.getBuiltinType(typeName);
 	if (builtin)
 		return builtin;
 
-	if (structTypes.contains(name))
-		return structTypes.at(name);
+	if (structTypes.contains(typeName))
+		return structTypes.at(typeName);
 
 	for (auto const& importName : imports)
 	{
 		auto mod = compCtx.getModule(importName);
-		if (mod->structTypes.contains(name))
+		if (mod->structTypes.contains(typeName))
 			return mod->structTypes.at(name);
 	}
 
@@ -192,32 +219,33 @@ Type* ModuleContext::getType(ASTType* type)
 		return compCtx.getArrayType(getType(arrayType->base));
 
 	assert("Invalid ASTType*");
+	return nullptr;
 }
 
-StructType* ModuleContext::createStruct(std::string const& name)
+StructType* ModuleContext::createStruct(std::string const& structName)
 {
-	if (structTypes.contains(name))
+	if (structTypes.contains(structName))
 		return nullptr;
 
-	structTypes.try_emplace(name, new StructType(compCtx.typeCtx, name));
-	return structTypes.at(name);
+	structTypes.try_emplace(structName, new StructType(compCtx.typeCtx, structName));
+	return structTypes.at(structName);
 }
 
-StructType* ModuleContext::getStruct(std::string const& name)
+StructType* ModuleContext::getStruct(std::string const& structName)
 {
-	if (!structTypes.contains(name))
-		structTypes.try_emplace(name, new StructType(compCtx.typeCtx, name));
-	return structTypes.at(name);
+	if (!structTypes.contains(structName))
+		structTypes.try_emplace(structName, new StructType(compCtx.typeCtx, structName));
+	return structTypes.at(structName);
 }
 
-StructType* ModuleContext::resolveStruct(std::string const& name)
+StructType* ModuleContext::resolveStruct(std::string const& structName)
 {
-	if (auto structType = getStruct(name))
+	if (auto structType = getStruct(structName))
 		return structType;
 
 	for (auto const& imp : imports)
 	{
-		if (auto structType = compCtx.getModule(imp)->getStruct(name))
+		if (auto structType = compCtx.getModule(imp)->getStruct(structName))
 			return structType;
 	}
 
@@ -241,30 +269,38 @@ IRFunctionDeclaration* ModuleContext::addFunction(IRFunctionDeclaration* functio
 	return function;
 }
 
-IRFunctionDeclaration* ModuleContext::getFunction(std::string const& name, std::vector<Type*> const& params)
+IRFunctionDeclaration* ModuleContext::getFunction(std::string const& functionName, std::vector<Type*> const& params)
 {
-	if (!functionDeclarations.contains(name))
-		functionDeclarations.try_emplace(name, std::vector<IRFunctionDeclaration*>());
-	auto& collection = functionDeclarations.at(name);
+	if (!functionDeclarations.contains(functionName))
+		functionDeclarations.try_emplace(functionName, std::vector<IRFunctionDeclaration*>());
+	auto& collection = functionDeclarations.at(functionName);
 
 	for (auto candidate : collection)
 	{
-		if (params.size() == candidate->params.size()
-			&& std::equal(params.begin(), params.end(), candidate->params.begin()))
-			return candidate;
+		if (params.size() != candidate->params.size())
+			continue;
+
+		for (size_t i = 0; true; i++)
+		{
+			if (i == params.size())
+				return candidate;
+
+			if (params[i] != candidate->params[i].second)
+				break;
+		}
 	}
 
 	return nullptr;
 }
 
-IRFunctionDeclaration* ModuleContext::resolveFunction(std::string const& name, std::vector<Type*> const& params)
+IRFunctionDeclaration* ModuleContext::resolveFunction(std::string const& functionName, std::vector<Type*> const& params)
 {
-	if (auto function = getFunction(name, params))
+	if (auto function = getFunction(functionName, params))
 		return function;
 
 	for (auto const& imp : imports)
 	{
-		if (auto function = compCtx.getModule(imp)->getFunction(name, params))
+		if (auto function = compCtx.getModule(imp)->getFunction(functionName, params))
 			return function;
 	}
 

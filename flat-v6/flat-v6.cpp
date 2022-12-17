@@ -12,12 +12,12 @@
 int main(int argc, char* argv[])
 {
 	CLI::App app("flat compiler v6", "flat-v6");
-	std::string input, output, target, cpuDesc, featureDesc;
+	std::string sourceDir, output, target, cpuDesc, featureDesc;
 
-	app.add_option("input, -i, --input", input)->type_name("FILENAME")->required()->check([](std::string const& value) -> std::string {
-		std::ifstream ifs(value);
-		if (ifs.fail() || ifs.bad() || !ifs.is_open())
-			return "Cannot open input file " + value;
+	app.add_option("source-dir, -s, --source-dir", sourceDir)->type_name("DIRECTORY")->required()->check([](std::string const& value) -> std::string {
+		std::filesystem::directory_entry dir(value);
+		if (!dir.exists() || !dir.is_directory())
+			return "Cannot open source directory " + value;
 		return "";
 	});
 
@@ -53,16 +53,14 @@ int main(int argc, char* argv[])
 
 	CLI11_PARSE(app, argc, argv);
 
-	std::ifstream ifs(input);
-	std::string source(std::istreambuf_iterator<char>(ifs), {});
-
 	CompilationOptions options = {};
 	options.targetDesc.cpuDesc = cpuDesc;
 	options.targetDesc.featureDesc = featureDesc;
 	options.targetDesc.targetTriple = target;
-	options.moduleName = std::filesystem::path(input).stem().string();
-	options.moduleSource = source;
+
+	std::error_code ec;
+	llvm::raw_fd_ostream outStream((output.empty() ? std::filesystem::path(sourceDir).replace_extension(".obj").string() : output), ec);
 
 	CompilationContext ctx(options, std::cout);
-	ctx.compile((output.empty() ? std::filesystem::path(input).replace_extension(".obj").string() : output));
+	ctx.compile(sourceDir, outStream);
 }

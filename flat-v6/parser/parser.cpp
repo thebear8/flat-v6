@@ -424,25 +424,27 @@ ASTSourceFile* Parser::sourceFile()
 {
 	auto begin = trim();
 
-	std::vector<std::string> modulePath;
-	if (match(Token::Module)) {
-		while (!match(Token::Eof)) {
-			expect(Token::Identifier);
-			modulePath.push_back(getTokenValue());
-			if (!match(Token::Dot))
-				break;
-		}
+	std::string modulePath;
+	expect(Token::Module);
+	while (!match(Token::Eof)) {
+		expect(Token::Identifier);
+		modulePath += (modulePath.empty() ? getTokenValue() : "." + getTokenValue());
+		if (!match(Token::Dot))
+			break;
+		modulePath += ".";
 	}
 
-	std::vector<std::vector<std::string>> imports;
+	std::vector<std::string> imports;
 	while (match(Token::Import)) {
-		std::vector<std::string> importPath;
+		std::string importPath;
 		while (!match(Token::Eof)) {
 			expect(Token::Identifier);
-			importPath.push_back(getTokenValue());
-			if (match(Token::Dot))
+			importPath += (importPath.empty() ? getTokenValue() : "." + getTokenValue());
+			if (!match(Token::Dot))
 				break;
+			importPath += ".";
 		}
+		imports.push_back(importPath);
 	}
 
 	std::vector<ASTDeclaration*> declarations;

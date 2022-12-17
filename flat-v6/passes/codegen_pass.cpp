@@ -65,7 +65,6 @@ llvm::Value* LLVMCodegenPass::visit(IRBoolExpression* node)
 
 llvm::Value* LLVMCodegenPass::visit(IRCharExpression* node)
 {
-	size_t position = 0;
 	return llvm::ConstantInt::get(llvm::Type::getInt32Ty(llvmCtx), node->value);
 }
 
@@ -142,6 +141,7 @@ llvm::Value* LLVMCodegenPass::visit(IRUnaryExpression* node)
 	else
 	{
 		assert(0 && "Invalid operator in unary expression");
+		return nullptr;
 	}
 }
 
@@ -249,6 +249,7 @@ llvm::Value* LLVMCodegenPass::visit(IRBinaryExpression* node)
 		else
 		{
 			assert(0 && "Invalid operator in binary expression");
+			return nullptr;
 		}
 	}
 }
@@ -305,6 +306,7 @@ llvm::Value* LLVMCodegenPass::visit(IRFieldExpression* node)
 	}
 
 	assert(0 && "Unknown struct field in field expression");
+	return nullptr;
 }
 
 llvm::Value* LLVMCodegenPass::visit(IRBlockStatement* node)

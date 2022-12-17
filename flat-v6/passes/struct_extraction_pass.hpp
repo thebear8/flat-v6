@@ -4,7 +4,7 @@
 #include "../data/ir.hpp"
 #include "../compiler.hpp"
 
-class StructExtractionPass : public ASTVisitor<void>
+class StructExtractionPass : ASTVisitor<void>
 {
 private:
 	ErrorLogger& logger;
@@ -15,6 +15,10 @@ public:
 	StructExtractionPass(ErrorLogger& logger, CompilationContext& compCtx, ModuleContext& modCtx) :
 		logger(logger), compCtx(compCtx), modCtx(modCtx) { }
 
+public:
+	void process(ASTSourceFile* sourceFile);
+
+private:
 	virtual void visit(ASTStructDeclaration* node) override;
 	virtual void visit(ASTFunctionDeclaration* node) override { }
 	virtual void visit(ASTExternFunctionDeclaration* node) override { }

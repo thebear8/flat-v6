@@ -1,5 +1,10 @@
 #include "struct_extraction_pass.hpp"
 
+void StructExtractionPass::process(ASTSourceFile* sourceFile)
+{
+	return dispatch(sourceFile);
+}
+
 void StructExtractionPass::visit(ASTStructDeclaration* node)
 {
 	if(!modCtx.createStruct(node->name))

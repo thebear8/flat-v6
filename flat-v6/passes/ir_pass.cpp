@@ -1,6 +1,11 @@
 #include "ir_pass.hpp"
 #include "../util/string_switch.hpp"
 
+IRSourceFile* IRPass::process(ASTSourceFile* sourceFile)
+{
+	return (IRSourceFile*)dispatch(sourceFile);
+}
+
 IRNode* IRPass::visit(ASTIntegerExpression* node)
 {
 	auto radix = StringSwitch<size_t>(node->value)
