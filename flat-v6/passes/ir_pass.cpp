@@ -14,8 +14,8 @@ IRNode* IRPass::visit(ASTIntegerExpression* node)
 		.Default(10);
 
 	auto value = StringSwitch<std::string>(node->value)
-		.StartsWith("0x", node->value.substr(2))
-		.StartsWith("0b", node->value.substr(2))
+		.StartsWith("0x", node->value.substr(std::min<size_t>(2, node->value.length())))
+		.StartsWith("0b", node->value.substr(std::min<size_t>(2, node->value.length())))
 		.Default(node->value);
 
 	auto width = StringSwitch<size_t>(node->suffix)
@@ -23,11 +23,13 @@ IRNode* IRPass::visit(ASTIntegerExpression* node)
 		.EndsWith("16", 16)
 		.EndsWith("32", 32)
 		.EndsWith("64", 64)
+		.Case("", 32)
 		.OrThrow();
 
 	auto isSigned = StringSwitch<bool>(node->suffix)
 		.StartsWith("u", false)
-		.StartsWith("i", false)
+		.StartsWith("i", true)
+		.Case("", true)
 		.OrThrow();
 
 	return irCtx.make(IRIntegerExpression(isSigned, width, radix, value));

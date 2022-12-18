@@ -1,5 +1,10 @@
 #include "function_extraction_pass.hpp"
 
+void FunctionExtractionPass::process(IRSourceFile* sourceFile)
+{
+	return dispatch(sourceFile);
+}
+
 void FunctionExtractionPass::visit(IRFunctionDeclaration* node)
 {
 	if (!modCtx.addFunction(node))

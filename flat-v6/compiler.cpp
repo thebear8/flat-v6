@@ -20,6 +20,7 @@
 #include "parser/parser.hpp"
 #include "passes/struct_extraction_pass.hpp"
 #include "passes/struct_population_pass.hpp"
+#include "passes/function_extraction_pass.hpp"
 #include "passes/ir_pass.hpp"
 #include "passes/semantic_pass.hpp"
 #include "passes/lowering_pass.hpp"
@@ -96,6 +97,9 @@ void CompilationContext::compile(std::string const& sourceDir, llvm::raw_pwrite_
 		);
 
 	for (auto sf : irSourceFiles)
+		FunctionExtractionPass(logger, *this, *getModule(sf->path)).process(sf);
+
+	for (auto sf : irSourceFiles)
 		SemanticPass(logger, *this, *getModule(sf->path)).analyze(sf);
 
 	for (auto sf : irSourceFiles)
@@ -103,6 +107,8 @@ void CompilationContext::compile(std::string const& sourceDir, llvm::raw_pwrite_
 
 	for (auto sf : irSourceFiles)
 		LLVMCodegenPass(logger, *this, *getModule(sf->path), llvmCtx, llvmMod).process(sf);
+
+	llvmMod.print(llvm::outs(), nullptr);
 
 	llvm::LoopAnalysisManager lam;
 	llvm::FunctionAnalysisManager fam;
@@ -118,6 +124,8 @@ void CompilationContext::compile(std::string const& sourceDir, llvm::raw_pwrite_
 
 	auto mpm = pb.buildPerModuleDefaultPipeline(llvm::OptimizationLevel::O1);
 	mpm.run(llvmMod, mam);
+
+	llvmMod.print(llvm::outs(), nullptr);
 
 	llvm::legacy::PassManager passManager;
 	if (targetMachine->addPassesToEmitFile(passManager, output, nullptr, llvm::CodeGenFileType::CGFT_ObjectFile))
@@ -254,9 +262,9 @@ StructType* ModuleContext::resolveStruct(std::string const& structName)
 
 IRFunctionDeclaration* ModuleContext::addFunction(IRFunctionDeclaration* function)
 {
-	if (functionDeclarations.contains(name))
-		functionDeclarations.try_emplace(name, std::vector<IRFunctionDeclaration*>());
-	auto& collection = functionDeclarations.at(name);
+	if (!functionDeclarations.contains(function->name))
+		functionDeclarations.try_emplace(function->name, std::vector<IRFunctionDeclaration*>());
+	auto& collection = functionDeclarations.at(function->name);
 
 	for (auto candidate : collection)
 	{
