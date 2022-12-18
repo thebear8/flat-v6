@@ -190,7 +190,7 @@
     <ClInclude Include="data\enum.hpp" />
     <ClInclude Include="data\ir.hpp" />
     <ClInclude Include="data\operator.hpp" />
-    <ClInclude Include="data\source_reference.hpp" />
+    <ClInclude Include="data\source_ref.hpp" />
     <ClInclude Include="data\token.hpp" />
     <ClInclude Include="parser\lexer.hpp" />
     <ClInclude Include="parser\parser.hpp" />

@@ -54,6 +54,9 @@
     <ClCompile Include="passes\struct_population_pass.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
+    <ClCompile Include="passes\function_extraction_pass.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="data\enum.hpp">
@@ -107,7 +110,7 @@
     <ClInclude Include="data\ir.hpp">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="data\source_reference.hpp">
+    <ClInclude Include="data\source_ref.hpp">
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="util\graph_context.hpp">
@@ -120,6 +123,9 @@
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="passes\struct_population_pass.hpp">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="passes\function_extraction_pass.hpp">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>

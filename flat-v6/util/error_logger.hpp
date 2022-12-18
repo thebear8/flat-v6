@@ -2,28 +2,25 @@
 #include <string>
 #include <string_view>
 #include <ostream>
+#include <unordered_map>
 
-struct ASTNode;
+#include "../data/source_ref.hpp"
 
 class ErrorLogger
 {
 private:
-	std::string_view source;
 	std::ostream& output;
+	std::unordered_map<size_t, std::string>& sources;
 
 public:
-	ErrorLogger(std::string_view source, std::ostream& output) :
-		source(source), output(output) { }
+	ErrorLogger(std::ostream& output, std::unordered_map<size_t, std::string>& sources) :
+		output(output), sources(sources) { }
 
 public:
 	[[noreturn]] void error(std::string const& message);
-	[[noreturn]] void error(ASTNode* node, std::string const& message);
-	[[noreturn]] void error(size_t position, std::string const& message);
-	[[noreturn]] void error(size_t begin, size_t end, std::string const& message);
+	[[noreturn]] void error(SourceRef const& location, std::string const& message);
 	void warning(std::string const& message);
-	void warning(ASTNode* node, std::string const& message);
-	void warning(size_t position, std::string const& message);
-	void warning(size_t begin, size_t end, std::string const& message);
+	void warning(SourceRef const& location, std::string const& message);
 
 	template<typename ReturnType>
 	[[noreturn]] ReturnType error(std::string const& message, ReturnType&& returnValue)
@@ -33,16 +30,23 @@ public:
 	}
 
 	template<typename ReturnType>
-	[[noreturn]] ReturnType error(ASTNode* node, std::string const& message, ReturnType&& returnValue)
+	[[noreturn]] ReturnType error(SourceRef const& location, std::string const& message, ReturnType&& returnValue)
 	{
-		error(node, message);
+		error(location, message);
 		return std::forward<ReturnType>(returnValue);
 	}
 
 	template<typename ReturnType>
-	ReturnType warning(ASTNode* node, std::string const& message, ReturnType&& returnValue)
+	ReturnType warning(std::string const& message, ReturnType&& returnValue)
 	{
-		warning(node, message);
+		warning(message);
+		return std::forward<ReturnType>(returnValue);
+	}
+
+	template<typename ReturnType>
+	ReturnType warning(SourceRef const& location, std::string const& message, ReturnType&& returnValue)
+	{
+		warning(location, message);
 		return std::forward<ReturnType>(returnValue);
 	}
 };
