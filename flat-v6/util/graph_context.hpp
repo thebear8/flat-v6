@@ -12,8 +12,7 @@ private:
     template<typename TNode>
     struct TNodeContainer : public NodeContainer, public TNode
     {
-        TNodeContainer(TNode&& value) :
-            TNode(std::forward<TNode>(value)) { }
+        TNodeContainer(TNode&& value) : TNode(std::forward<TNode>(value)) {}
 
         TNode* get() { return this; }
     };

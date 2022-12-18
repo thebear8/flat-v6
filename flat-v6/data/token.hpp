@@ -2,54 +2,54 @@
 #include "enum.hpp"
 
 #define TOKEN_LIST(ENTRY) \
-ENTRY(Eof) \
-ENTRY(Error) \
-ENTRY(NewLine) \
-ENTRY(Whitespace) \
-ENTRY(Dot) \
-ENTRY(Comma) \
-ENTRY(Colon) \
-ENTRY(ParenOpen) \
-ENTRY(ParenClose) \
-ENTRY(BracketOpen) \
-ENTRY(BracketClose) \
-ENTRY(BraceOpen) \
-ENTRY(BraceClose) \
-ENTRY(Plus) \
-ENTRY(Minus) \
-ENTRY(LogicalNot) \
-ENTRY(BitwiseNot) \
-ENTRY(Multiply) \
-ENTRY(Divide) \
-ENTRY(Modulo) \
-ENTRY(ShiftLeft) \
-ENTRY(ShiftRight) \
-ENTRY(BitwiseAnd) \
-ENTRY(BitwiseOr) \
-ENTRY(BitwiseXor) \
-ENTRY(Equal) \
-ENTRY(NotEqual) \
-ENTRY(LessThan) \
-ENTRY(GreaterThan) \
-ENTRY(LessOrEqual) \
-ENTRY(GreaterOrEqual) \
-ENTRY(LogicalAnd) \
-ENTRY(LogicalOr) \
-ENTRY(Assign) \
-ENTRY(True) \
-ENTRY(False) \
-ENTRY(Let) \
-ENTRY(Return) \
-ENTRY(While) \
-ENTRY(If) \
-ENTRY(Else) \
-ENTRY(Struct) \
-ENTRY(Function) \
-ENTRY(Extern) \
-ENTRY(Import) \
-ENTRY(Module) \
-ENTRY(Integer) \
-ENTRY(Identifier) \
-ENTRY(CharLiteral) \
-ENTRY(StringLiteral)
+    ENTRY(Eof)            \
+    ENTRY(Error)          \
+    ENTRY(NewLine)        \
+    ENTRY(Whitespace)     \
+    ENTRY(Dot)            \
+    ENTRY(Comma)          \
+    ENTRY(Colon)          \
+    ENTRY(ParenOpen)      \
+    ENTRY(ParenClose)     \
+    ENTRY(BracketOpen)    \
+    ENTRY(BracketClose)   \
+    ENTRY(BraceOpen)      \
+    ENTRY(BraceClose)     \
+    ENTRY(Plus)           \
+    ENTRY(Minus)          \
+    ENTRY(LogicalNot)     \
+    ENTRY(BitwiseNot)     \
+    ENTRY(Multiply)       \
+    ENTRY(Divide)         \
+    ENTRY(Modulo)         \
+    ENTRY(ShiftLeft)      \
+    ENTRY(ShiftRight)     \
+    ENTRY(BitwiseAnd)     \
+    ENTRY(BitwiseOr)      \
+    ENTRY(BitwiseXor)     \
+    ENTRY(Equal)          \
+    ENTRY(NotEqual)       \
+    ENTRY(LessThan)       \
+    ENTRY(GreaterThan)    \
+    ENTRY(LessOrEqual)    \
+    ENTRY(GreaterOrEqual) \
+    ENTRY(LogicalAnd)     \
+    ENTRY(LogicalOr)      \
+    ENTRY(Assign)         \
+    ENTRY(True)           \
+    ENTRY(False)          \
+    ENTRY(Let)            \
+    ENTRY(Return)         \
+    ENTRY(While)          \
+    ENTRY(If)             \
+    ENTRY(Else)           \
+    ENTRY(Struct)         \
+    ENTRY(Function)       \
+    ENTRY(Extern)         \
+    ENTRY(Import)         \
+    ENTRY(Module)         \
+    ENTRY(Integer)        \
+    ENTRY(Identifier)     \
+    ENTRY(CharLiteral)    \
+    ENTRY(StringLiteral)
 DEFINE_ENUM(Token, TOKEN_LIST)

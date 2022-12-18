@@ -2,20 +2,20 @@
 
 void StructPopulationPass::process(ASTSourceFile* sourceFile)
 {
-	return dispatch(sourceFile);
+    return dispatch(sourceFile);
 }
 
 void StructPopulationPass::visit(ASTStructDeclaration* node)
 {
-	auto structType = modCtx.getStruct(node->name);
-	assert(structType && "structType cannot be null");
+    auto structType = modCtx.getStruct(node->name);
+    assert(structType && "structType cannot be null");
 
-	for (auto const& [fieldName, fieldType] : node->fields)
-		structType->addField(fieldName, modCtx.getType(fieldType));
+    for (auto const& [fieldName, fieldType] : node->fields)
+        structType->addField(fieldName, modCtx.getType(fieldType));
 }
 
 void StructPopulationPass::visit(ASTSourceFile* node)
 {
-	for (auto declaration : node->declarations)
-		dispatch(declaration);
+    for (auto declaration : node->declarations)
+        dispatch(declaration);
 }
