@@ -127,8 +127,6 @@ void CompilationContext::compile(
         LLVMCodegenPass(logger, *this, *getModule(sf->path), llvmCtx, llvmMod)
             .process(sf);
 
-    llvmMod.print(llvm::outs(), nullptr);
-
     llvm::LoopAnalysisManager lam;
     llvm::FunctionAnalysisManager fam;
     llvm::CGSCCAnalysisManager cgam;

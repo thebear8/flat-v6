@@ -142,7 +142,8 @@ llvm::Value* LLVMCodegenPass::visit(IRStructExpression* node)
                 break;
             }
 
-            assert(0 && "No initializer for field in struct expression");
+            if (j == node->fields.size())
+                assert(0 && "No initializer for field in struct expression");
         }
     }
 
@@ -482,6 +483,9 @@ llvm::Value* LLVMCodegenPass::visit(IRFunctionDeclaration* node)
     assert(
         function
         && "No matching llvm function object for function declaration");
+
+    if (!node->body)
+        return nullptr;
 
     auto entryBlock = llvm::BasicBlock::Create(llvmCtx, "entry");
     auto bodyBlock = llvm::BasicBlock::Create(llvmCtx, "body");
