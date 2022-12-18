@@ -30,8 +30,6 @@
 
 CompilationContext::CompilationContext(CompilationOptions const& options, std::ostream& logStream) :
 	options(options),
-	logger(options.moduleSource, logStream),
-	astCtx(),
 	typeCtx(),
 	llvmCtx(),
 	llvmMod(options.moduleName, llvmCtx),
@@ -47,13 +45,13 @@ CompilationContext::CompilationContext(CompilationOptions const& options, std::o
 	std::string error;
 	target = llvm::TargetRegistry::lookupTarget(options.targetDesc.targetTriple, error);
 	if (!target)
-		logger.error(error);
+		ErrorLogger(std::cout, {}).error(error);
 
 	auto targetOptions = llvm::TargetOptions();
 	auto relocModel = llvm::Optional<llvm::Reloc::Model>();
 	targetMachine = target->createTargetMachine(options.targetDesc.targetTriple, options.targetDesc.cpuDesc, options.targetDesc.featureDesc, targetOptions, relocModel);
 	if (!targetMachine)
-		logger.error("Can't create TargetMachine");
+		ErrorLogger(std::cout, {}).error("Can't create TargetMachine");
 
 	llvmMod.setDataLayout(targetMachine->createDataLayout());
 	llvmMod.setTargetTriple(options.targetDesc.targetTriple);
@@ -69,7 +67,10 @@ CompilationContext::~CompilationContext()
 
 void CompilationContext::compile(std::string const& sourceDir, llvm::raw_pwrite_stream& output)
 {
+	GraphContext astCtx;
 	std::vector<ASTSourceFile*> astSourceFiles;
+	std::unordered_map<size_t, std::string> sources;
+	ErrorLogger logger(std::cout, sources);
 
 	for (auto const& entry : std::filesystem::recursive_directory_iterator(sourceDir))
 	{
@@ -79,7 +80,10 @@ void CompilationContext::compile(std::string const& sourceDir, llvm::raw_pwrite_
 		std::ifstream inputStream(entry.path());
 		std::string input(std::istreambuf_iterator<char>(inputStream), {});
 
-		Parser parser(logger, astCtx, input);
+		auto id = sources.size() + 1;
+		sources.try_emplace(id, input);
+
+		Parser parser(logger, astCtx, input, id);
 		astSourceFiles.push_back(parser.sourceFile());
 	}
 

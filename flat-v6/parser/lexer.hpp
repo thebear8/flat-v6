@@ -72,10 +72,11 @@ protected:
 	std::string_view value;
 	std::string_view intValue;
 	std::string_view intSuffixValue;
+	size_t id;
 
 public:
-	Lexer(ErrorLogger& logger, std::string_view input) :
-		logger(logger), input(input), position(0), value("") { }
+	Lexer(ErrorLogger& logger, std::string_view input, size_t id) :
+		logger(logger), input(input), id(id), position(0), value("") { }
 
 private:
 	Token advance();

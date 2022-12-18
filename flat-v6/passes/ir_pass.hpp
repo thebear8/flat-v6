@@ -2,6 +2,7 @@
 #include "../compiler.hpp"
 #include "../data/ast.hpp"
 #include "../data/ir.hpp"
+#include "../data/source_ref.hpp"
 
 /// @brief Transforms AST Nodes into IR Nodes
 class IRPass : public ASTVisitor<IRNode*>
@@ -45,8 +46,8 @@ private:
 	virtual IRNode* visit(ASTSourceFile* node) override;
 
 private:
-	std::vector<uint8_t> unescapeStringUTF8(std::string const& input, ASTNode* node);
-	uint32_t unescapeCodePoint(std::string const& value, size_t& position, ASTNode* node);
+	std::vector<uint8_t> unescapeStringUTF8(std::string const& input, SourceRef const& location);
+	uint32_t unescapeCodePoint(std::string const& value, size_t& position, SourceRef const& location);
 	bool isDigit(char c) { return (c >= '0' && c <= '9'); }
 	bool isBinaryDigit(char c) { return (c >= '0' && c <= '1'); }
 	bool isHexDigit(char c) { return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'); }

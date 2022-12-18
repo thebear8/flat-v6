@@ -1,16 +1,18 @@
 #pragma once
 #include "lexer.hpp"
 #include "../data/ast.hpp"
+#include "../util/graph_context.hpp"
 
 class Parser : protected Lexer
 {
 private:
 	ErrorLogger& logger;
-	AstContext& ctx;
+	GraphContext& ctx;
+	size_t id;
 
 public:
-	Parser(ErrorLogger& logger, AstContext& ctx, std::string_view input) :
-		Lexer(logger, input), logger(logger), ctx(ctx) { }
+	Parser(ErrorLogger& logger, GraphContext& ctx, std::string_view input, size_t id) :
+		Lexer(logger, input, id), logger(logger), ctx(ctx), id(id) { }
 
 public:
 	ASTExpression* l0();

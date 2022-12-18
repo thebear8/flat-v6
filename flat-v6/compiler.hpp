@@ -38,8 +38,6 @@ class CompilationContext
 private:
 	CompilationOptions options;
 
-	ErrorLogger logger;
-	AstContext astCtx;
 	TypeContext typeCtx;
 
 	std::unordered_map<std::string, ModuleContext*> modules;
@@ -149,7 +147,7 @@ class ModuleContext
 {
 public:
 	CompilationContext& compCtx;
-	AstContext astCtx;
+	GraphContext astCtx;
 	GraphContext irCtx;
 
 	std::string name;

@@ -50,7 +50,7 @@ IRNode* IRPass::visit(ASTCharExpression* node)
 	size_t position = 0;
 	return irCtx.make(
 		IRCharExpression(
-			unescapeCodePoint(node->value, position, node)
+			unescapeCodePoint(node->value, position, node->location)
 		));
 }
 
@@ -58,7 +58,7 @@ IRNode* IRPass::visit(ASTStringExpression* node)
 {
 	return irCtx.make(
 		IRStringExpression(
-			unescapeStringUTF8(node->value, node)
+			unescapeStringUTF8(node->value, node->location)
 		));
 }
 
@@ -240,14 +240,14 @@ IRNode* IRPass::visit(ASTSourceFile* node)
 		)); 
 }
 
-std::vector<uint8_t> IRPass::unescapeStringUTF8(std::string const& input, ASTNode* node)
+std::vector<uint8_t> IRPass::unescapeStringUTF8(std::string const& input, SourceRef const& location)
 {
 	std::vector<uint8_t> bytes;
 
 	size_t position = 0;
 	while (position < input.length())
 	{
-		uint32_t cp = unescapeCodePoint(input, position, node);
+		uint32_t cp = unescapeCodePoint(input, position, location);
 		if (cp < 0x7F)
 		{
 			bytes.push_back(cp);
@@ -272,7 +272,7 @@ std::vector<uint8_t> IRPass::unescapeStringUTF8(std::string const& input, ASTNod
 		}
 		else
 		{
-			return logger.error(node, "Invalid Unicode code point", bytes);
+			return logger.error(location, "Invalid Unicode code point", bytes);
 		}
 	}
 
@@ -280,7 +280,7 @@ std::vector<uint8_t> IRPass::unescapeStringUTF8(std::string const& input, ASTNod
 	return bytes;
 }
 
-uint32_t IRPass::unescapeCodePoint(std::string const& input, size_t& position, ASTNode* node)
+uint32_t IRPass::unescapeCodePoint(std::string const& input, size_t& position, SourceRef const& location)
 {
 	if (position < input.length() && input[position] == '\\')
 	{
@@ -292,7 +292,7 @@ uint32_t IRPass::unescapeCodePoint(std::string const& input, size_t& position, A
 				position++;
 
 			if ((position - start) > 3)
-				return logger.error(node, "Octal char literal cannot have more than three digits", 0);
+				return logger.error(location, "Octal char literal cannot have more than three digits", 0);
 
 			return std::stoul(input.substr(start, (position - start)), nullptr, 8);
 		}
@@ -304,7 +304,7 @@ uint32_t IRPass::unescapeCodePoint(std::string const& input, size_t& position, A
 				position++;
 
 			if ((position - start) == 0)
-				return logger.error(node, "Hex char literal cannot have zero digits", 0);
+				return logger.error(location, "Hex char literal cannot have zero digits", 0);
 
 			return std::stoul(input.substr(start, (position - start)), nullptr, 16);
 		}
@@ -316,7 +316,7 @@ uint32_t IRPass::unescapeCodePoint(std::string const& input, size_t& position, A
 				position++;
 
 			if ((position - start) != 4)
-				logger.error(node, "2 byte Unicode code point (\\u) must have 4 digits", "");
+				logger.error(location, "2 byte Unicode code point (\\u) must have 4 digits", "");
 
 			return std::stoul(input.substr(start, (position - start)), nullptr, 16);
 		}
@@ -328,21 +328,21 @@ uint32_t IRPass::unescapeCodePoint(std::string const& input, size_t& position, A
 				position++;
 
 			if ((position - start) != 8)
-				logger.error(node, "4 byte Unicode code point (\\U) must have 8 digits", "");
+				logger.error(location, "4 byte Unicode code point (\\U) must have 8 digits", "");
 
 			return std::stoul(input.substr(start, (position - start)), nullptr, 16);
 		}
 		else if (position < input.length())
 		{
 			if (!escapeChars.contains(input[position]))
-				return logger.error(node, "Invalid escape sequence", 0);
+				return logger.error(location, "Invalid escape sequence", 0);
 
 			position++;
 			return escapeChars.at(input[position]);
 		}
 		else
 		{
-			return logger.error(node, "Incomplete escape sequence", 0);
+			return logger.error(location, "Incomplete escape sequence", 0);
 		}
 	}
 	else if (position < input.length())
@@ -351,6 +351,6 @@ uint32_t IRPass::unescapeCodePoint(std::string const& input, size_t& position, A
 	}
 	else
 	{
-		return logger.error(node, "Unexpected end of char sequence", 0);
+		return logger.error(location, "Unexpected end of char sequence", 0);
 	}
 }
