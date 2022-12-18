@@ -21,14 +21,16 @@ public:
     }
 
 public:
-    [[noreturn]] void error(std::string const& message);
-    [[noreturn]] void error(
+    [[noreturn]] void fatal(std::string const& message);
+    [[noreturn]] void fatal(
         SourceRef const& location, std::string const& message);
+    void error(std::string const& message);
+    void error(SourceRef const& location, std::string const& message);
     void warning(std::string const& message);
     void warning(SourceRef const& location, std::string const& message);
 
     template<typename ReturnType>
-    [[noreturn]] ReturnType error(
+    ReturnType error(
         std::string const& message, ReturnType&& returnValue)
     {
         error(message);
@@ -36,7 +38,7 @@ public:
     }
 
     template<typename ReturnType>
-    [[noreturn]] ReturnType error(
+    ReturnType error(
         SourceRef const& location,
         std::string const& message,
         ReturnType&& returnValue)

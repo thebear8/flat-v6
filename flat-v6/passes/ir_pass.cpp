@@ -228,7 +228,7 @@ std::vector<uint8_t> IRPass::unescapeStringUTF8(
         uint32_t cp = unescapeCodePoint(input, position, location);
         if (cp < 0x7F)
         {
-            bytes.push_back(cp);
+            bytes.push_back((uint8_t)cp);
         }
         else if (cp <= 0x07FF)
         {

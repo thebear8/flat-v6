@@ -45,7 +45,7 @@ CompilationContext::CompilationContext(
     std::string error;
     target = llvm::TargetRegistry::lookupTarget(targetDesc.targetTriple, error);
     if (!target)
-        ErrorLogger(std::cout, {}).error(error);
+        ErrorLogger(std::cout, {}).fatal(error);
 
     auto targetOptions = llvm::TargetOptions();
     auto relocModel = llvm::Optional<llvm::Reloc::Model>();
@@ -56,7 +56,7 @@ CompilationContext::CompilationContext(
         targetOptions,
         relocModel);
     if (!targetMachine)
-        ErrorLogger(std::cout, {}).error("Can't create TargetMachine");
+        ErrorLogger(std::cout, {}).fatal("Can't create TargetMachine");
 
     llvmMod.setDataLayout(targetMachine->createDataLayout());
     llvmMod.setTargetTriple(targetDesc.targetTriple);
@@ -152,7 +152,7 @@ void CompilationContext::compile(
             output,
             nullptr,
             llvm::CodeGenFileType::CGFT_ObjectFile))
-        logger.error("TargetMachine cannot emit object files");
+        logger.fatal("TargetMachine cannot emit object files");
 
     passManager.run(llvmMod);
     output.flush();
