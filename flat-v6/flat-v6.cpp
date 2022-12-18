@@ -78,19 +78,18 @@ int main(int argc, char* argv[])
 
     CLI11_PARSE(app, argc, argv);
 
-    CompilationOptions options = {};
-    options.targetDesc.cpuDesc = cpuDesc;
-    options.targetDesc.featureDesc = featureDesc;
-    options.targetDesc.targetTriple = target;
+    TargetDescriptor targetDesc = {};
+    targetDesc.cpuDesc = cpuDesc;
+    targetDesc.featureDesc = featureDesc;
+    targetDesc.targetTriple = target;
+
+    auto outputName = output;
+    if (outputName.empty())
+        outputName =
+            std::filesystem::path(sourceDir).replace_extension(".obj").string();
 
     std::error_code ec;
-    llvm::raw_fd_ostream outStream(
-        (output.empty() ? std::filesystem::path(sourceDir)
-                              .replace_extension(".obj")
-                              .string()
-                        : output),
-        ec);
-
-    CompilationContext ctx(options, std::cout);
+    llvm::raw_fd_ostream outStream(outputName, ec);
+    CompilationContext ctx(targetDesc, std::cout);
     ctx.compile(sourceDir, outStream);
 }

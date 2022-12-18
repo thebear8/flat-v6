@@ -29,20 +29,13 @@ struct TargetDescriptor
     }
 };
 
-struct CompilationOptions
-{
-    std::string moduleName;
-    std::string_view moduleSource;
-    TargetDescriptor targetDesc;
-};
-
 class ModuleContext;
 class CompilationContext
 {
     friend class ModuleContext;
 
 private:
-    CompilationOptions options;
+    TargetDescriptor targetDesc;
 
     TypeContext typeCtx;
 
@@ -56,7 +49,8 @@ private:
 
 public:
     CompilationContext(
-        CompilationOptions const& options, std::ostream& logStream = std::cout);
+        TargetDescriptor const& targetDesc,
+        std::ostream& logStream = std::cout);
     ~CompilationContext();
 
 public:

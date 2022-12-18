@@ -28,11 +28,11 @@
 #include "util/string_switch.hpp"
 
 CompilationContext::CompilationContext(
-    CompilationOptions const& options, std::ostream& logStream)
-    : options(options),
+    TargetDescriptor const& targetDesc, std::ostream& logStream)
+    : targetDesc(targetDesc),
       typeCtx(),
       llvmCtx(),
-      llvmMod(options.moduleName, llvmCtx),
+      llvmMod("flat", llvmCtx),
       target(nullptr),
       targetMachine(nullptr)
 {
@@ -43,24 +43,23 @@ CompilationContext::CompilationContext(
     llvm::InitializeAllAsmPrinters();
 
     std::string error;
-    target = llvm::TargetRegistry::lookupTarget(
-        options.targetDesc.targetTriple, error);
+    target = llvm::TargetRegistry::lookupTarget(targetDesc.targetTriple, error);
     if (!target)
         ErrorLogger(std::cout, {}).error(error);
 
     auto targetOptions = llvm::TargetOptions();
     auto relocModel = llvm::Optional<llvm::Reloc::Model>();
     targetMachine = target->createTargetMachine(
-        options.targetDesc.targetTriple,
-        options.targetDesc.cpuDesc,
-        options.targetDesc.featureDesc,
+        targetDesc.targetTriple,
+        targetDesc.cpuDesc,
+        targetDesc.featureDesc,
         targetOptions,
         relocModel);
     if (!targetMachine)
         ErrorLogger(std::cout, {}).error("Can't create TargetMachine");
 
     llvmMod.setDataLayout(targetMachine->createDataLayout());
-    llvmMod.setTargetTriple(options.targetDesc.targetTriple);
+    llvmMod.setTargetTriple(targetDesc.targetTriple);
 
     typeCtx.setPointerSize(llvmMod.getDataLayout().getPointerSizeInBits());
 }
