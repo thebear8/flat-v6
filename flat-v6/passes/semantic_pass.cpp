@@ -28,7 +28,7 @@ Type* SemanticPass::visit(IRStringExpression* node)
 Type* SemanticPass::visit(IRIdentifierExpression* node)
 {
     if (!localVariables.contains(node->value))
-        return logger.error("Undefined Identifier", nullptr);
+        return logger.error(node->location, "Undefined Identifier", nullptr);
 
     return (node->type = localVariables.at(node->value));
 }
@@ -38,6 +38,7 @@ Type* SemanticPass::visit(IRStructExpression* node)
     auto structType = modCtx.resolveStruct(node->structName);
     if (!structType)
         return logger.error(
+            node->location, 
             "Undefined Struct Type " + node->structName, nullptr);
 
     for (auto& [name, value] : node->fields)
@@ -52,6 +53,7 @@ Type* SemanticPass::visit(IRStructExpression* node)
             {
                 if (fieldType != value->type)
                     return logger.error(
+                        node->location, 
                         "Field " + name + " has type " + fieldType->toString()
                             + ", value type is " + value->type->toString(),
                         nullptr);
@@ -60,6 +62,7 @@ Type* SemanticPass::visit(IRStructExpression* node)
 
             if (i == structType->fields.size() - 1)
                 return logger.error(
+                    node->location, 
                     "Struct " + structType->name
                         + " does not contain a field called " + name,
                     nullptr);
@@ -75,6 +78,7 @@ Type* SemanticPass::visit(IRStructExpression* node)
             {
                 if (value->type != fieldType)
                     return logger.error(
+                        node->location, 
                         "Field " + name + " has type " + fieldType->toString()
                             + ", value type is " + value->type->toString(),
                         nullptr);
@@ -83,6 +87,7 @@ Type* SemanticPass::visit(IRStructExpression* node)
 
             if (i == node->fields.size() - 1)
                 return logger.error(
+                    node->location, 
                     "No initializer for field " + fieldName + ": "
                         + fieldType->toString(),
                     nullptr);
@@ -122,6 +127,7 @@ Type* SemanticPass::visit(IRUnaryExpression* node)
             unaryOperators.at(node->operation).name, args);
         if (!function)
             return logger.error(
+                node->location, 
                 "No matching operator function "
                     + unaryOperators.at(node->operation).name + " for type "
                     + value->toString(),
@@ -183,11 +189,13 @@ Type* SemanticPass::visit(IRBinaryExpression* node)
     {
         if (!dynamic_cast<IRIdentifierExpression*>(node->left))
             return logger.error(
+                node->location, 
                 "Left side of assignment has to be identifier", nullptr);
 
         if ((left->isIntegerType() && right->isIntegerType())
             && (left->getBitSize() < right->getBitSize()))
             logger.warning(
+                node->location, 
                 "Narrowing conversion from " + left->toString() + " to "
                 + right->toString());
 
@@ -200,6 +208,7 @@ Type* SemanticPass::visit(IRBinaryExpression* node)
             binaryOperators.at(node->operation).name, args);
         if (!function)
             return logger.error(
+                node->location, 
                 "No matching operator function "
                     + binaryOperators.at(node->operation).name + " for types "
                     + left->toString() + ", " + right->toString(),
@@ -209,6 +218,7 @@ Type* SemanticPass::visit(IRBinaryExpression* node)
                 == OperatorCategory::BinaryAssign
             && function->result != left)
             return logger.error(
+                node->location, 
                 "Assignment operator overload function has to return a value that has the type of the left operand",
                 nullptr);
 
@@ -230,6 +240,7 @@ Type* SemanticPass::visit(IRCallExpression* node)
             modCtx.resolveFunction(identifierExpression->value, args);
         if (!function)
             return logger.error(
+                node->location, 
                 "No matching function " + identifierExpression->value, nullptr);
 
         node->target = function;
@@ -241,6 +252,7 @@ Type* SemanticPass::visit(IRCallExpression* node)
         auto function = modCtx.resolveFunction("__call__", args);
         if (!function)
             return logger.error(
+                node->location, 
                 "No matching operator function __call__ for type "
                     + args.front()->toString(),
                 nullptr);
@@ -273,6 +285,7 @@ Type* SemanticPass::visit(IRIndexExpression* node)
         auto function = modCtx.resolveFunction("__index__", args);
         if (!function)
             return logger.error(
+                node->location, 
                 "No matching operator function __index__ for type "
                     + args.front()->toString(),
                 nullptr);
@@ -287,6 +300,7 @@ Type* SemanticPass::visit(IRFieldExpression* node)
     auto value = dispatch(node->expression);
     if (!value->isStructType())
         return logger.error(
+            node->location, 
             "Left side of field expression has to be of struct type", nullptr);
 
     auto structType = dynamic_cast<StructType*>(value);
@@ -297,6 +311,7 @@ Type* SemanticPass::visit(IRFieldExpression* node)
     }
 
     return logger.error(
+        node->location, 
         "Struct " + structType->name + " does not have a field named "
             + node->fieldName,
         nullptr);
@@ -321,10 +336,12 @@ Type* SemanticPass::visit(IRVariableStatement* node)
     for (auto& [name, value] : node->items)
     {
         if (localVariables.contains(name))
-            return logger.error("Variable is already defined", nullptr);
+            return logger.error(
+                node->location, "Variable is already defined", nullptr);
 
         if (dispatch(value)->isVoidType())
-            return logger.error("Variable cannot have void type", nullptr);
+            return logger.error(
+                node->location, "Variable cannot have void type", nullptr);
 
         localVariables.try_emplace(name, value->type);
     }
@@ -339,6 +356,7 @@ Type* SemanticPass::visit(IRReturnStatement* node)
     {
         functionResult = nullptr;
         return logger.error(
+            node->location, 
             "Return expression has to be of function result type", nullptr);
     }
 
@@ -350,6 +368,7 @@ Type* SemanticPass::visit(IRWhileStatement* node)
     auto condition = dispatch(node->condition);
     if (!condition->isBoolType())
         return logger.error(
+            node->location, 
             "While condition has to be of boolean type", nullptr);
 
     auto prevResult = functionResult;
@@ -363,7 +382,8 @@ Type* SemanticPass::visit(IRIfStatement* node)
 {
     auto condition = dispatch(node->condition);
     if (!condition->isBoolType())
-        return logger.error("If condition has to be of boolean type", nullptr);
+        return logger.error(
+            node->location, "If condition has to be of boolean type", nullptr);
 
     auto prevResult = functionResult;
 
@@ -404,6 +424,7 @@ Type* SemanticPass::visit(IRFunctionDeclaration* node)
 
     if (!expectedFunctionResult->isVoidType() && !functionResult)
         return logger.error(
+            node->location, 
             "Missing return statement in function " + node->name
                 + ", should return " + expectedFunctionResult->toString(),
             nullptr);

@@ -9,6 +9,7 @@ void FunctionExtractionPass::visit(IRFunctionDeclaration* node)
 {
     if (!modCtx.addFunction(node))
         return logger.error(
+            node->location, 
             "Function " + node->name + " in module " + modCtx.name
             + " is already defined");
 }

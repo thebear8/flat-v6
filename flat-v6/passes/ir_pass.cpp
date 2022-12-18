@@ -38,7 +38,7 @@ IRNode* IRPass::visit(ASTIntegerExpression* node)
                         .Case("", true)
                         .OrThrow();
 
-    return irCtx.make(IRIntegerExpression(isSigned, width, radix, value));
+    return irCtx.make(IRIntegerExpression(node->location, isSigned, width, radix, value));
 }
 
 IRNode* IRPass::visit(ASTBoolExpression* node)
@@ -48,25 +48,26 @@ IRNode* IRPass::visit(ASTBoolExpression* node)
                      .Case("false", false)
                      .OrThrow();
 
-    return irCtx.make(IRBoolExpression(value));
+    return irCtx.make(IRBoolExpression(node->location, value));
 }
 
 IRNode* IRPass::visit(ASTCharExpression* node)
 {
     size_t position = 0;
     return irCtx.make(IRCharExpression(
+        node->location, 
         unescapeCodePoint(node->value, position, node->location)));
 }
 
 IRNode* IRPass::visit(ASTStringExpression* node)
 {
-    return irCtx.make(
-        IRStringExpression(unescapeStringUTF8(node->value, node->location)));
+    return irCtx.make(IRStringExpression(
+        node->location, unescapeStringUTF8(node->value, node->location)));
 }
 
 IRNode* IRPass::visit(ASTIdentifierExpression* node)
 {
-    return irCtx.make(IRIdentifierExpression(node->value));
+    return irCtx.make(IRIdentifierExpression(node->location, node->value));
 }
 
 IRNode* IRPass::visit(ASTStructExpression* node)
@@ -75,18 +76,21 @@ IRNode* IRPass::visit(ASTStructExpression* node)
     for (auto const& [name, value] : node->fields)
         fields.push_back({ name, (IRExpression*)dispatch(value) });
 
-    return irCtx.make(IRStructExpression(node->structName, fields));
+    return irCtx.make(
+        IRStructExpression(node->location, node->structName, fields));
 }
 
 IRNode* IRPass::visit(ASTUnaryExpression* node)
 {
     return irCtx.make(IRUnaryExpression(
+        node->location, 
         node->operation, (IRExpression*)dispatch(node->expression), nullptr));
 }
 
 IRNode* IRPass::visit(ASTBinaryExpression* node)
 {
     return irCtx.make(IRBinaryExpression(
+        node->location, 
         node->operation,
         (IRExpression*)dispatch(node->left),
         (IRExpression*)dispatch(node->right),
@@ -100,6 +104,7 @@ IRNode* IRPass::visit(ASTCallExpression* node)
         args.push_back((IRExpression*)dispatch(arg));
 
     return irCtx.make(IRCallExpression(
+        node->location, 
         (IRExpression*)dispatch(node->expression), args, nullptr));
 }
 
@@ -110,12 +115,14 @@ IRNode* IRPass::visit(ASTIndexExpression* node)
         args.push_back((IRExpression*)dispatch(arg));
 
     return irCtx.make(IRIndexExpression(
+        node->location, 
         (IRExpression*)dispatch(node->expression), args, nullptr));
 }
 
 IRNode* IRPass::visit(ASTFieldExpression* node)
 {
     return irCtx.make(IRFieldExpression(
+        node->location, 
         (IRExpression*)dispatch(node->expression), node->fieldName));
 }
 
@@ -125,13 +132,13 @@ IRNode* IRPass::visit(ASTBlockStatement* node)
     for (auto statement : node->statements)
         statements.push_back((IRStatement*)dispatch(statement));
 
-    return irCtx.make(IRBlockStatement(statements));
+    return irCtx.make(IRBlockStatement(node->location, statements));
 }
 
 IRNode* IRPass::visit(ASTExpressionStatement* node)
 {
-    return irCtx.make(
-        IRExpressionStatement((IRExpression*)dispatch(node->expression)));
+    return irCtx.make(IRExpressionStatement(
+        node->location, (IRExpression*)dispatch(node->expression)));
 }
 
 IRNode* IRPass::visit(ASTVariableStatement* node)
@@ -140,18 +147,19 @@ IRNode* IRPass::visit(ASTVariableStatement* node)
     for (auto const& [name, value] : node->items)
         items.push_back({ name, (IRExpression*)dispatch(value) });
 
-    return irCtx.make(IRVariableStatement(items));
+    return irCtx.make(IRVariableStatement(node->location, items));
 }
 
 IRNode* IRPass::visit(ASTReturnStatement* node)
 {
-    return irCtx.make(
-        IRReturnStatement((IRExpression*)dispatch(node->expression)));
+    return irCtx.make(IRReturnStatement(
+        node->location, (IRExpression*)dispatch(node->expression)));
 }
 
 IRNode* IRPass::visit(ASTWhileStatement* node)
 {
     return irCtx.make(IRWhileStatement(
+        node->location, 
         (IRExpression*)dispatch(node->condition),
         (IRStatement*)dispatch(node->body)));
 }
@@ -159,6 +167,7 @@ IRNode* IRPass::visit(ASTWhileStatement* node)
 IRNode* IRPass::visit(ASTIfStatement* node)
 {
     return irCtx.make(IRIfStatement(
+        node->location, 
         (IRExpression*)dispatch(node->condition),
         (IRStatement*)dispatch(node->ifBody),
         (IRStatement*)((node->elseBody) ? dispatch(node->elseBody) : nullptr)));
@@ -170,7 +179,7 @@ IRNode* IRPass::visit(ASTStructDeclaration* node)
     for (auto const& [name, type] : node->fields)
         fields.push_back({ name, modCtx.getType(type) });
 
-    return irCtx.make(IRStructDeclaration(node->name, fields));
+    return irCtx.make(IRStructDeclaration(node->location, node->name, fields));
 }
 
 IRNode* IRPass::visit(ASTFunctionDeclaration* node)
@@ -180,6 +189,7 @@ IRNode* IRPass::visit(ASTFunctionDeclaration* node)
         params.push_back({ name, modCtx.getType(type) });
 
     return irCtx.make(IRFunctionDeclaration(
+        node->location, 
         node->name,
         modCtx.getType(node->result),
         params,
@@ -193,6 +203,7 @@ IRNode* IRPass::visit(ASTExternFunctionDeclaration* node)
         params.push_back({ name, modCtx.getType(type) });
 
     return irCtx.make(IRFunctionDeclaration(
+        node->location, 
         node->lib, node->name, modCtx.getType(node->result), params));
 }
 
@@ -202,8 +213,8 @@ IRNode* IRPass::visit(ASTSourceFile* node)
     for (auto declaration : node->declarations)
         declarations.push_back((IRDeclaration*)dispatch(declaration));
 
-    return irCtx.make(
-        IRSourceFile(node->modulePath, node->importPaths, declarations));
+    return irCtx.make(IRSourceFile(
+        node->location, node->modulePath, node->importPaths, declarations));
 }
 
 std::vector<uint8_t> IRPass::unescapeStringUTF8(
