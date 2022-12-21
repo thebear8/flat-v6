@@ -16,6 +16,7 @@
 #include <fstream>
 
 #include "data/ast.hpp"
+#include "data/type.hpp"
 #include "parser/parser.hpp"
 #include "passes/codegen_pass.hpp"
 #include "passes/function_extraction_pass.hpp"
@@ -24,18 +25,37 @@
 #include "passes/semantic_pass.hpp"
 #include "passes/struct_extraction_pass.hpp"
 #include "passes/struct_population_pass.hpp"
-#include "type/type.hpp"
 #include "util/string_switch.hpp"
 
 CompilationContext::CompilationContext(
     TargetDescriptor const& targetDesc, std::ostream& logStream)
     : targetDesc(targetDesc),
-      typeCtx(),
       llvmCtx(),
       llvmMod("flat", llvmCtx),
       target(nullptr),
-      targetMachine(nullptr)
+      targetMachine(nullptr),
+      m_void(new VoidType()),
+      m_bool(new BoolType()),
+      m_i8(new IntegerType(true, 8)),
+      m_i16(new IntegerType(true, 16)),
+      m_i32(new IntegerType(true, 32)),
+      m_i64(new IntegerType(true, 64)),
+      m_u8(new IntegerType(false, 8)),
+      m_u16(new IntegerType(false, 16)),
+      m_u32(new IntegerType(false, 32)),
+      m_u64(new IntegerType(false, 64)),
+      m_char(new CharType()),
+      m_string(new StringType())
 {
+    m_signedIntegerTypes.try_emplace(8, m_i8);
+    m_signedIntegerTypes.try_emplace(16, m_i16);
+    m_signedIntegerTypes.try_emplace(32, m_i32);
+    m_signedIntegerTypes.try_emplace(64, m_i64);
+    m_unsignedIntegerTypes.try_emplace(8, m_u8);
+    m_unsignedIntegerTypes.try_emplace(16, m_u16);
+    m_unsignedIntegerTypes.try_emplace(32, m_u32);
+    m_unsignedIntegerTypes.try_emplace(64, m_u64);
+
     llvm::InitializeAllTargetInfos();
     llvm::InitializeAllTargets();
     llvm::InitializeAllTargetMCs();
@@ -60,8 +80,6 @@ CompilationContext::CompilationContext(
 
     llvmMod.setDataLayout(targetMachine->createDataLayout());
     llvmMod.setTargetTriple(targetDesc.targetTriple);
-
-    typeCtx.setPointerSize(llvmMod.getDataLayout().getPointerSizeInBits());
 }
 
 CompilationContext::~CompilationContext()
@@ -183,34 +201,51 @@ llvm::Function* CompilationContext::getLLVMFunction(
 Type* CompilationContext::getBuiltinType(std::string const& name)
 {
     return StringSwitch<Type*>(name)
-        .Case("void", typeCtx.getVoid())
-        .Case("bool", typeCtx.getBool())
-        .Case("i8", typeCtx.getI8())
-        .Case("i16", typeCtx.getI16())
-        .Case("i32", typeCtx.getI32())
-        .Case("i64", typeCtx.getI64())
-        .Case("u8", typeCtx.getU8())
-        .Case("u16", typeCtx.getU16())
-        .Case("u32", typeCtx.getU32())
-        .Case("u64", typeCtx.getU64())
-        .Case("char", typeCtx.getChar())
-        .Case("string", typeCtx.getString())
+        .Case("void", getVoid())
+        .Case("bool", getBool())
+        .Case("i8", getI8())
+        .Case("i16", getI16())
+        .Case("i32", getI32())
+        .Case("i64", getI64())
+        .Case("u8", getU8())
+        .Case("u16", getU16())
+        .Case("u32", getU32())
+        .Case("u64", getU64())
+        .Case("char", getChar())
+        .Case("string", getString())
         .Default(nullptr);
 }
 
 IntegerType* CompilationContext::getIntegerType(size_t width, bool isSigned)
 {
-    return typeCtx.getIntegerType(width, isSigned);
+    if (isSigned)
+    {
+        if (!m_signedIntegerTypes.contains(width))
+            m_signedIntegerTypes.try_emplace(
+                width, new IntegerType(true, width));
+        return m_signedIntegerTypes.at(width);
+    }
+    else
+    {
+        if (!m_unsignedIntegerTypes.contains(width))
+            m_unsignedIntegerTypes.try_emplace(
+                width, new IntegerType(false, width));
+        return m_unsignedIntegerTypes.at(width);
+    }
 }
 
 PointerType* CompilationContext::getPointerType(Type* base)
 {
-    return typeCtx.getPointerType(base);
+    if (!m_pointerTypes.contains(base))
+        m_pointerTypes.try_emplace(base, new PointerType(base));
+    return m_pointerTypes.at(base);
 }
 
 ArrayType* CompilationContext::getArrayType(Type* base)
 {
-    return typeCtx.getArrayType(base);
+    if (!m_arrayTypes.contains(base))
+        m_arrayTypes.try_emplace(base, new ArrayType(base));
+    return m_arrayTypes.at(base);
 }
 
 ModuleContext::~ModuleContext()
@@ -259,16 +294,14 @@ StructType* ModuleContext::createStruct(std::string const& structName)
     if (structTypes.contains(structName))
         return nullptr;
 
-    structTypes.try_emplace(
-        structName, new StructType(compCtx.typeCtx, structName));
+    structTypes.try_emplace(structName, new StructType(structName, {}));
     return structTypes.at(structName);
 }
 
 StructType* ModuleContext::getStruct(std::string const& structName)
 {
     if (!structTypes.contains(structName))
-        structTypes.try_emplace(
-            structName, new StructType(compCtx.typeCtx, structName));
+        structTypes.try_emplace(structName, new StructType(structName, {}));
     return structTypes.at(structName);
 }
 

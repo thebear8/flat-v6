@@ -7,7 +7,6 @@
 #include "../compiler.hpp"
 #include "../data/ir.hpp"
 #include "../data/operator.hpp"
-#include "../type/type.hpp"
 #include "../util/error_logger.hpp"
 
 class SemanticPass : IRVisitor<Type*>

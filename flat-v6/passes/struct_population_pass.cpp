@@ -11,7 +11,8 @@ void StructPopulationPass::visit(ASTStructDeclaration* node)
     assert(structType && "structType cannot be null");
 
     for (auto const& [fieldName, fieldType] : node->fields)
-        structType->addField(fieldName, modCtx.getType(fieldType));
+        structType->fields.push_back(
+            std::pair(fieldName, modCtx.getType(fieldType)));
 }
 
 void StructPopulationPass::visit(ASTSourceFile* node)

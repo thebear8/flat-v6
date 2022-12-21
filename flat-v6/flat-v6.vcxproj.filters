@@ -18,7 +18,7 @@
     <ClCompile Include="flat-v6.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="type\type.cpp">
+    <ClCompile Include="type_\type.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
     <ClCompile Include="parser\lexer.cpp">
@@ -71,7 +71,7 @@
     <ClInclude Include="data\operator.hpp">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="type\type.hpp">
+    <ClInclude Include="type_\type.hpp">
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="parser\lexer.hpp">
@@ -104,9 +104,6 @@
     <ClInclude Include="util\visitor.hpp">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="util\ast_context.hpp">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
     <ClInclude Include="data\ir.hpp">
       <Filter>Headerdateien</Filter>
     </ClInclude>
@@ -126,6 +123,9 @@
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="passes\function_extraction_pass.hpp">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="data\type.hpp">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>

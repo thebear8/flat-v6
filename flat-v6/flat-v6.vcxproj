@@ -181,7 +181,7 @@
     <ClCompile Include="passes\semantic_pass.cpp" />
     <ClCompile Include="passes\struct_extraction_pass.cpp" />
     <ClCompile Include="passes\struct_population_pass.cpp" />
-    <ClCompile Include="type\type.cpp" />
+    <ClCompile Include="type_\type.cpp" />
     <ClCompile Include="util\error_logger.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -192,6 +192,7 @@
     <ClInclude Include="data\operator.hpp" />
     <ClInclude Include="data\source_ref.hpp" />
     <ClInclude Include="data\token.hpp" />
+    <ClInclude Include="data\type.hpp" />
     <ClInclude Include="parser\lexer.hpp" />
     <ClInclude Include="parser\parser.hpp" />
     <ClInclude Include="passes\codegen_pass.hpp" />
@@ -202,8 +203,7 @@
     <ClInclude Include="passes\semantic_pass.hpp" />
     <ClInclude Include="passes\struct_extraction_pass.hpp" />
     <ClInclude Include="passes\struct_population_pass.hpp" />
-    <ClInclude Include="type\type.hpp" />
-    <ClInclude Include="util\ast_context.hpp" />
+    <ClInclude Include="type_\type.hpp" />
     <ClInclude Include="util\error_logger.hpp" />
     <ClInclude Include="util\graph_context.hpp" />
     <ClInclude Include="util\string_switch.hpp" />

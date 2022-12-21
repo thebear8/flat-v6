@@ -8,7 +8,7 @@
 
 #include "data/ast.hpp"
 #include "data/ir.hpp"
-#include "type/type.hpp"
+#include "data/type.hpp"
 #include "util/error_logger.hpp"
 #include "util/graph_context.hpp"
 
@@ -36,16 +36,31 @@ class CompilationContext
 
 private:
     TargetDescriptor targetDesc;
-
-    TypeContext typeCtx;
-
-    std::unordered_map<std::string, ModuleContext*> modules;
-
     llvm::LLVMContext llvmCtx;
     llvm::Module llvmMod;
     llvm::Target const* target;
     llvm::TargetMachine* targetMachine;
+
+    std::unordered_map<std::string, ModuleContext*> modules;
     std::unordered_map<IRFunctionDeclaration*, llvm::Function*> llvmFunctions;
+
+    std::unordered_map<size_t, IntegerType*> m_signedIntegerTypes;
+    std::unordered_map<size_t, IntegerType*> m_unsignedIntegerTypes;
+    std::unordered_map<Type*, PointerType*> m_pointerTypes;
+    std::unordered_map<Type*, ArrayType*> m_arrayTypes;
+
+    VoidType* m_void;
+    BoolType* m_bool;
+    IntegerType* m_i8;
+    IntegerType* m_i16;
+    IntegerType* m_i32;
+    IntegerType* m_i64;
+    IntegerType* m_u8;
+    IntegerType* m_u16;
+    IntegerType* m_u32;
+    IntegerType* m_u64;
+    CharType* m_char;
+    StringType* m_string;
 
 public:
     CompilationContext(
@@ -102,51 +117,51 @@ public:
 
     /// @brief Get void type
     /// @return Type representing void
-    VoidType* getVoid() { return typeCtx.getVoid(); }
+    VoidType* getVoid() { return m_void; }
 
     /// @brief Get bool type
     /// @return Type representing bool
-    BoolType* getBool() { return typeCtx.getBool(); }
+    BoolType* getBool() { return m_bool; }
 
     /// @brief Get i8 type
     /// @return IntegerType representing i8
-    IntegerType* getI8() { return typeCtx.getI8(); }
+    IntegerType* getI8() { return m_i8; }
 
     /// @brief Get u8 type
     /// @return IntegerType representing u8
-    IntegerType* getU8() { return typeCtx.getU8(); }
+    IntegerType* getU8() { return m_u8; }
 
     /// @brief Get i16 type
     /// @return IntegerType representing i16
-    IntegerType* getI16() { return typeCtx.getI16(); }
+    IntegerType* getI16() { return m_i16; }
 
     /// @brief Get u16 type
     /// @return IntegerType representing u16
-    IntegerType* getU16() { return typeCtx.getU16(); }
+    IntegerType* getU16() { return m_u16; }
 
     /// @brief Get i32 type
     /// @return IntegerType representing i32
-    IntegerType* getI32() { return typeCtx.getI32(); }
+    IntegerType* getI32() { return m_i32; }
 
     /// @brief Get u32 type
     /// @return IntegerType representing u32
-    IntegerType* getU32() { return typeCtx.getU32(); }
+    IntegerType* getU32() { return m_u32; }
 
     /// @brief Get i64 type
     /// @return IntegerType representing i64
-    IntegerType* getI64() { return typeCtx.getI64(); }
+    IntegerType* getI64() { return m_i64; }
 
     /// @brief Get u64 type
     /// @return IntegerType representing u64
-    IntegerType* getU64() { return typeCtx.getU64(); }
+    IntegerType* getU64() { return m_u64; }
 
     /// @brief Get char type
     /// @return Type representing char
-    CharType* getChar() { return typeCtx.getChar(); }
+    CharType* getChar() { return m_char; }
 
     /// @brief Get string type
     /// @return Type representing string
-    StringType* getString() { return typeCtx.getString(); }
+    StringType* getString() { return m_string; }
 };
 
 class ModuleContext

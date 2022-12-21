@@ -3,9 +3,9 @@
 #include <unordered_map>
 #include <vector>
 
-#include "../type/type.hpp"
 #include "../util/visitor.hpp"
 #include "operator.hpp"
+#include "type.hpp"
 
 using IRTripleDispatchVisitor = triple_dispatch_visitor::TripleDispatchVisitor<
     struct IRNode,
