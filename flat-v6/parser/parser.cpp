@@ -654,7 +654,7 @@ ASTType* Parser::typeName()
         else if (match(Token::BracketOpen) && match(Token::BracketClose))
         {
             type =
-                ctx.make(ASTPointerType(SourceRef(id, begin, position), type));
+                ctx.make(ASTArrayType(SourceRef(id, begin, position), type));
         }
         else
         {
