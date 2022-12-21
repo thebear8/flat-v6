@@ -1,8 +1,8 @@
 module entry
 
-extern(user32) fn MessageBoxA(title: string, text: string): i32
+extern(user32) fn MessageBoxA(hwnd: u32, title: string, text: string, type: u32): i32
 
 fn main(argc: i32, argv: string[]): i32 {
-    MessageBoxA("Hello World", "Hello World")
+    MessageBoxA(0u32, "Hello World", "Hello World", 0u32)
     return 0
 }
