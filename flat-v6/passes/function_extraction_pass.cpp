@@ -5,7 +5,7 @@ void FunctionExtractionPass::process(IRSourceFile* sourceFile)
     return dispatch(sourceFile);
 }
 
-void FunctionExtractionPass::visit(IRFunctionDeclaration* node)
+void FunctionExtractionPass::visit(IRFunctionDefinition* node)
 {
     if (!modCtx.addFunction(node))
         return logger.error(
@@ -16,6 +16,6 @@ void FunctionExtractionPass::visit(IRFunctionDeclaration* node)
 
 void FunctionExtractionPass::visit(IRSourceFile* node)
 {
-    for (auto decl : node->declarations)
+    for (auto decl : node->definitions)
         dispatch(decl);
 }

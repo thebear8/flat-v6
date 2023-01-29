@@ -182,7 +182,7 @@ ModuleContext* CompilationContext::getModule(std::string const& name)
 }
 
 llvm::Function* CompilationContext::addLLVMFunction(
-    IRFunctionDeclaration* function, llvm::Function* llvmFunction)
+    IRFunctionDefinition* function, llvm::Function* llvmFunction)
 {
     if (llvmFunctions.contains(function))
         return nullptr;
@@ -191,7 +191,7 @@ llvm::Function* CompilationContext::addLLVMFunction(
 }
 
 llvm::Function* CompilationContext::getLLVMFunction(
-    IRFunctionDeclaration* function)
+    IRFunctionDefinition* function)
 {
     if (!llvmFunctions.contains(function))
         return nullptr;
@@ -319,13 +319,13 @@ StructType* ModuleContext::resolveStruct(std::string const& structName)
     return nullptr;
 }
 
-IRFunctionDeclaration* ModuleContext::addFunction(
-    IRFunctionDeclaration* function)
+IRFunctionDefinition* ModuleContext::addFunction(
+    IRFunctionDefinition* function)
 {
-    if (!functionDeclarations.contains(function->name))
-        functionDeclarations.try_emplace(
-            function->name, std::vector<IRFunctionDeclaration*>());
-    auto& collection = functionDeclarations.at(function->name);
+    if (!functionDefinitions.contains(function->name))
+        functionDefinitions.try_emplace(
+            function->name, std::vector<IRFunctionDefinition*>());
+    auto& collection = functionDefinitions.at(function->name);
 
     for (auto candidate : collection)
     {
@@ -341,13 +341,13 @@ IRFunctionDeclaration* ModuleContext::addFunction(
     return function;
 }
 
-IRFunctionDeclaration* ModuleContext::getFunction(
+IRFunctionDefinition* ModuleContext::getFunction(
     std::string const& functionName, std::vector<Type*> const& params)
 {
-    if (!functionDeclarations.contains(functionName))
-        functionDeclarations.try_emplace(
-            functionName, std::vector<IRFunctionDeclaration*>());
-    auto& collection = functionDeclarations.at(functionName);
+    if (!functionDefinitions.contains(functionName))
+        functionDefinitions.try_emplace(
+            functionName, std::vector<IRFunctionDefinition*>());
+    auto& collection = functionDefinitions.at(functionName);
 
     for (auto candidate : collection)
     {
@@ -367,7 +367,7 @@ IRFunctionDeclaration* ModuleContext::getFunction(
     return nullptr;
 }
 
-IRFunctionDeclaration* ModuleContext::resolveFunction(
+IRFunctionDefinition* ModuleContext::resolveFunction(
     std::string const& functionName, std::vector<Type*> const& params)
 {
     if (auto function = getFunction(functionName, params))

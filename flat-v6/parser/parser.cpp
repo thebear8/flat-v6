@@ -499,7 +499,7 @@ ASTStatement* Parser::statement()
     }
 }
 
-ASTStructDeclaration* Parser::structDeclaration(size_t begin)
+ASTStructDefinition* Parser::structDefinition(size_t begin)
 {
     expect(Token::Identifier);
     auto structName = getTokenValue();
@@ -523,7 +523,7 @@ ASTStructDeclaration* Parser::structDeclaration(size_t begin)
 
     auto constraints = constraintList();
 
-    return ctx.make(ASTStructDeclaration(
+    return ctx.make(ASTStructDefinition(
         SourceRef(id, begin, position),
         structName,
         typeParams,
@@ -531,7 +531,7 @@ ASTStructDeclaration* Parser::structDeclaration(size_t begin)
         fields));
 }
 
-ASTFunctionDeclaration* Parser::functionDeclaration(size_t begin)
+ASTFunctionDefinition* Parser::functionDefinition(size_t begin)
 {
     expect(Token::Identifier);
     auto name = getTokenValue();
@@ -560,7 +560,7 @@ ASTFunctionDeclaration* Parser::functionDeclaration(size_t begin)
     auto bodyBegin = trim();
     expect(Token::BraceOpen);
     auto body = blockStatement(bodyBegin);
-    return ctx.make(ASTFunctionDeclaration(
+    return ctx.make(ASTFunctionDefinition(
         SourceRef(id, begin, position),
         name,
         typeParams,
@@ -570,7 +570,7 @@ ASTFunctionDeclaration* Parser::functionDeclaration(size_t begin)
         body));
 }
 
-ASTExternFunctionDeclaration* Parser::externFunctionDeclaration(size_t begin)
+ASTExternFunctionDefinition* Parser::externFunctionDefinition(size_t begin)
 {
     expect(Token::ParenOpen);
     expect(Token::Identifier);
@@ -602,7 +602,7 @@ ASTExternFunctionDeclaration* Parser::externFunctionDeclaration(size_t begin)
 
     auto constraints = constraintList();
 
-    return ctx.make(ASTExternFunctionDeclaration(
+    return ctx.make(ASTExternFunctionDefinition(
         SourceRef(id, begin, position),
         lib,
         name,
@@ -644,35 +644,35 @@ ASTSourceFile* Parser::sourceFile()
         imports.push_back(importPath);
     }
 
-    std::vector<ASTDeclaration*> declarations;
+    std::vector<ASTDefinition*> definitions;
     while (!match(Token::Eof))
     {
         auto declBegin = trim();
         if (match(Token::Constraint))
         {
-            declarations.push_back(constraintDeclaration(declBegin));
+            definitions.push_back(constraintDefinition(declBegin));
         }
         else if (match(Token::Struct))
         {
-            declarations.push_back(structDeclaration(declBegin));
+            definitions.push_back(structDefinition(declBegin));
         }
         else if (match(Token::Function))
         {
-            declarations.push_back(functionDeclaration(declBegin));
+            definitions.push_back(functionDefinition(declBegin));
         }
         else if (match(Token::Extern))
         {
-            declarations.push_back(externFunctionDeclaration(declBegin));
+            definitions.push_back(externFunctionDefinition(declBegin));
         }
         else
         {
             logger.error(
                 SourceRef(id, position),
-                "Expected eiter StructDeclaration, FunctionDeclaration or ExternFunctionDeclaration");
+                "Expected eiter StructDefinition, FunctionDefinition or ExternFunctionDefinition");
         }
     }
     return ctx.make(ASTSourceFile(
-        SourceRef(id, begin, position), modulePath, imports, declarations));
+        SourceRef(id, begin, position), modulePath, imports, definitions));
 }
 
 ASTType* Parser::typeName()

@@ -67,8 +67,8 @@ protected:
     virtual llvm::Value* visit(IRWhileStatement* node) override;
     virtual llvm::Value* visit(IRIfStatement* node) override;
 
-    virtual llvm::Value* visit(IRStructDeclaration* node) override;
-    virtual llvm::Value* visit(IRFunctionDeclaration* node) override;
+    virtual llvm::Value* visit(IRStructDefinition* node) override;
+    virtual llvm::Value* visit(IRFunctionDefinition* node) override;
     virtual llvm::Value* visit(IRSourceFile* node) override;
 
 private:

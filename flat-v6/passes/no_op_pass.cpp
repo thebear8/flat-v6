@@ -123,25 +123,25 @@ ASTNode* NoOpPass::visit(ASTIfStatement* node)
     return node;
 }
 
-ASTNode* NoOpPass::visit(ASTStructDeclaration* node)
+ASTNode* NoOpPass::visit(ASTStructDefinition* node)
 {
     return node;
 }
 
-ASTNode* NoOpPass::visit(ASTFunctionDeclaration* node)
+ASTNode* NoOpPass::visit(ASTFunctionDefinition* node)
 {
     dispatch(node->body);
     return node;
 }
 
-ASTNode* NoOpPass::visit(ASTExternFunctionDeclaration* node)
+ASTNode* NoOpPass::visit(ASTExternFunctionDefinition* node)
 {
     return node;
 }
 
 ASTNode* NoOpPass::visit(ASTSourceFile* node)
 {
-    for (auto& decl : node->declarations)
+    for (auto& decl : node->definitions)
         dispatch(decl);
 
     return node;

@@ -21,8 +21,8 @@ public:
     void process(ASTSourceFile* sourceFile);
 
 private:
-    virtual void visit(ASTStructDeclaration* node) override;
-    virtual void visit(ASTFunctionDeclaration* node) override {}
-    virtual void visit(ASTExternFunctionDeclaration* node) override {}
+    virtual void visit(ASTStructDefinition* node) override;
+    virtual void visit(ASTFunctionDefinition* node) override {}
+    virtual void visit(ASTExternFunctionDefinition* node) override {}
     virtual void visit(ASTSourceFile* node) override;
 };

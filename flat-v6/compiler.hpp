@@ -42,7 +42,7 @@ private:
     llvm::TargetMachine* targetMachine;
 
     std::unordered_map<std::string, ModuleContext*> modules;
-    std::unordered_map<IRFunctionDeclaration*, llvm::Function*> llvmFunctions;
+    std::unordered_map<IRFunctionDefinition*, llvm::Function*> llvmFunctions;
 
     std::unordered_map<size_t, IntegerType*> m_signedIntegerTypes;
     std::unordered_map<size_t, IntegerType*> m_unsignedIntegerTypes;
@@ -85,14 +85,14 @@ public:
     /// @return The added llvm::Function or nullptr if the function already
     /// exists
     llvm::Function* addLLVMFunction(
-        IRFunctionDeclaration* function, llvm::Function* llvmFunction);
+        IRFunctionDefinition* function, llvm::Function* llvmFunction);
 
     /// @brief Get an llvm::Function for an IR function. This doesn't actually
     /// belong in CompilationContext, but is here for now for lack of a better
     /// place.
     /// @param function The IR function to get an llvm::Function for
     /// @return The retrieved llvm::Function or nullptr on failure
-    llvm::Function* getLLVMFunction(IRFunctionDeclaration* function);
+    llvm::Function* getLLVMFunction(IRFunctionDefinition* function);
 
     /// @brief Lookup a builtin type
     /// @param name Type name
@@ -174,8 +174,8 @@ public:
     std::string name;
     std::set<std::string> imports;
     std::unordered_map<std::string, StructType*> structTypes;
-    std::unordered_map<std::string, std::vector<IRFunctionDeclaration*>>
-        functionDeclarations;
+    std::unordered_map<std::string, std::vector<IRFunctionDefinition*>>
+        functionDefinitions;
 
 public:
     ModuleContext(CompilationContext& compCtx, std::string const& name)
@@ -218,13 +218,13 @@ public:
     /// @param function The function to add
     /// @return The added function or nullptr if a function with the same name
     /// and parameters already exists
-    IRFunctionDeclaration* addFunction(IRFunctionDeclaration* function);
+    IRFunctionDefinition* addFunction(IRFunctionDefinition* function);
 
     /// @brief Get a function with specified name and params
     /// @param name Name of the function
     /// @param params Parameters of the function
     /// @return The retrieved function or nullptr if the function does not exist
-    IRFunctionDeclaration* getFunction(
+    IRFunctionDefinition* getFunction(
         std::string const& name, std::vector<Type*> const& params);
 
     /// @brief Resolve a function with specified name and params in the context
@@ -232,6 +232,6 @@ public:
     /// @param name Name of the function
     /// @param params Parameters of the function
     /// @return The resolved function or nullptr if the function does not exist
-    IRFunctionDeclaration* resolveFunction(
+    IRFunctionDefinition* resolveFunction(
         std::string const& name, std::vector<Type*> const& params);
 };

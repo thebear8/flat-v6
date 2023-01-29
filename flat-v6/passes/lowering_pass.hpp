@@ -49,8 +49,8 @@ protected:
     virtual IRNode* visit(IRWhileStatement* node) override;
     virtual IRNode* visit(IRIfStatement* node) override;
 
-    virtual IRNode* visit(IRStructDeclaration* node) override;
-    virtual IRNode* visit(IRFunctionDeclaration* node) override;
+    virtual IRNode* visit(IRStructDefinition* node) override;
+    virtual IRNode* visit(IRFunctionDefinition* node) override;
     virtual IRNode* visit(IRSourceFile* node) override;
 
 private:

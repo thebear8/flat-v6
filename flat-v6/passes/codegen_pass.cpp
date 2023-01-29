@@ -6,7 +6,7 @@
 
 void LLVMCodegenPass::process(IRSourceFile* source)
 {
-    for (auto& [functionName, collection] : modCtx.functionDeclarations)
+    for (auto& [functionName, collection] : modCtx.functionDefinitions)
     {
         for (auto function : collection)
         {
@@ -472,17 +472,17 @@ llvm::Value* LLVMCodegenPass::visit(IRIfStatement* node)
     return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRStructDeclaration* node)
+llvm::Value* LLVMCodegenPass::visit(IRStructDefinition* node)
 {
     return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRFunctionDeclaration* node)
+llvm::Value* LLVMCodegenPass::visit(IRFunctionDefinition* node)
 {
     auto function = compCtx.getLLVMFunction(node);
     assert(
         function
-        && "No matching llvm function object for function declaration");
+        && "No matching llvm function object for function definition");
 
     if (!node->body)
         return nullptr;
@@ -522,7 +522,7 @@ llvm::Value* LLVMCodegenPass::visit(IRFunctionDeclaration* node)
 
 llvm::Value* LLVMCodegenPass::visit(IRSourceFile* node)
 {
-    for (auto& decl : node->declarations)
+    for (auto& decl : node->definitions)
         dispatch(decl);
 
     return nullptr;

@@ -252,12 +252,12 @@ IRNode* OperatorLoweringPass::visit(IRIfStatement* node)
     return node;
 }
 
-IRNode* OperatorLoweringPass::visit(IRStructDeclaration* node)
+IRNode* OperatorLoweringPass::visit(IRStructDefinition* node)
 {
     return node;
 }
 
-IRNode* OperatorLoweringPass::visit(IRFunctionDeclaration* node)
+IRNode* OperatorLoweringPass::visit(IRFunctionDefinition* node)
 {
     node->body =
         ((node->body) ? checked_cast<IRStatement>(dispatch(node->body))
@@ -267,8 +267,8 @@ IRNode* OperatorLoweringPass::visit(IRFunctionDeclaration* node)
 
 IRNode* OperatorLoweringPass::visit(IRSourceFile* node)
 {
-    for (auto& decl : node->declarations)
-        decl = checked_cast<IRDeclaration>(dispatch(decl));
+    for (auto& decl : node->definitions)
+        decl = checked_cast<IRDefinition>(dispatch(decl));
 
     return node;
 }

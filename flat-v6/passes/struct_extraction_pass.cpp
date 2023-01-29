@@ -5,7 +5,7 @@ void StructExtractionPass::process(ASTSourceFile* sourceFile)
     return dispatch(sourceFile);
 }
 
-void StructExtractionPass::visit(ASTStructDeclaration* node)
+void StructExtractionPass::visit(ASTStructDefinition* node)
 {
     if (!modCtx.createStruct(node->name))
         return logger.error(
@@ -29,6 +29,6 @@ void StructExtractionPass::visit(ASTSourceFile* node)
             modCtx.imports.emplace(importName);
     }
 
-    for (auto declaration : node->declarations)
-        dispatch(declaration);
+    for (auto definition : node->definitions)
+        dispatch(definition);
 }

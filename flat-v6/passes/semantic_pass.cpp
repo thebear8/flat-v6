@@ -403,12 +403,12 @@ Type* SemanticPass::visit(IRIfStatement* node)
     return nullptr;
 }
 
-Type* SemanticPass::visit(IRStructDeclaration* node)
+Type* SemanticPass::visit(IRStructDefinition* node)
 {
     return nullptr;
 }
 
-Type* SemanticPass::visit(IRFunctionDeclaration* node)
+Type* SemanticPass::visit(IRFunctionDefinition* node)
 {
     if (!node->body)
         return nullptr;
@@ -434,7 +434,7 @@ Type* SemanticPass::visit(IRFunctionDeclaration* node)
 
 Type* SemanticPass::visit(IRSourceFile* node)
 {
-    for (auto& decl : node->declarations)
+    for (auto& decl : node->definitions)
         dispatch(decl);
 
     return nullptr;
