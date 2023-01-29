@@ -1,4 +1,4 @@
-constraint Comparable(T) {
+constraint Comparable<T> {
     fn __eq__(a: T, b: T): bool
     fn __neq__(a: T, b: T): bool
     fn __lt__(a: T, b: T): bool
@@ -7,14 +7,14 @@ constraint Comparable(T) {
     fn __gteq__(a: T, b: T): bool
 }
 
-constraint Stringifieable(T) {
+constraint Stringifieable<T> {
     fn toString(v: T): str
 }
 
-struct GenericStruct<T> [Comparable(T)] {
-    T number,
+struct GenericStruct<T> [Comparable<T>] {
+    number: T,
 }
 
-fn generic<T>(): bool [Comparable(T), Stringifieable(T)] {
+fn generic<T>(): bool [Comparable<T>, Stringifieable<T>] {
     
 }

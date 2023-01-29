@@ -45,6 +45,7 @@
     ENTRY(Else)           \
     ENTRY(Struct)         \
     ENTRY(Function)       \
+    ENTRY(Constraint)     \
     ENTRY(Extern)         \
     ENTRY(Import)         \
     ENTRY(Module)         \

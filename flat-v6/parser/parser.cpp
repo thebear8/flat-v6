@@ -503,6 +503,9 @@ ASTStructDeclaration* Parser::structDeclaration(size_t begin)
 {
     expect(Token::Identifier);
     auto structName = getTokenValue();
+
+    auto typeParams = typeParamList();
+
     expect(Token::BraceOpen);
     std::vector<std::pair<std::string, ASTType*>> fields;
     while (!match(Token::BraceClose) && !match(Token::Eof))
@@ -517,14 +520,24 @@ ASTStructDeclaration* Parser::structDeclaration(size_t begin)
             break;
         }
     }
+
+    auto constraints = constraintList();
+
     return ctx.make(ASTStructDeclaration(
-        SourceRef(id, begin, position), structName, fields));
+        SourceRef(id, begin, position),
+        structName,
+        typeParams,
+        constraints,
+        fields));
 }
 
 ASTFunctionDeclaration* Parser::functionDeclaration(size_t begin)
 {
     expect(Token::Identifier);
     auto name = getTokenValue();
+
+    auto typeParams = typeParamList();
+
     std::vector<std::pair<std::string, ASTType*>> parameters;
     expect(Token::ParenOpen);
     while (!match(Token::ParenClose) && !match(Token::Eof))
@@ -538,15 +551,23 @@ ASTFunctionDeclaration* Parser::functionDeclaration(size_t begin)
     }
 
     ASTType* result =
-        (!match(Token::Colon)
-             ? ctx.make(ASTNamedType(SourceRef(id, begin, position), "void"))
-             : typeName());
+        (!match(Token::Colon) ? ctx.make(
+             ASTNamedType(SourceRef(id, begin, position), "void", {}))
+                              : typeName());
+
+    auto constraints = constraintList();
 
     auto bodyBegin = trim();
     expect(Token::BraceOpen);
     auto body = blockStatement(bodyBegin);
     return ctx.make(ASTFunctionDeclaration(
-        SourceRef(id, begin, position), name, result, parameters, body));
+        SourceRef(id, begin, position),
+        name,
+        typeParams,
+        constraints,
+        result,
+        parameters,
+        body));
 }
 
 ASTExternFunctionDeclaration* Parser::externFunctionDeclaration(size_t begin)
@@ -559,6 +580,9 @@ ASTExternFunctionDeclaration* Parser::externFunctionDeclaration(size_t begin)
     expect(Token::Function);
     expect(Token::Identifier);
     auto name = getTokenValue();
+
+    auto typeParams = typeParamList();
+
     std::vector<std::pair<std::string, ASTType*>> parameters;
     expect(Token::ParenOpen);
     while (!match(Token::ParenClose) && !match(Token::Eof))
@@ -572,11 +596,20 @@ ASTExternFunctionDeclaration* Parser::externFunctionDeclaration(size_t begin)
     }
 
     ASTType* result =
-        ((!match(Token::Colon)
-              ? ctx.make(ASTNamedType(SourceRef(id, begin, position), "void"))
-              : typeName()));
+        (!match(Token::Colon) ? ctx.make(
+             ASTNamedType(SourceRef(id, begin, position), "void", {}))
+                              : typeName());
+
+    auto constraints = constraintList();
+
     return ctx.make(ASTExternFunctionDeclaration(
-        SourceRef(id, begin, position), lib, name, result, parameters));
+        SourceRef(id, begin, position),
+        lib,
+        name,
+        typeParams,
+        constraints,
+        result,
+        parameters));
 }
 
 ASTSourceFile* Parser::sourceFile()
@@ -615,7 +648,11 @@ ASTSourceFile* Parser::sourceFile()
     while (!match(Token::Eof))
     {
         auto declBegin = trim();
-        if (match(Token::Struct))
+        if (match(Token::Constraint))
+        {
+            declarations.push_back(constraintDeclaration(declBegin));
+        }
+        else if (match(Token::Struct))
         {
             declarations.push_back(structDeclaration(declBegin));
         }
@@ -642,8 +679,11 @@ ASTType* Parser::typeName()
 {
     auto begin = trim();
     expect(Token::Identifier);
-    ASTType* type =
-        ctx.make(ASTNamedType(SourceRef(id, begin, position), getTokenValue()));
+
+    auto typeArgs = typeArgList();
+
+    ASTType* type = ctx.make(ASTNamedType(
+        SourceRef(id, begin, position), getTokenValue(), typeArgs));
     while (true)
     {
         if (match(Token::Multiply))
@@ -653,12 +693,70 @@ ASTType* Parser::typeName()
         }
         else if (match(Token::BracketOpen) && match(Token::BracketClose))
         {
-            type =
-                ctx.make(ASTArrayType(SourceRef(id, begin, position), type));
+            type = ctx.make(ASTArrayType(SourceRef(id, begin, position), type));
         }
         else
         {
             return type;
         }
     }
+}
+
+//
+
+std::vector<std::string> Parser::typeParamList()
+{
+    std::vector<std::string> params;
+    if (match(Token::LessThan))
+    {
+        while (!match(Token::GreaterThan) && !match(Token::Eof))
+        {
+            expect(Token::Identifier);
+            params.push_back(getTokenValue());
+            if (!match(Token::Comma))
+            {
+                expect(Token::GreaterThan);
+                break;
+            }
+        }
+    }
+    return params;
+}
+
+std::vector<ASTType*> Parser::typeArgList()
+{
+    std::vector<ASTType*> args;
+    if (match(Token::LessThan))
+    {
+        while (!match(Token::GreaterThan) && !match(Token::Eof))
+        {
+            args.push_back(typeName());
+            if (!match(Token::Comma))
+            {
+                expect(Token::GreaterThan);
+                break;
+            }
+        }
+    }
+    return args;
+}
+
+std::vector<std::pair<std::string, std::vector<ASTType*>>>
+Parser::constraintList()
+{
+    std::vector<std::pair<std::string, std::vector<ASTType*>>> constraints;
+    if (match(Token::BracketOpen))
+    {
+        while (!match(Token::BracketClose) && !match(Token::Eof))
+        {
+            expect(Token::Identifier);
+            constraints.push_back(std::pair(getTokenValue(), typeArgList()));
+            if (!match(Token::Comma))
+            {
+                expect(Token::BracketClose);
+                break;
+            }
+        }
+    }
+    return constraints;
 }

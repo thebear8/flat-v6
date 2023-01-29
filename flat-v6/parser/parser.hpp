@@ -41,6 +41,7 @@ public:
     ASTStatement* ifStatement(size_t begin);
     ASTStatement* statement();
 
+    ASTConstraintDeclaration* constraintDeclaration(size_t begin);
     ASTStructDeclaration* structDeclaration(size_t begin);
     ASTFunctionDeclaration* functionDeclaration(size_t begin);
     ASTExternFunctionDeclaration* externFunctionDeclaration(size_t begin);
@@ -48,4 +49,9 @@ public:
     ASTSourceFile* sourceFile();
 
     ASTType* typeName();
+
+private:
+    std::vector<std::string> typeParamList();
+    std::vector<ASTType*> typeArgList();
+    std::vector<std::pair<std::string, std::vector<ASTType*>>> constraintList();
 };

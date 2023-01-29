@@ -37,9 +37,9 @@ private:
         { Token::Let, "let" },       { Token::Return, "return" },
         { Token::While, "while" },   { Token::If, "if" },
         { Token::Else, "else" },     { Token::Struct, "struct" },
-        { Token::Function, "fn" },   { Token::Import, "import" },
-        { Token::Module, "module" }, { Token::Function, "fn" },
-        { Token::Extern, "extern" },
+        { Token::Function, "fn" },   { Token::Constraint, "constraint" },
+        { Token::Import, "import" }, { Token::Module, "module" },
+        { Token::Function, "fn" },   { Token::Extern, "extern" },
     };
 
 protected:
