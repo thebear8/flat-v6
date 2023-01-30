@@ -499,6 +499,46 @@ ASTStatement* Parser::statement()
     }
 }
 
+ASTConstraintDeclaration* Parser::constraintDeclaration(size_t begin)
+{
+    expect(Token::Identifier);
+    auto constraintName = getTokenValue();
+    auto typeParams = typeParamList();
+    auto constraints = constraintList();
+
+    expect(Token::BraceOpen);
+    std::vector<ASTDeclaration*> declarations;
+    while (!match(Token::BraceClose) && !match(Token::Eof))
+    {
+        auto declBegin = trim();
+        if (match(Token::Struct))
+        {
+            declarations.push_back(structDeclaration(declBegin));
+        }
+        else if (match(Token::Function))
+        {
+            declarations.push_back(functionDeclaration(declBegin));
+        }
+        else if (match(Token::Extern))
+        {
+            declarations.push_back(externFunctionDeclaration(declBegin));
+        }
+        else
+        {
+            logger.error(
+                SourceRef(id, position),
+                "Expected eiter StructDeclaration, FunctionDeclaration or ExternFunctionDeclaration");
+        }
+    }
+
+    return ctx.make(ASTConstraintDeclaration(
+        SourceRef(id, begin, position),
+        constraintName,
+        typeParams,
+        constraints,
+        declarations));
+}
+
 ASTStructDeclaration* Parser::structDeclaration(size_t begin)
 {
     expect(Token::Identifier);
@@ -668,7 +708,7 @@ ASTSourceFile* Parser::sourceFile()
         {
             logger.error(
                 SourceRef(id, position),
-                "Expected eiter StructDeclaration, FunctionDeclaration or ExternFunctionDeclaration");
+                "Expected eiter ConstraintDeclaration, StructDeclaration, FunctionDeclaration or ExternFunctionDeclaration");
         }
     }
     return ctx.make(ASTSourceFile(
