@@ -40,10 +40,10 @@ using ASTTripleDispatchVisitor = triple_dispatch_visitor::TripleDispatchVisitor<
     struct ASTWhileStatement,
     struct ASTIfStatement,
 
-    struct ASTConstraintDefinition,
-    struct ASTStructDefinition,
-    struct ASTFunctionDefinition,
-    struct ASTExternFunctionDefinition,
+    struct ASTConstraintDeclaration,
+    struct ASTStructDeclaration,
+    struct ASTFunctionDeclaration,
+    struct ASTExternFunctionDeclaration,
 
     struct ASTSourceFile>;
 
