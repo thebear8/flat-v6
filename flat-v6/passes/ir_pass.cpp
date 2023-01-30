@@ -173,22 +173,22 @@ IRNode* IRPass::visit(ASTIfStatement* node)
         (IRStatement*)((node->elseBody) ? dispatch(node->elseBody) : nullptr)));
 }
 
-IRNode* IRPass::visit(ASTStructDefinition* node)
+IRNode* IRPass::visit(ASTStructDeclaration* node)
 {
     std::vector<std::pair<std::string, Type*>> fields;
     for (auto const& [name, type] : node->fields)
         fields.push_back({ name, modCtx.getType(type) });
 
-    return irCtx.make(IRStructDefinition(node->location, node->name, fields));
+    return irCtx.make(IRStructDeclaration(node->location, node->name, fields));
 }
 
-IRNode* IRPass::visit(ASTFunctionDefinition* node)
+IRNode* IRPass::visit(ASTFunctionDeclaration* node)
 {
     std::vector<std::pair<std::string, Type*>> params;
     for (auto const& [name, type] : node->parameters)
         params.push_back({ name, modCtx.getType(type) });
 
-    return irCtx.make(IRFunctionDefinition(
+    return irCtx.make(IRFunctionDeclaration(
         node->location, 
         node->name,
         modCtx.getType(node->result),
@@ -196,25 +196,25 @@ IRNode* IRPass::visit(ASTFunctionDefinition* node)
         (IRStatement*)dispatch(node->body)));
 }
 
-IRNode* IRPass::visit(ASTExternFunctionDefinition* node)
+IRNode* IRPass::visit(ASTExternFunctionDeclaration* node)
 {
     std::vector<std::pair<std::string, Type*>> params;
     for (auto const& [name, type] : node->parameters)
         params.push_back({ name, modCtx.getType(type) });
 
-    return irCtx.make(IRFunctionDefinition(
+    return irCtx.make(IRFunctionDeclaration(
         node->location, 
         node->lib, node->name, modCtx.getType(node->result), params));
 }
 
 IRNode* IRPass::visit(ASTSourceFile* node)
 {
-    std::vector<IRDefinition*> definitions;
-    for (auto definition : node->definitions)
-        definitions.push_back((IRDefinition*)dispatch(definition));
+    std::vector<IRDeclaration*> declarations;
+    for (auto declaration : node->declarations)
+        declarations.push_back((IRDeclaration*)dispatch(declaration));
 
     return irCtx.make(IRSourceFile(
-        node->location, node->modulePath, node->importPaths, definitions));
+        node->location, node->modulePath, node->importPaths, declarations));
 }
 
 std::vector<uint8_t> IRPass::unescapeStringUTF8(

@@ -5,7 +5,7 @@ void StructPopulationPass::process(ASTSourceFile* sourceFile)
     return dispatch(sourceFile);
 }
 
-void StructPopulationPass::visit(ASTStructDefinition* node)
+void StructPopulationPass::visit(ASTStructDeclaration* node)
 {
     auto structType = modCtx.getStruct(node->name);
     assert(structType && "structType cannot be null");
@@ -17,6 +17,6 @@ void StructPopulationPass::visit(ASTStructDefinition* node)
 
 void StructPopulationPass::visit(ASTSourceFile* node)
 {
-    for (auto definition : node->definitions)
-        dispatch(definition);
+    for (auto declaration : node->declarations)
+        dispatch(declaration);
 }

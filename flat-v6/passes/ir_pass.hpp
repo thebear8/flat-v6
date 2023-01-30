@@ -46,9 +46,9 @@ private:
     virtual IRNode* visit(ASTWhileStatement* node) override;
     virtual IRNode* visit(ASTIfStatement* node) override;
 
-    virtual IRNode* visit(ASTStructDefinition* node) override;
-    virtual IRNode* visit(ASTFunctionDefinition* node) override;
-    virtual IRNode* visit(ASTExternFunctionDefinition* node) override;
+    virtual IRNode* visit(ASTStructDeclaration* node) override;
+    virtual IRNode* visit(ASTFunctionDeclaration* node) override;
+    virtual IRNode* visit(ASTExternFunctionDeclaration* node) override;
     virtual IRNode* visit(ASTSourceFile* node) override;
 
 private:

@@ -24,8 +24,8 @@ class NoOpPass : public ASTVisitor<ASTNode*>
     virtual ASTNode* visit(ASTWhileStatement* node) override;
     virtual ASTNode* visit(ASTIfStatement* node) override;
 
-    virtual ASTNode* visit(ASTStructDefinition* node) override;
-    virtual ASTNode* visit(ASTFunctionDefinition* node) override;
-    virtual ASTNode* visit(ASTExternFunctionDefinition* node) override;
+    virtual ASTNode* visit(ASTStructDeclaration* node) override;
+    virtual ASTNode* visit(ASTFunctionDeclaration* node) override;
+    virtual ASTNode* visit(ASTExternFunctionDeclaration* node) override;
     virtual ASTNode* visit(ASTSourceFile* node) override;
 };

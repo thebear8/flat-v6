@@ -41,10 +41,10 @@ public:
     ASTStatement* ifStatement(size_t begin);
     ASTStatement* statement();
 
-    ASTConstraintDefinition* constraintDefinition(size_t begin);
-    ASTStructDefinition* structDefinition(size_t begin);
-    ASTFunctionDefinition* functionDefinition(size_t begin);
-    ASTExternFunctionDefinition* externFunctionDefinition(size_t begin);
+    ASTConstraintDeclaration* constraintDeclaration(size_t begin);
+    ASTStructDeclaration* structDeclaration(size_t begin);
+    ASTFunctionDeclaration* functionDeclaration(size_t begin);
+    ASTExternFunctionDeclaration* externFunctionDeclaration(size_t begin);
 
     ASTSourceFile* sourceFile();
 
