@@ -3,17 +3,17 @@
 #include <algorithm>
 #include <ranges>
 
-Type* Environment::getType(std::string const& typeName)
+IRType* Environment::getType(std::string const& typeName)
 {
-    if (auto t = getStruct(typeName))
-        return t;
-    else if (auto t = getGeneric(typeName))
-        return t;
+    if (auto s = getStruct(typeName))
+        return s;
+    else if (auto g = getGeneric(typeName))
+        return g;
 
     return nullptr;
 }
 
-Type* Environment::findType(std::string const& typeName)
+IRType* Environment::findType(std::string const& typeName)
 {
     if (auto t = getType(typeName))
         return t;
@@ -23,7 +23,7 @@ Type* Environment::findType(std::string const& typeName)
     return nullptr;
 }
 
-GenericType* Environment::addGeneric(GenericType* genericType)
+IRGenericType* Environment::addGeneric(IRGenericType* genericType)
 {
     if (m_generics.contains(genericType->name))
         return nullptr;
@@ -32,14 +32,14 @@ GenericType* Environment::addGeneric(GenericType* genericType)
     return m_generics.at(genericType->name);
 }
 
-GenericType* Environment::getGeneric(std::string const& genericName)
+IRGenericType* Environment::getGeneric(std::string const& genericName)
 {
     if (m_generics.contains(genericName))
         return m_generics.at(genericName);
     return nullptr;
 }
 
-GenericType* Environment::findGeneric(std::string const& genericName)
+IRGenericType* Environment::findGeneric(std::string const& genericName)
 {
     if (auto t = getGeneric(genericName))
         return t;
@@ -49,7 +49,7 @@ GenericType* Environment::findGeneric(std::string const& genericName)
     return nullptr;
 }
 
-StructType* Environment::addStruct(StructType* structType)
+IRStructType* Environment::addStruct(IRStructType* structType)
 {
     if (m_structs.contains(structType->name))
         return nullptr;
@@ -58,14 +58,14 @@ StructType* Environment::addStruct(StructType* structType)
     return m_structs.at(structType->name);
 }
 
-StructType* Environment::getStruct(std::string const& structName)
+IRStructType* Environment::getStruct(std::string const& structName)
 {
     if (m_structs.contains(structName))
         return m_structs.at(structName);
     return nullptr;
 }
 
-StructType* Environment::findStruct(std::string const& structName)
+IRStructType* Environment::findStruct(std::string const& structName)
 {
     if (auto structType = getStruct(structName))
         return structType;
@@ -79,7 +79,7 @@ IRFunctionDeclaration* Environment::addFunction(IRFunctionDeclaration* function)
 {
     for (auto [i, end] = m_functions.equal_range(function->name); i != end; ++i)
     {
-        auto t = [](std::pair<std::string, Type*> p)
+        auto t = [](std::pair<std::string, IRType*> p)
         {
             return p.second;
         };
@@ -98,11 +98,11 @@ IRFunctionDeclaration* Environment::addFunction(IRFunctionDeclaration* function)
 }
 
 IRFunctionDeclaration* Environment::getFunction(
-    std::string const& functionName, std::vector<Type*> const& params)
+    std::string const& functionName, std::vector<IRType*> const& params)
 {
     for (auto [i, end] = m_functions.equal_range(functionName); i != end; ++i)
     {
-        auto t = [](std::pair<std::string, Type*> p)
+        auto t = [](std::pair<std::string, IRType*> p)
         {
             return p.second;
         };
@@ -119,7 +119,7 @@ IRFunctionDeclaration* Environment::getFunction(
 }
 
 IRFunctionDeclaration* Environment::findFunction(
-    std::string const& functionName, std::vector<Type*> const& params)
+    std::string const& functionName, std::vector<IRType*> const& params)
 {
     if (auto f = getFunction(functionName, params))
         return f;
@@ -129,7 +129,7 @@ IRFunctionDeclaration* Environment::findFunction(
     return nullptr;
 }
 
-Type* Environment::addVariableType(std::string const& variableName, Type* variableType)
+IRType* Environment::addVariableType(std::string const& variableName, IRType* variableType)
 {
     if (m_variableTypes.contains(variableName))
         return nullptr;
@@ -138,14 +138,14 @@ Type* Environment::addVariableType(std::string const& variableName, Type* variab
     return m_variableTypes.at(variableName);
 }
 
-Type* Environment::getVariableType(std::string const& variableName)
+IRType* Environment::getVariableType(std::string const& variableName)
 {
     if (m_variableTypes.contains(variableName))
         return m_variableTypes.at(variableName);
     return nullptr;
 }
 
-Type* Environment::findVariableType(std::string const& variableName)
+IRType* Environment::findVariableType(std::string const& variableName)
 {
     if (auto t = getVariableType(variableName))
         return t;

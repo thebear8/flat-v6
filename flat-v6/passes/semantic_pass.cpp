@@ -5,27 +5,27 @@ void SemanticPass::analyze(IRSourceFile* program)
     dispatch(program);
 }
 
-Type* SemanticPass::visit(IRIntegerExpression* node)
+IRType* SemanticPass::visit(IRIntegerExpression* node)
 {
     return (node->type = compCtx.getIntegerType(node->width, node->isSigned));
 }
 
-Type* SemanticPass::visit(IRBoolExpression* node)
+IRType* SemanticPass::visit(IRBoolExpression* node)
 {
     return (node->type = compCtx.getBool());
 }
 
-Type* SemanticPass::visit(IRCharExpression* node)
+IRType* SemanticPass::visit(IRCharExpression* node)
 {
     return (node->type = compCtx.getChar());
 }
 
-Type* SemanticPass::visit(IRStringExpression* node)
+IRType* SemanticPass::visit(IRStringExpression* node)
 {
     return (node->type = compCtx.getString());
 }
 
-Type* SemanticPass::visit(IRIdentifierExpression* node)
+IRType* SemanticPass::visit(IRIdentifierExpression* node)
 {
     if (!localVariables.contains(node->value))
         return logger.error(node->location, "Undefined Identifier", nullptr);
@@ -33,9 +33,9 @@ Type* SemanticPass::visit(IRIdentifierExpression* node)
     return (node->type = localVariables.at(node->value));
 }
 
-Type* SemanticPass::visit(IRStructExpression* node)
+IRType* SemanticPass::visit(IRStructExpression* node)
 {
-    auto structType = modCtx.resolveStruct(node->structName);
+    auto structType = modCtx.findStruct(node->structName);
     if (!structType)
         return logger.error(
             node->location, 
@@ -97,7 +97,7 @@ Type* SemanticPass::visit(IRStructExpression* node)
     return (node->type = structType);
 }
 
-Type* SemanticPass::visit(IRUnaryExpression* node)
+IRType* SemanticPass::visit(IRUnaryExpression* node)
 {
     auto value = dispatch(node->expression);
     if (unaryOperators.at(node->operation).category
@@ -123,7 +123,7 @@ Type* SemanticPass::visit(IRUnaryExpression* node)
     else
     {
         auto args = std::vector({ value });
-        auto function = modCtx.resolveFunction(
+        auto function = modCtx.findFunction(
             unaryOperators.at(node->operation).name, args);
         if (!function)
             return logger.error(
@@ -138,7 +138,7 @@ Type* SemanticPass::visit(IRUnaryExpression* node)
     }
 }
 
-Type* SemanticPass::visit(IRBinaryExpression* node)
+IRType* SemanticPass::visit(IRBinaryExpression* node)
 {
     auto left = dispatch(node->left);
     auto right = dispatch(node->right);
@@ -204,7 +204,7 @@ Type* SemanticPass::visit(IRBinaryExpression* node)
     else
     {
         auto args = std::vector({ left, right });
-        auto function = modCtx.resolveFunction(
+        auto function = modCtx.findFunction(
             binaryOperators.at(node->operation).name, args);
         if (!function)
             return logger.error(
@@ -227,9 +227,9 @@ Type* SemanticPass::visit(IRBinaryExpression* node)
     }
 }
 
-Type* SemanticPass::visit(IRCallExpression* node)
+IRType* SemanticPass::visit(IRCallExpression* node)
 {
-    std::vector<Type*> args;
+    std::vector<IRType*> args;
     for (auto arg : node->args)
         args.push_back(dispatch(arg));
 
@@ -237,7 +237,7 @@ Type* SemanticPass::visit(IRCallExpression* node)
             dynamic_cast<IRIdentifierExpression*>(node->expression))
     {
         auto function =
-            modCtx.resolveFunction(identifierExpression->value, args);
+            modCtx.findFunction(identifierExpression->value, args);
         if (!function)
             return logger.error(
                 node->location, 
@@ -249,7 +249,7 @@ Type* SemanticPass::visit(IRCallExpression* node)
     else
     {
         args.insert(args.begin(), dispatch(node->expression));
-        auto function = modCtx.resolveFunction("__call__", args);
+        auto function = modCtx.findFunction("__call__", args);
         if (!function)
             return logger.error(
                 node->location, 
@@ -262,9 +262,9 @@ Type* SemanticPass::visit(IRCallExpression* node)
     }
 }
 
-Type* SemanticPass::visit(IRIndexExpression* node)
+IRType* SemanticPass::visit(IRIndexExpression* node)
 {
-    std::vector<Type*> args;
+    std::vector<IRType*> args;
     for (auto arg : node->args)
         args.push_back(dispatch(arg));
 
@@ -272,7 +272,7 @@ Type* SemanticPass::visit(IRIndexExpression* node)
     if (value->isArrayType() && args.size() == 1
         && args.front()->isIntegerType())
     {
-        return (node->type = dynamic_cast<ArrayType*>(value)->base);
+        return (node->type = dynamic_cast<IRArrayType*>(value)->base);
     }
     if (value->isStringType() && args.size() == 1
         && args.front()->isIntegerType())
@@ -282,7 +282,7 @@ Type* SemanticPass::visit(IRIndexExpression* node)
     else
     {
         args.insert(args.begin(), value);
-        auto function = modCtx.resolveFunction("__index__", args);
+        auto function = modCtx.findFunction("__index__", args);
         if (!function)
             return logger.error(
                 node->location, 
@@ -295,7 +295,7 @@ Type* SemanticPass::visit(IRIndexExpression* node)
     }
 }
 
-Type* SemanticPass::visit(IRFieldExpression* node)
+IRType* SemanticPass::visit(IRFieldExpression* node)
 {
     auto value = dispatch(node->expression);
     if (!value->isStructType())
@@ -303,7 +303,7 @@ Type* SemanticPass::visit(IRFieldExpression* node)
             node->location, 
             "Left side of field expression has to be of struct type", nullptr);
 
-    auto structType = dynamic_cast<StructType*>(value);
+    auto structType = dynamic_cast<IRStructType*>(value);
     for (int i = 0; i < structType->fields.size(); i++)
     {
         if (structType->fields[i].first == node->fieldName)
@@ -317,7 +317,7 @@ Type* SemanticPass::visit(IRFieldExpression* node)
         nullptr);
 }
 
-Type* SemanticPass::visit(IRBlockStatement* node)
+IRType* SemanticPass::visit(IRBlockStatement* node)
 {
     for (auto& statement : node->statements)
         dispatch(statement);
@@ -325,13 +325,13 @@ Type* SemanticPass::visit(IRBlockStatement* node)
     return nullptr;
 }
 
-Type* SemanticPass::visit(IRExpressionStatement* node)
+IRType* SemanticPass::visit(IRExpressionStatement* node)
 {
     dispatch(node->expression);
     return nullptr;
 }
 
-Type* SemanticPass::visit(IRVariableStatement* node)
+IRType* SemanticPass::visit(IRVariableStatement* node)
 {
     for (auto& [name, value] : node->items)
     {
@@ -349,7 +349,7 @@ Type* SemanticPass::visit(IRVariableStatement* node)
     return nullptr;
 }
 
-Type* SemanticPass::visit(IRReturnStatement* node)
+IRType* SemanticPass::visit(IRReturnStatement* node)
 {
     functionResult = dispatch(node->expression);
     if (functionResult != expectedFunctionResult)
@@ -363,7 +363,7 @@ Type* SemanticPass::visit(IRReturnStatement* node)
     return nullptr;
 }
 
-Type* SemanticPass::visit(IRWhileStatement* node)
+IRType* SemanticPass::visit(IRWhileStatement* node)
 {
     auto condition = dispatch(node->condition);
     if (!condition->isBoolType())
@@ -378,7 +378,7 @@ Type* SemanticPass::visit(IRWhileStatement* node)
     return nullptr;
 }
 
-Type* SemanticPass::visit(IRIfStatement* node)
+IRType* SemanticPass::visit(IRIfStatement* node)
 {
     auto condition = dispatch(node->condition);
     if (!condition->isBoolType())
@@ -403,12 +403,12 @@ Type* SemanticPass::visit(IRIfStatement* node)
     return nullptr;
 }
 
-Type* SemanticPass::visit(IRStructDeclaration* node)
+IRType* SemanticPass::visit(IRStructDeclaration* node)
 {
     return nullptr;
 }
 
-Type* SemanticPass::visit(IRFunctionDeclaration* node)
+IRType* SemanticPass::visit(IRFunctionDeclaration* node)
 {
     if (!node->body)
         return nullptr;
@@ -432,7 +432,7 @@ Type* SemanticPass::visit(IRFunctionDeclaration* node)
     return nullptr;
 }
 
-Type* SemanticPass::visit(IRSourceFile* node)
+IRType* SemanticPass::visit(IRSourceFile* node)
 {
     for (auto& decl : node->declarations)
         dispatch(decl);

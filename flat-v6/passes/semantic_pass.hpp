@@ -9,15 +9,15 @@
 #include "../data/operator.hpp"
 #include "../util/error_logger.hpp"
 
-class SemanticPass : IRVisitor<Type*>
+class SemanticPass : IRVisitor<IRType*>
 {
 private:
     ErrorLogger& logger;
     CompilationContext& compCtx;
     ModuleContext& modCtx;
 
-    Type *functionResult, *expectedFunctionResult;
-    std::unordered_map<std::string, Type*> localVariables;
+    IRType *functionResult, *expectedFunctionResult;
+    std::unordered_map<std::string, IRType*> localVariables;
 
 public:
     SemanticPass(
@@ -34,26 +34,26 @@ public:
     void analyze(IRSourceFile* source);
 
 private:
-    virtual Type* visit(IRIntegerExpression* node) override;
-    virtual Type* visit(IRBoolExpression* node) override;
-    virtual Type* visit(IRCharExpression* node) override;
-    virtual Type* visit(IRStringExpression* node) override;
-    virtual Type* visit(IRIdentifierExpression* node) override;
-    virtual Type* visit(IRStructExpression* node) override;
-    virtual Type* visit(IRUnaryExpression* node) override;
-    virtual Type* visit(IRBinaryExpression* node) override;
-    virtual Type* visit(IRCallExpression* node) override;
-    virtual Type* visit(IRIndexExpression* node) override;
-    virtual Type* visit(IRFieldExpression* node) override;
+    virtual IRType* visit(IRIntegerExpression* node) override;
+    virtual IRType* visit(IRBoolExpression* node) override;
+    virtual IRType* visit(IRCharExpression* node) override;
+    virtual IRType* visit(IRStringExpression* node) override;
+    virtual IRType* visit(IRIdentifierExpression* node) override;
+    virtual IRType* visit(IRStructExpression* node) override;
+    virtual IRType* visit(IRUnaryExpression* node) override;
+    virtual IRType* visit(IRBinaryExpression* node) override;
+    virtual IRType* visit(IRCallExpression* node) override;
+    virtual IRType* visit(IRIndexExpression* node) override;
+    virtual IRType* visit(IRFieldExpression* node) override;
 
-    virtual Type* visit(IRBlockStatement* node) override;
-    virtual Type* visit(IRExpressionStatement* node) override;
-    virtual Type* visit(IRVariableStatement* node) override;
-    virtual Type* visit(IRReturnStatement* node) override;
-    virtual Type* visit(IRWhileStatement* node) override;
-    virtual Type* visit(IRIfStatement* node) override;
+    virtual IRType* visit(IRBlockStatement* node) override;
+    virtual IRType* visit(IRExpressionStatement* node) override;
+    virtual IRType* visit(IRVariableStatement* node) override;
+    virtual IRType* visit(IRReturnStatement* node) override;
+    virtual IRType* visit(IRWhileStatement* node) override;
+    virtual IRType* visit(IRIfStatement* node) override;
 
-    virtual Type* visit(IRStructDeclaration* node) override;
-    virtual Type* visit(IRFunctionDeclaration* node) override;
-    virtual Type* visit(IRSourceFile* node) override;
+    virtual IRType* visit(IRStructDeclaration* node) override;
+    virtual IRType* visit(IRFunctionDeclaration* node) override;
+    virtual IRType* visit(IRSourceFile* node) override;
 };

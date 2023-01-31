@@ -6,38 +6,35 @@
 
 void LLVMCodegenPass::process(IRSourceFile* source)
 {
-    for (auto& [functionName, collection] : modCtx.functionDeclarations)
+    for (auto& [functionName, function] : modCtx.getFunctionList())
     {
-        for (auto function : collection)
+        std::vector<IRType*> params;
+        for (auto& [name, type] : function->params)
+            params.push_back(type);
+
+        std::vector<llvm::Type*> llvmParams;
+        for (auto& param : params)
+            llvmParams.push_back(getLLVMType(param));
+
+        auto type = llvm::FunctionType::get(
+            getLLVMType(function->result), llvmParams, false);
+        auto name =
+            ((function->body)
+                ? getMangledFunctionName(function->name, params)
+                : function->name);
+        auto llvmFunction = llvm::Function::Create(
+            type,
+            llvm::GlobalValue::LinkageTypes::ExternalLinkage,
+            name,
+            mod);
+        compCtx.addLLVMFunction(function, llvmFunction);
+
+        if (!function->body)
         {
-            std::vector<Type*> params;
-            for (auto& [name, type] : function->params)
-                params.push_back(type);
-
-            std::vector<llvm::Type*> llvmParams;
-            for (auto& param : params)
-                llvmParams.push_back(getLLVMType(param));
-
-            auto type = llvm::FunctionType::get(
-                getLLVMType(function->result), llvmParams, false);
-            auto name =
-                ((function->body)
-                     ? getMangledFunctionName(function->name, params)
-                     : function->name);
-            auto llvmFunction = llvm::Function::Create(
-                type,
-                llvm::GlobalValue::LinkageTypes::ExternalLinkage,
-                name,
-                mod);
-            compCtx.addLLVMFunction(function, llvmFunction);
-
-            if (!function->body)
-            {
-                llvmFunction->setCallingConv(llvm::CallingConv::Win64);
-                llvmFunction->setDLLStorageClass(
-                    llvm::GlobalValue::DLLStorageClassTypes::
-                        DLLImportStorageClass);
-            }
+            llvmFunction->setCallingConv(llvm::CallingConv::Win64);
+            llvmFunction->setDLLStorageClass(
+                llvm::GlobalValue::DLLStorageClassTypes::
+                DLLImportStorageClass);
         }
     }
 
@@ -121,7 +118,7 @@ llvm::Value* LLVMCodegenPass::visit(IRIdentifierExpression* node)
 
 llvm::Value* LLVMCodegenPass::visit(IRStructExpression* node)
 {
-    auto type = dynamic_cast<StructType*>(node->type);
+    auto type = dynamic_cast<IRStructType*>(node->type);
     auto structPtr =
         builder.CreateAlloca(getLLVMType(type), nullptr, type->name + "_");
 
@@ -350,7 +347,7 @@ llvm::Value* LLVMCodegenPass::visit(IRIndexExpression* node)
 
 llvm::Value* LLVMCodegenPass::visit(IRFieldExpression* node)
 {
-    auto structType = dynamic_cast<StructType*>(node->expression->type);
+    auto structType = dynamic_cast<IRStructType*>(node->expression->type);
     for (int i = 0; i < structType->fields.size(); i++)
     {
         if (structType->fields[i].first == node->fieldName)
@@ -528,7 +525,7 @@ llvm::Value* LLVMCodegenPass::visit(IRSourceFile* node)
     return nullptr;
 }
 
-llvm::Type* LLVMCodegenPass::getLLVMType(Type* type)
+llvm::Type* LLVMCodegenPass::getLLVMType(IRType* type)
 {
     if (llvmTypes.contains(type))
     {
@@ -564,7 +561,7 @@ llvm::Type* LLVMCodegenPass::getLLVMType(Type* type)
     }
     else if (type->isStructType())
     {
-        auto structType = dynamic_cast<StructType*>(type);
+        auto structType = dynamic_cast<IRStructType*>(type);
 
         std::vector<llvm::Type*> fields;
         for (auto& [fieldName, fieldType] : structType->fields)
@@ -575,13 +572,13 @@ llvm::Type* LLVMCodegenPass::getLLVMType(Type* type)
     }
     else if (type->isPointerType())
     {
-        auto base = dynamic_cast<PointerType*>(type)->base;
+        auto base = dynamic_cast<IRPointerType*>(type)->base;
         llvmTypes.try_emplace(type, getLLVMType(base)->getPointerTo());
         return llvmTypes.at(type);
     }
     else if (type->isArrayType())
     {
-        auto base = dynamic_cast<ArrayType*>(type)->base;
+        auto base = dynamic_cast<IRArrayType*>(type)->base;
         auto fields = std::vector<llvm::Type*>(
             { llvm::Type::getInt64Ty(llvmCtx),
               llvm::ArrayType::get(getLLVMType(base), 0) });
@@ -596,7 +593,7 @@ llvm::Type* LLVMCodegenPass::getLLVMType(Type* type)
     }
 }
 
-std::string LLVMCodegenPass::getMangledTypeName(Type* type)
+std::string LLVMCodegenPass::getMangledTypeName(IRType* type)
 {
     if (type->isVoidType())
     {
@@ -621,7 +618,7 @@ std::string LLVMCodegenPass::getMangledTypeName(Type* type)
     }
     else if (type->isStructType())
     {
-        auto structType = dynamic_cast<StructType*>(type);
+        auto structType = dynamic_cast<IRStructType*>(type);
         auto output = "S_" + structType->name + "_";
 
         for (auto& [fieldName, fieldType] : structType->fields)
@@ -632,12 +629,12 @@ std::string LLVMCodegenPass::getMangledTypeName(Type* type)
     }
     else if (type->isPointerType())
     {
-        auto ptrType = dynamic_cast<PointerType*>(type);
+        auto ptrType = dynamic_cast<IRPointerType*>(type);
         return "P_" + getMangledTypeName(ptrType->base) + "_";
     }
     else if (type->isArrayType())
     {
-        auto arrType = dynamic_cast<ArrayType*>(type);
+        auto arrType = dynamic_cast<IRArrayType*>(type);
         return "A_" + getMangledTypeName(arrType->base) + "_";
     }
     else
@@ -647,7 +644,7 @@ std::string LLVMCodegenPass::getMangledTypeName(Type* type)
 }
 
 std::string LLVMCodegenPass::getMangledFunctionName(
-    std::string const& function, std::vector<Type*> const& params)
+    std::string const& function, std::vector<IRType*> const& params)
 {
     auto output = function + "@";
     for (auto& param : params)

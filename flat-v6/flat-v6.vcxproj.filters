@@ -116,9 +116,6 @@
     <ClInclude Include="passes\function_extraction_pass.hpp">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="data\type.hpp">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
     <ClInclude Include="environment.hpp">
       <Filter>Headerdateien</Filter>
     </ClInclude>

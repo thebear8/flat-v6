@@ -38,7 +38,8 @@ IRNode* IRPass::visit(ASTIntegerExpression* node)
                         .Case("", true)
                         .OrThrow();
 
-    return irCtx.make(IRIntegerExpression(node->location, isSigned, width, radix, value));
+    return irCtx.make(
+        IRIntegerExpression(node->location, isSigned, width, radix, value));
 }
 
 IRNode* IRPass::visit(ASTBoolExpression* node)
@@ -55,7 +56,7 @@ IRNode* IRPass::visit(ASTCharExpression* node)
 {
     size_t position = 0;
     return irCtx.make(IRCharExpression(
-        node->location, 
+        node->location,
         unescapeCodePoint(node->value, position, node->location)));
 }
 
@@ -83,14 +84,16 @@ IRNode* IRPass::visit(ASTStructExpression* node)
 IRNode* IRPass::visit(ASTUnaryExpression* node)
 {
     return irCtx.make(IRUnaryExpression(
-        node->location, 
-        node->operation, (IRExpression*)dispatch(node->expression), nullptr));
+        node->location,
+        node->operation,
+        (IRExpression*)dispatch(node->expression),
+        nullptr));
 }
 
 IRNode* IRPass::visit(ASTBinaryExpression* node)
 {
     return irCtx.make(IRBinaryExpression(
-        node->location, 
+        node->location,
         node->operation,
         (IRExpression*)dispatch(node->left),
         (IRExpression*)dispatch(node->right),
@@ -104,8 +107,10 @@ IRNode* IRPass::visit(ASTCallExpression* node)
         args.push_back((IRExpression*)dispatch(arg));
 
     return irCtx.make(IRCallExpression(
-        node->location, 
-        (IRExpression*)dispatch(node->expression), args, nullptr));
+        node->location,
+        (IRExpression*)dispatch(node->expression),
+        args,
+        nullptr));
 }
 
 IRNode* IRPass::visit(ASTIndexExpression* node)
@@ -115,15 +120,18 @@ IRNode* IRPass::visit(ASTIndexExpression* node)
         args.push_back((IRExpression*)dispatch(arg));
 
     return irCtx.make(IRIndexExpression(
-        node->location, 
-        (IRExpression*)dispatch(node->expression), args, nullptr));
+        node->location,
+        (IRExpression*)dispatch(node->expression),
+        args,
+        nullptr));
 }
 
 IRNode* IRPass::visit(ASTFieldExpression* node)
 {
     return irCtx.make(IRFieldExpression(
-        node->location, 
-        (IRExpression*)dispatch(node->expression), node->fieldName));
+        node->location,
+        (IRExpression*)dispatch(node->expression),
+        node->fieldName));
 }
 
 IRNode* IRPass::visit(ASTBlockStatement* node)
@@ -159,7 +167,7 @@ IRNode* IRPass::visit(ASTReturnStatement* node)
 IRNode* IRPass::visit(ASTWhileStatement* node)
 {
     return irCtx.make(IRWhileStatement(
-        node->location, 
+        node->location,
         (IRExpression*)dispatch(node->condition),
         (IRStatement*)dispatch(node->body)));
 }
@@ -167,7 +175,7 @@ IRNode* IRPass::visit(ASTWhileStatement* node)
 IRNode* IRPass::visit(ASTIfStatement* node)
 {
     return irCtx.make(IRIfStatement(
-        node->location, 
+        node->location,
         (IRExpression*)dispatch(node->condition),
         (IRStatement*)dispatch(node->ifBody),
         (IRStatement*)((node->elseBody) ? dispatch(node->elseBody) : nullptr)));
@@ -175,12 +183,14 @@ IRNode* IRPass::visit(ASTIfStatement* node)
 
 IRNode* IRPass::visit(ASTStructDeclaration* node)
 {
-    std::vector<std::pair<std::string, Type*>> fields;
+    std::vector<std::pair<std::string, IRType*>> fields;
     for (auto const& [name, type] : node->fields)
-        fields.push_back({ name, mapType(type) });
+        fields.push_back({ name, (IRType*)dispatch(type) });
 
     auto structType = modCtx.getStruct(node->name);
-    assert(structType && "Struct type for struct declaration not found. This should not happen.");
+    assert(
+        structType
+        && "Struct type for struct declaration not found. This should not happen.");
     structType->fields = fields;
 
     return irCtx.make(IRStructDeclaration(node->location, node->name, fields));
@@ -188,27 +198,30 @@ IRNode* IRPass::visit(ASTStructDeclaration* node)
 
 IRNode* IRPass::visit(ASTFunctionDeclaration* node)
 {
-    std::vector<std::pair<std::string, Type*>> params;
+    std::vector<std::pair<std::string, IRType*>> params;
     for (auto const& [name, type] : node->parameters)
-        params.push_back({ name, mapType(type) });
+        params.push_back({ name, (IRType*)dispatch(type) });
 
     return irCtx.make(IRFunctionDeclaration(
-        node->location, 
+        node->location,
         node->name,
-        mapType(node->result),
+        (IRType*)dispatch(node->result),
         params,
         (IRStatement*)dispatch(node->body)));
 }
 
 IRNode* IRPass::visit(ASTExternFunctionDeclaration* node)
 {
-    std::vector<std::pair<std::string, Type*>> params;
+    std::vector<std::pair<std::string, IRType*>> params;
     for (auto const& [name, type] : node->parameters)
-        params.push_back({ name, mapType(type) });
+        params.push_back({ name, (IRType*)dispatch(type) });
 
     return irCtx.make(IRFunctionDeclaration(
-        node->location, 
-        node->lib, node->name, mapType(node->result), params));
+        node->location,
+        node->lib,
+        node->name,
+        (IRType*)dispatch(node->result),
+        params));
 }
 
 IRNode* IRPass::visit(ASTSourceFile* node)
@@ -221,16 +234,19 @@ IRNode* IRPass::visit(ASTSourceFile* node)
         node->location, node->modulePath, node->importPaths, declarations));
 }
 
-Type* IRPass::mapType(ASTType* type)
+IRNode* IRPass::visit(ASTNamedType* node)
 {
-    if (auto namedType = dynamic_cast<ASTNamedType*>(type))
-        return modCtx.findType(namedType->name);
-    else if (auto pointerType = dynamic_cast<ASTPointerType*>(type))
-        return compCtx.getPointerType(mapType(pointerType->base));
-    else if (auto arrayType = dynamic_cast<ASTArrayType*>(type))
-        return compCtx.getArrayType(mapType(arrayType->base));
+    return modCtx.findType(node->name);
+}
 
-    return nullptr;
+IRNode* IRPass::visit(ASTPointerType* node)
+{
+    return compCtx.getPointerType((IRType*)dispatch(node->base));
+}
+
+IRNode* IRPass::visit(ASTArrayType* node)
+{
+    return compCtx.getArrayType((IRType*)dispatch(node->base));
 }
 
 std::vector<uint8_t> IRPass::unescapeStringUTF8(

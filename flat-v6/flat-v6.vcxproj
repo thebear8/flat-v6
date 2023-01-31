@@ -191,7 +191,6 @@
     <ClInclude Include="data\operator.hpp" />
     <ClInclude Include="data\source_ref.hpp" />
     <ClInclude Include="data\token.hpp" />
-    <ClInclude Include="data\type.hpp" />
     <ClInclude Include="environment.hpp" />
     <ClInclude Include="parser\lexer.hpp" />
     <ClInclude Include="parser\parser.hpp" />

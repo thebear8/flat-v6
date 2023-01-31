@@ -16,7 +16,6 @@
 #include <fstream>
 
 #include "data/ast.hpp"
-#include "data/type.hpp"
 #include "parser/parser.hpp"
 #include "passes/codegen_pass.hpp"
 #include "passes/function_extraction_pass.hpp"
@@ -34,18 +33,18 @@ CompilationContext::CompilationContext(
       llvmMod("flat", llvmCtx),
       target(nullptr),
       targetMachine(nullptr),
-      m_void(new VoidType()),
-      m_bool(new BoolType()),
-      m_i8(new IntegerType(true, 8)),
-      m_i16(new IntegerType(true, 16)),
-      m_i32(new IntegerType(true, 32)),
-      m_i64(new IntegerType(true, 64)),
-      m_u8(new IntegerType(false, 8)),
-      m_u16(new IntegerType(false, 16)),
-      m_u32(new IntegerType(false, 32)),
-      m_u64(new IntegerType(false, 64)),
-      m_char(new CharType()),
-      m_string(new StringType())
+      m_void(new IRVoidType()),
+      m_bool(new IRBoolType()),
+      m_i8(new IRIntegerType(true, 8)),
+      m_i16(new IRIntegerType(true, 16)),
+      m_i32(new IRIntegerType(true, 32)),
+      m_i64(new IRIntegerType(true, 64)),
+      m_u8(new IRIntegerType(false, 8)),
+      m_u16(new IRIntegerType(false, 16)),
+      m_u32(new IRIntegerType(false, 32)),
+      m_u64(new IRIntegerType(false, 64)),
+      m_char(new IRCharType()),
+      m_string(new IRStringType())
 {
     m_signedIntegerTypes.try_emplace(8, m_i8);
     m_signedIntegerTypes.try_emplace(16, m_i16);
@@ -194,9 +193,9 @@ llvm::Function* CompilationContext::getLLVMFunction(
     return llvmFunctions.at(function);
 }
 
-Type* CompilationContext::getBuiltinType(std::string const& name)
+IRType* CompilationContext::getBuiltinType(std::string const& name)
 {
-    return StringSwitch<Type*>(name)
+    return StringSwitch<IRType*>(name)
         .Case("void", getVoid())
         .Case("bool", getBool())
         .Case("i8", getI8())
@@ -212,34 +211,34 @@ Type* CompilationContext::getBuiltinType(std::string const& name)
         .Default(nullptr);
 }
 
-IntegerType* CompilationContext::getIntegerType(size_t width, bool isSigned)
+IRIntegerType* CompilationContext::getIntegerType(size_t width, bool isSigned)
 {
     if (isSigned)
     {
         if (!m_signedIntegerTypes.contains(width))
             m_signedIntegerTypes.try_emplace(
-                width, new IntegerType(true, width));
+                width, new IRIntegerType(true, width));
         return m_signedIntegerTypes.at(width);
     }
     else
     {
         if (!m_unsignedIntegerTypes.contains(width))
             m_unsignedIntegerTypes.try_emplace(
-                width, new IntegerType(false, width));
+                width, new IRIntegerType(false, width));
         return m_unsignedIntegerTypes.at(width);
     }
 }
 
-PointerType* CompilationContext::getPointerType(Type* base)
+IRPointerType* CompilationContext::getPointerType(IRType* base)
 {
     if (!m_pointerTypes.contains(base))
-        m_pointerTypes.try_emplace(base, new PointerType(base));
+        m_pointerTypes.try_emplace(base, new IRPointerType(base));
     return m_pointerTypes.at(base);
 }
 
-ArrayType* CompilationContext::getArrayType(Type* base)
+IRArrayType* CompilationContext::getArrayType(IRType* base)
 {
     if (!m_arrayTypes.contains(base))
-        m_arrayTypes.try_emplace(base, new ArrayType(base));
+        m_arrayTypes.try_emplace(base, new IRArrayType(base));
     return m_arrayTypes.at(base);
 }

@@ -13,7 +13,7 @@ void StructExtractionPass::visit(ASTStructDeclaration* node)
             "Struct " + node->name + " is already defined in module "
             + modCtx.name);
 
-    modCtx.addStruct(modCtx.irCtx.make(StructType(node->name, {})));
+    modCtx.addStruct(modCtx.irCtx.make(IRStructType(node->name, {})));
 }
 
 void StructExtractionPass::visit(ASTSourceFile* node)

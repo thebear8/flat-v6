@@ -24,7 +24,7 @@ private:
     llvm::Module& mod;
     llvm::IRBuilder<> builder;
 
-    std::unordered_map<Type*, llvm::Type*> llvmTypes;
+    std::unordered_map<IRType*, llvm::Type*> llvmTypes;
     std::unordered_map<std::string, llvm::Value*> localValues;
 
 public:
@@ -72,8 +72,8 @@ protected:
     virtual llvm::Value* visit(IRSourceFile* node) override;
 
 private:
-    llvm::Type* getLLVMType(Type* type);
-    std::string getMangledTypeName(Type* type);
+    llvm::Type* getLLVMType(IRType* type);
+    std::string getMangledTypeName(IRType* type);
     std::string getMangledFunctionName(
-        std::string const& function, std::vector<Type*> const& params);
+        std::string const& function, std::vector<IRType*> const& params);
 };

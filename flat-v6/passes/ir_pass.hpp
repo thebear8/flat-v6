@@ -51,8 +51,9 @@ private:
     virtual IRNode* visit(ASTExternFunctionDeclaration* node) override;
     virtual IRNode* visit(ASTSourceFile* node) override;
 
-private:
-    Type* mapType(ASTType* type);
+    virtual IRNode* visit(ASTNamedType* node) override;
+    virtual IRNode* visit(ASTPointerType* node) override;
+    virtual IRNode* visit(ASTArrayType* node) override;
 
 private:
     std::vector<uint8_t> unescapeStringUTF8(
