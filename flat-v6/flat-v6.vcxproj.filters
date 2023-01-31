@@ -48,9 +48,6 @@
     <ClCompile Include="passes\struct_extraction_pass.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="passes\struct_population_pass.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
     <ClCompile Include="passes\function_extraction_pass.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
@@ -114,9 +111,6 @@
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="passes\struct_extraction_pass.hpp">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="passes\struct_population_pass.hpp">
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="passes\function_extraction_pass.hpp">

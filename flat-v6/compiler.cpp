@@ -24,7 +24,6 @@
 #include "passes/lowering_pass.hpp"
 #include "passes/semantic_pass.hpp"
 #include "passes/struct_extraction_pass.hpp"
-#include "passes/struct_population_pass.hpp"
 #include "util/string_switch.hpp"
 
 CompilationContext::CompilationContext(
@@ -115,10 +114,6 @@ void CompilationContext::compile(
 
     for (auto sf : astSourceFiles)
         StructExtractionPass(logger, *this, *getModule(sf->modulePath))
-            .process(sf);
-
-    for (auto sf : astSourceFiles)
-        StructPopulationPass(logger, *this, *getModule(sf->modulePath))
             .process(sf);
 
     std::vector<IRSourceFile*> irSourceFiles;

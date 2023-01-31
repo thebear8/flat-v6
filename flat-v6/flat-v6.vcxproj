@@ -181,7 +181,6 @@
     <ClCompile Include="passes\no_op_pass.cpp" />
     <ClCompile Include="passes\semantic_pass.cpp" />
     <ClCompile Include="passes\struct_extraction_pass.cpp" />
-    <ClCompile Include="passes\struct_population_pass.cpp" />
     <ClCompile Include="util\error_logger.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -203,7 +202,6 @@
     <ClInclude Include="passes\no_op_pass.hpp" />
     <ClInclude Include="passes\semantic_pass.hpp" />
     <ClInclude Include="passes\struct_extraction_pass.hpp" />
-    <ClInclude Include="passes\struct_population_pass.hpp" />
     <ClInclude Include="util\error_logger.hpp" />
     <ClInclude Include="util\graph_context.hpp" />
     <ClInclude Include="util\string_switch.hpp" />
