@@ -169,6 +169,13 @@ void CompilationContext::compile(
     output.flush();
 }
 
+IRType* CompilationContext::getType(std::string const& name)
+{
+    if (auto b = getBuiltinType(name))
+        return b;
+    return Environment::getType(name);
+}
+
 ModuleContext* CompilationContext::getModule(std::string const& name)
 {
     if (!modules.contains(name))

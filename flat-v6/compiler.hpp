@@ -71,6 +71,8 @@ public:
 public:
     void compile(std::string const& sourceDir, llvm::raw_pwrite_stream& output);
 
+    IRType* getType(std::string const& name) override;
+
 public:
     /// @brief Get or create a ModuleContext for the specified module
     /// @param name The module name
