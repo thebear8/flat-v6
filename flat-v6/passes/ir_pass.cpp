@@ -177,7 +177,11 @@ IRNode* IRPass::visit(ASTStructDeclaration* node)
 {
     std::vector<std::pair<std::string, Type*>> fields;
     for (auto const& [name, type] : node->fields)
-        fields.push_back({ name, modCtx.getType(type) });
+        fields.push_back({ name, mapType(type) });
+
+    auto structType = modCtx.getStruct(node->name);
+    assert(structType && "Struct type for struct declaration not found. This should not happen.");
+    structType->fields = fields;
 
     return irCtx.make(IRStructDeclaration(node->location, node->name, fields));
 }
@@ -186,12 +190,12 @@ IRNode* IRPass::visit(ASTFunctionDeclaration* node)
 {
     std::vector<std::pair<std::string, Type*>> params;
     for (auto const& [name, type] : node->parameters)
-        params.push_back({ name, modCtx.getType(type) });
+        params.push_back({ name, mapType(type) });
 
     return irCtx.make(IRFunctionDeclaration(
         node->location, 
         node->name,
-        modCtx.getType(node->result),
+        mapType(node->result),
         params,
         (IRStatement*)dispatch(node->body)));
 }
@@ -200,11 +204,11 @@ IRNode* IRPass::visit(ASTExternFunctionDeclaration* node)
 {
     std::vector<std::pair<std::string, Type*>> params;
     for (auto const& [name, type] : node->parameters)
-        params.push_back({ name, modCtx.getType(type) });
+        params.push_back({ name, mapType(type) });
 
     return irCtx.make(IRFunctionDeclaration(
         node->location, 
-        node->lib, node->name, modCtx.getType(node->result), params));
+        node->lib, node->name, mapType(node->result), params));
 }
 
 IRNode* IRPass::visit(ASTSourceFile* node)
@@ -215,6 +219,18 @@ IRNode* IRPass::visit(ASTSourceFile* node)
 
     return irCtx.make(IRSourceFile(
         node->location, node->modulePath, node->importPaths, declarations));
+}
+
+Type* IRPass::mapType(ASTType* type)
+{
+    if (auto namedType = dynamic_cast<ASTNamedType*>(type))
+        return modCtx.findType(namedType->name);
+    else if (auto pointerType = dynamic_cast<ASTPointerType*>(type))
+        return compCtx.getPointerType(mapType(pointerType->base));
+    else if (auto arrayType = dynamic_cast<ASTArrayType*>(type))
+        return compCtx.getArrayType(mapType(arrayType->base));
+
+    return nullptr;
 }
 
 std::vector<uint8_t> IRPass::unescapeStringUTF8(

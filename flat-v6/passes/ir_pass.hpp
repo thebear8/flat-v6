@@ -52,6 +52,9 @@ private:
     virtual IRNode* visit(ASTSourceFile* node) override;
 
 private:
+    Type* mapType(ASTType* type);
+
+private:
     std::vector<uint8_t> unescapeStringUTF8(
         std::string const& input, SourceRef const& location);
     uint32_t unescapeCodePoint(
@@ -78,7 +81,7 @@ private:
     }
 
 private:
-    std::unordered_map<char, uint32_t> escapeChars = {
+    static inline std::unordered_map<char, uint32_t> escapeChars = {
         { 'a', '\a' },  { 'b', '\b' },  { 'f', '\f' },  { 'n', '\n' },
         { 'r', '\r' },  { 't', '\t' },  { 'v', '\v' },  { '\\', '\\' },
         { '\'', '\'' }, { '\"', '\"' }, { '\?', '\?' },

@@ -3,6 +3,7 @@
 #include <unordered_map>
 
 class Type;
+class GenericType;
 class VoidType;
 class BoolType;
 class IntegerType;
@@ -25,6 +26,7 @@ public:
 
     virtual std::string toString() = 0;
 
+    virtual bool isGenericType() { return false; }
     virtual bool isVoidType() { return false; }
     virtual bool isBoolType() { return false; }
     virtual bool isIntegerType() { return false; }
@@ -34,6 +36,18 @@ public:
     virtual bool isPointerType() { return false; }
     virtual bool isArrayType() { return false; }
     virtual bool isSigned() { return false; }
+};
+
+class GenericType : public Type
+{
+public:
+    std::string name;
+
+public:
+    GenericType(std::string const& name) : name(name) {}
+
+    virtual std::string toString() override { return name; }
+    virtual bool isGenericType() override { return true; }
 };
 
 class VoidType : public Type

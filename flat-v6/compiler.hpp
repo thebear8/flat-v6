@@ -9,6 +9,7 @@
 #include "data/ast.hpp"
 #include "data/ir.hpp"
 #include "data/type.hpp"
+#include "environment.hpp"
 #include "util/error_logger.hpp"
 #include "util/graph_context.hpp"
 
@@ -30,7 +31,7 @@ struct TargetDescriptor
 };
 
 class ModuleContext;
-class CompilationContext
+class CompilationContext : public Environment
 {
     friend class ModuleContext;
 
@@ -164,7 +165,7 @@ public:
     StringType* getString() { return m_string; }
 };
 
-class ModuleContext
+class ModuleContext : public Environment
 {
 public:
     CompilationContext& compCtx;
@@ -173,65 +174,10 @@ public:
 
     std::string name;
     std::set<std::string> imports;
-    std::unordered_map<std::string, StructType*> structTypes;
-    std::unordered_map<std::string, std::vector<IRFunctionDeclaration*>>
-        functionDeclarations;
 
 public:
     ModuleContext(CompilationContext& compCtx, std::string const& name)
-        : compCtx(compCtx), name(name)
+        : Environment(name, &compCtx), compCtx(compCtx), name(name)
     {
     }
-
-    ~ModuleContext();
-
-    /// @brief Lookup a builtin type or struct type
-    /// @param name Name of the type to get
-    /// @return The specified type on success or nullptr on failure
-    Type* getBuiltinOrStructType(std::string const& name);
-
-    /// @brief Get a Type from an ASTType in the context of the module
-    /// @param type ASTType to get a Type for
-    /// @return The Type that represents the given ASTType
-    Type* getType(ASTType* type);
-
-    /// @brief Create a struct type with specified name
-    /// @param name The name of the struct type
-    /// @return The created struct type or nullptr if the struct type already
-    /// exists
-    StructType* createStruct(std::string const& name);
-
-    /// @brief Get a struct type
-    /// @param name Name of the struct type
-    /// @return The retrieved struct type or nullptr if the struct type does not
-    /// exist
-    StructType* getStruct(std::string const& name);
-
-    /// @brief Resolve a struct type with specified name in the context of the
-    /// module. The module is searched first, then the imports.
-    /// @param name Name of the struct type
-    /// @return The retrieved struct type or nullptr if the struct type does not
-    /// exist
-    StructType* resolveStruct(std::string const& name);
-
-    /// @brief Add a function with specified name and params to the module
-    /// @param function The function to add
-    /// @return The added function or nullptr if a function with the same name
-    /// and parameters already exists
-    IRFunctionDeclaration* addFunction(IRFunctionDeclaration* function);
-
-    /// @brief Get a function with specified name and params
-    /// @param name Name of the function
-    /// @param params Parameters of the function
-    /// @return The retrieved function or nullptr if the function does not exist
-    IRFunctionDeclaration* getFunction(
-        std::string const& name, std::vector<Type*> const& params);
-
-    /// @brief Resolve a function with specified name and params in the context
-    /// of the module. The module is searched first, then the imports.
-    /// @param name Name of the function
-    /// @param params Parameters of the function
-    /// @return The resolved function or nullptr if the function does not exist
-    IRFunctionDeclaration* resolveFunction(
-        std::string const& name, std::vector<Type*> const& params);
 };

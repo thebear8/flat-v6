@@ -7,11 +7,13 @@ void StructExtractionPass::process(ASTSourceFile* sourceFile)
 
 void StructExtractionPass::visit(ASTStructDeclaration* node)
 {
-    if (!modCtx.createStruct(node->name))
+    if(modCtx.getStruct(node->name))
         return logger.error(
             node->location,
             "Struct " + node->name + " is already defined in module "
-                + modCtx.name);
+            + modCtx.name);
+
+    modCtx.addStruct(modCtx.irCtx.make(StructType(node->name, {})));
 }
 
 void StructExtractionPass::visit(ASTSourceFile* node)
