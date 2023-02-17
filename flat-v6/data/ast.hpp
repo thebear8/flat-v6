@@ -10,15 +10,8 @@
 
 using ASTTripleDispatchVisitor = triple_dispatch_visitor::TripleDispatchVisitor<
     struct ASTNode,
-    struct ASTType,
+
     struct ASTExpression,
-    struct ASTStatement,
-    struct ASTDeclaration,
-
-    struct ASTNamedType,
-    struct ASTPointerType,
-    struct ASTArrayType,
-
     struct ASTIntegerExpression,
     struct ASTBoolExpression,
     struct ASTCharExpression,
@@ -33,6 +26,7 @@ using ASTTripleDispatchVisitor = triple_dispatch_visitor::TripleDispatchVisitor<
     struct ASTBoundIndexExpression,
     struct ASTFieldExpression,
 
+    struct ASTStatement,
     struct ASTBlockStatement,
     struct ASTExpressionStatement,
     struct ASTVariableStatement,
@@ -40,10 +34,16 @@ using ASTTripleDispatchVisitor = triple_dispatch_visitor::TripleDispatchVisitor<
     struct ASTWhileStatement,
     struct ASTIfStatement,
 
+    struct ASTDeclaration,
     struct ASTConstraintDeclaration,
     struct ASTStructDeclaration,
     struct ASTFunctionDeclaration,
     struct ASTExternFunctionDeclaration,
+
+    struct ASTType,
+    struct ASTNamedType,
+    struct ASTPointerType,
+    struct ASTArrayType,
 
     struct ASTSourceFile>;
 
@@ -59,12 +59,7 @@ struct ASTNode : ASTTripleDispatchVisitor::NodeBase
     IMPLEMENT_ACCEPT()
 };
 
-struct ASTType : public ASTNode
-{
-    ASTType(SourceRef const& location) : ASTNode(location) {}
-
-    IMPLEMENT_ACCEPT()
-};
+//
 
 struct ASTExpression : public ASTNode
 {
@@ -76,74 +71,6 @@ struct ASTExpression : public ASTNode
 
     IMPLEMENT_ACCEPT()
 };
-
-struct ASTStatement : public ASTNode
-{
-    ASTStatement(SourceRef const& location) : ASTNode(location) {}
-
-    IMPLEMENT_ACCEPT()
-};
-
-struct ASTDeclaration : public ASTNode
-{
-    std::vector<std::string> typeParams;
-    std::vector<std::pair<std::string, std::vector<ASTType*>>> constraints;
-
-    ASTDeclaration(
-        SourceRef const& location,
-        std::vector<std::string> const& typeParams,
-        std::vector<std::pair<std::string, std::vector<ASTType*>>> const&
-            constraints)
-        : ASTNode(location), typeParams(typeParams), constraints(constraints)
-    {
-    }
-
-    IMPLEMENT_ACCEPT()
-};
-
-//
-
-struct ASTNamedType : public ASTType
-{
-    std::string name;
-    std::vector<ASTType*> typeArgs;
-
-    ASTNamedType(
-        SourceRef const& location,
-        std::string const& name,
-        std::vector<ASTType*> const& typeArgs)
-        : ASTType(location), name(name), typeArgs(typeArgs)
-    {
-    }
-
-    IMPLEMENT_ACCEPT()
-};
-
-struct ASTPointerType : public ASTType
-{
-    ASTType* base;
-
-    ASTPointerType(SourceRef const& location, ASTType* base)
-        : ASTType(location), base(base)
-    {
-    }
-
-    IMPLEMENT_ACCEPT()
-};
-
-struct ASTArrayType : public ASTType
-{
-    ASTType* base;
-
-    ASTArrayType(SourceRef const& location, ASTType* base)
-        : ASTType(location), base(base)
-    {
-    }
-
-    IMPLEMENT_ACCEPT()
-};
-
-//
 
 struct ASTIntegerExpression : public ASTExpression
 {
@@ -343,6 +270,13 @@ struct ASTFieldExpression : public ASTExpression
 
 //
 
+struct ASTStatement : public ASTNode
+{
+    ASTStatement(SourceRef const& location) : ASTNode(location) {}
+
+    IMPLEMENT_ACCEPT()
+};
+
 struct ASTBlockStatement : public ASTStatement
 {
     std::vector<ASTStatement*> statements;
@@ -430,6 +364,23 @@ struct ASTIfStatement : public ASTStatement
 
 //
 
+struct ASTDeclaration : public ASTNode
+{
+    std::vector<std::string> typeParams;
+    std::vector<std::pair<std::string, std::vector<ASTType*>>> requirements;
+
+    ASTDeclaration(
+        SourceRef const& location,
+        std::vector<std::string> const& typeParams,
+        std::vector<std::pair<std::string, std::vector<ASTType*>>> const&
+        requirements)
+        : ASTNode(location), typeParams(typeParams), requirements(requirements)
+    {
+    }
+
+    IMPLEMENT_ACCEPT()
+};
+
 struct ASTConstraintDeclaration : public ASTDeclaration
 {
     std::string name;
@@ -440,9 +391,9 @@ struct ASTConstraintDeclaration : public ASTDeclaration
         std::string const& name,
         std::vector<std::string> const& typeParams,
         std::vector<std::pair<std::string, std::vector<ASTType*>>> const&
-            constraints,
+            requirements,
         std::vector<ASTDeclaration*> const& conditions)
-        : ASTDeclaration(location, typeParams, constraints),
+        : ASTDeclaration(location, typeParams, requirements),
           name(name),
           conditions(conditions)
     {
@@ -461,9 +412,9 @@ struct ASTStructDeclaration : public ASTDeclaration
         std::string const& name,
         std::vector<std::string> const& typeParams,
         std::vector<std::pair<std::string, std::vector<ASTType*>>> const&
-            constraints,
+            requirements,
         std::vector<std::pair<std::string, ASTType*>> const& fields)
-        : ASTDeclaration(location, typeParams, constraints),
+        : ASTDeclaration(location, typeParams, requirements),
           name(name),
           fields(fields)
     {
@@ -484,11 +435,11 @@ struct ASTFunctionDeclaration : public ASTDeclaration
         std::string const& name,
         std::vector<std::string> const& typeParams,
         std::vector<std::pair<std::string, std::vector<ASTType*>>> const&
-            constraints,
+            requirements,
         ASTType* result,
         std::vector<std::pair<std::string, ASTType*>> const& parameters,
         ASTStatement* body)
-        : ASTDeclaration(location, typeParams, constraints),
+        : ASTDeclaration(location, typeParams, requirements),
           name(name),
           result(result),
           parameters(parameters),
@@ -512,14 +463,63 @@ struct ASTExternFunctionDeclaration : public ASTDeclaration
         std::string const& name,
         std::vector<std::string> const& typeParams,
         std::vector<std::pair<std::string, std::vector<ASTType*>>> const&
-            constraints,
+            requirements,
         ASTType* result,
         std::vector<std::pair<std::string, ASTType*>> const& parameters)
-        : ASTDeclaration(location, typeParams, constraints),
+        : ASTDeclaration(location, typeParams, requirements),
           lib(lib),
           name(name),
           result(result),
           parameters(parameters)
+    {
+    }
+
+    IMPLEMENT_ACCEPT()
+};
+
+//
+
+struct ASTType : public ASTNode
+{
+    ASTType(SourceRef const& location) : ASTNode(location) {}
+
+    IMPLEMENT_ACCEPT()
+};
+
+struct ASTNamedType : public ASTType
+{
+    std::string name;
+    std::vector<ASTType*> typeArgs;
+
+    ASTNamedType(
+        SourceRef const& location,
+        std::string const& name,
+        std::vector<ASTType*> const& typeArgs)
+        : ASTType(location), name(name), typeArgs(typeArgs)
+    {
+    }
+
+    IMPLEMENT_ACCEPT()
+};
+
+struct ASTPointerType : public ASTType
+{
+    ASTType* base;
+
+    ASTPointerType(SourceRef const& location, ASTType* base)
+        : ASTType(location), base(base)
+    {
+    }
+
+    IMPLEMENT_ACCEPT()
+};
+
+struct ASTArrayType : public ASTType
+{
+    ASTType* base;
+
+    ASTArrayType(SourceRef const& location, ASTType* base)
+        : ASTType(location), base(base)
     {
     }
 

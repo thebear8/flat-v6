@@ -53,6 +53,7 @@ private:
     virtual IRType* visit(IRWhileStatement* node) override;
     virtual IRType* visit(IRIfStatement* node) override;
 
+    virtual IRType* visit(IRConstraintDeclaration* node) override;
     virtual IRType* visit(IRStructDeclaration* node) override;
     virtual IRType* visit(IRFunctionDeclaration* node) override;
     virtual IRType* visit(IRSourceFile* node) override;

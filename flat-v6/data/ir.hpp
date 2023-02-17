@@ -10,10 +10,7 @@
 using IRTripleDispatchVisitor = triple_dispatch_visitor::TripleDispatchVisitor<
     struct IRNode,
 
-    struct IRDeclaration,
-    struct IRStatement,
     struct IRExpression,
-
     struct IRIntegerExpression,
     struct IRBoolExpression,
     struct IRCharExpression,
@@ -27,12 +24,15 @@ using IRTripleDispatchVisitor = triple_dispatch_visitor::TripleDispatchVisitor<
     struct IRFieldExpression,
     struct IRBlockStatement,
 
+    struct IRStatement,
     struct IRExpressionStatement,
     struct IRVariableStatement,
     struct IRReturnStatement,
     struct IRWhileStatement,
     struct IRIfStatement,
 
+    struct IRDeclaration,
+    struct IRConstraintDeclaration,
     struct IRStructDeclaration,
     struct IRFunctionDeclaration,
     struct IRSourceFile,
@@ -359,7 +359,38 @@ struct IRIfStatement : public IRStatement
 
 struct IRDeclaration : public IRNode
 {
-    IRDeclaration(SourceRef const& location) : IRNode(location) {}
+    std::vector<std::string> typeParams;
+    std::vector<std::pair<std::string, std::vector<IRType*>>> requirements;
+
+    IRDeclaration(
+        SourceRef const& location,
+        std::vector<std::string> const& typeParams,
+        std::vector<std::pair<std::string, std::vector<IRType*>>> const&
+            requirements)
+        : IRNode(location), typeParams(typeParams), requirements(requirements)
+    {
+    }
+
+    IMPLEMENT_ACCEPT()
+};
+
+struct IRConstraintDeclaration : public IRDeclaration
+{
+    std::string name;
+    std::vector<IRDeclaration*> conditions;
+
+    IRConstraintDeclaration(
+        SourceRef const& location,
+        std::string const& name,
+        std::vector<std::string> const& typeParams,
+        std::vector<std::pair<std::string, std::vector<IRType*>>> const&
+            requirements,
+        std::vector<IRDeclaration*> const& conditions)
+        : IRDeclaration(location, typeParams, requirements),
+          name(name),
+          conditions(conditions)
+    {
+    }
 
     IMPLEMENT_ACCEPT()
 };
@@ -372,8 +403,11 @@ struct IRStructDeclaration : public IRDeclaration
     IRStructDeclaration(
         SourceRef const& location,
         std::string const& name,
+        std::vector<std::string> const& typeParams,
+        std::vector<std::pair<std::string, std::vector<IRType*>>> const&
+            requirements,
         std::vector<std::pair<std::string, IRType*>> const& fields)
-        : IRDeclaration(location), name(name), fields(fields)
+        : IRDeclaration(location, typeParams, requirements), name(name), fields(fields)
     {
     }
 
@@ -391,10 +425,13 @@ struct IRFunctionDeclaration : public IRDeclaration
     IRFunctionDeclaration(
         SourceRef const& location,
         std::string const& name,
+        std::vector<std::string> const& typeParams,
+        std::vector<std::pair<std::string, std::vector<IRType*>>> const&
+            requirements,
         IRType* result,
         std::vector<std::pair<std::string, IRType*>> const& params,
         IRStatement* body)
-        : IRDeclaration(location),
+        : IRDeclaration(location, typeParams, requirements),
           lib(""),
           name(name),
           result(result),
@@ -407,9 +444,12 @@ struct IRFunctionDeclaration : public IRDeclaration
         SourceRef const& location,
         std::string const& lib,
         std::string const& name,
+        std::vector<std::string> const& typeParams,
+        std::vector<std::pair<std::string, std::vector<IRType*>>> const&
+            requirements,
         IRType* result,
         std::vector<std::pair<std::string, IRType*>> const& params)
-        : IRDeclaration(location),
+        : IRDeclaration(location, typeParams, requirements),
           lib(lib),
           name(name),
           result(result),

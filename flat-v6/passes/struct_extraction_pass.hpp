@@ -22,6 +22,7 @@ public:
 
 private:
     virtual void visit(ASTStructDeclaration* node) override;
+    virtual void visit(ASTConstraintDeclaration* node) override {}
     virtual void visit(ASTFunctionDeclaration* node) override {}
     virtual void visit(ASTExternFunctionDeclaration* node) override {}
     virtual void visit(ASTSourceFile* node) override;

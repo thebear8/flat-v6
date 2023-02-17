@@ -403,6 +403,11 @@ IRType* SemanticPass::visit(IRIfStatement* node)
     return nullptr;
 }
 
+IRType* SemanticPass::visit(IRConstraintDeclaration* node)
+{
+    return nullptr;
+}
+
 IRType* SemanticPass::visit(IRStructDeclaration* node)
 {
     return nullptr;

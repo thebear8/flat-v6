@@ -181,6 +181,16 @@ IRNode* IRPass::visit(ASTIfStatement* node)
         (IRStatement*)((node->elseBody) ? dispatch(node->elseBody) : nullptr)));
 }
 
+IRNode* IRPass::visit(ASTConstraintDeclaration* node)
+{
+    return irCtx.make(IRConstraintDeclaration(
+        node->location,
+        node->name,
+        node->typeParams,
+        transformRequirements(node->requirements),
+        transformConstraintConditions(node->conditions)));
+}
+
 IRNode* IRPass::visit(ASTStructDeclaration* node)
 {
     std::vector<std::pair<std::string, IRType*>> fields;
@@ -193,7 +203,12 @@ IRNode* IRPass::visit(ASTStructDeclaration* node)
         && "Struct type for struct declaration not found. This should not happen.");
     structType->fields = fields;
 
-    return irCtx.make(IRStructDeclaration(node->location, node->name, fields));
+    return irCtx.make(IRStructDeclaration(
+        node->location,
+        node->name,
+        node->typeParams,
+        transformRequirements(node->requirements),
+        fields));
 }
 
 IRNode* IRPass::visit(ASTFunctionDeclaration* node)
@@ -205,6 +220,8 @@ IRNode* IRPass::visit(ASTFunctionDeclaration* node)
     return irCtx.make(IRFunctionDeclaration(
         node->location,
         node->name,
+        node->typeParams,
+        transformRequirements(node->requirements),
         (IRType*)dispatch(node->result),
         params,
         (IRStatement*)dispatch(node->body)));
@@ -220,6 +237,8 @@ IRNode* IRPass::visit(ASTExternFunctionDeclaration* node)
         node->location,
         node->lib,
         node->name,
+        node->typeParams,
+        transformRequirements(node->requirements),
         (IRType*)dispatch(node->result),
         params));
 }
@@ -247,6 +266,39 @@ IRNode* IRPass::visit(ASTPointerType* node)
 IRNode* IRPass::visit(ASTArrayType* node)
 {
     return compCtx.getArrayType((IRType*)dispatch(node->base));
+}
+
+std::vector<IRDeclaration*> IRPass::transformConstraintConditions(
+    std::vector<ASTDeclaration*> const& conditions)
+{
+    auto t = [&](ASTDeclaration* d)
+    {
+        return (IRDeclaration*)dispatch(d);
+    };
+
+    auto range = conditions | std::views::transform(t);
+    return std::vector(range.begin(), range.end());
+}
+
+std::vector<std::pair<std::string, std::vector<IRType*>>>
+IRPass::transformRequirements(
+    std::vector<std::pair<std::string, std::vector<ASTType*>>> const&
+        requirements)
+{
+    auto t = [&](std::pair<std::string, std::vector<ASTType*>> const& c)
+    {
+        auto t = [&](ASTType* t)
+        {
+            return (IRType*)dispatch(t);
+        };
+
+        auto const& [name, typeArgs] = c;
+        auto range = typeArgs | std::views::transform(t);
+        return std::pair(name, std::vector(range.begin(), range.end()));
+    };
+
+    auto range = requirements | std::views::transform(t);
+    return std::vector(range.begin(), range.end());
 }
 
 std::vector<uint8_t> IRPass::unescapeStringUTF8(

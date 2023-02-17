@@ -21,6 +21,7 @@ public:
     void process(IRSourceFile* sourceFile);
 
 private:
+    virtual void visit(IRConstraintDeclaration* node) override {}
     virtual void visit(IRStructDeclaration* node) override {}
     virtual void visit(IRFunctionDeclaration* node) override;
     virtual void visit(IRSourceFile* node) override;

@@ -46,6 +46,7 @@ private:
     virtual IRNode* visit(ASTWhileStatement* node) override;
     virtual IRNode* visit(ASTIfStatement* node) override;
 
+    virtual IRNode* visit(ASTConstraintDeclaration* node) override;
     virtual IRNode* visit(ASTStructDeclaration* node) override;
     virtual IRNode* visit(ASTFunctionDeclaration* node) override;
     virtual IRNode* visit(ASTExternFunctionDeclaration* node) override;
@@ -56,10 +57,20 @@ private:
     virtual IRNode* visit(ASTArrayType* node) override;
 
 private:
+    std::vector<IRDeclaration*> transformConstraintConditions(
+        std::vector<ASTDeclaration*> const& conditions);
+
+    std::vector<std::pair<std::string, std::vector<IRType*>>>
+    transformRequirements(
+        std::vector<std::pair<std::string, std::vector<ASTType*>>> const&
+            requirements);
+
+private:
     std::vector<uint8_t> unescapeStringUTF8(
         std::string const& input, SourceRef const& location);
     uint32_t unescapeCodePoint(
         std::string const& value, size_t& position, SourceRef const& location);
+
     bool isDigit(char c) { return (c >= '0' && c <= '9'); }
     bool isBinaryDigit(char c) { return (c >= '0' && c <= '1'); }
     bool isHexDigit(char c)

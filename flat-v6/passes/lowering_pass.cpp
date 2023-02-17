@@ -252,6 +252,11 @@ IRNode* OperatorLoweringPass::visit(IRIfStatement* node)
     return node;
 }
 
+IRNode* OperatorLoweringPass::visit(IRConstraintDeclaration* node)
+{
+    return node;
+}
+
 IRNode* OperatorLoweringPass::visit(IRStructDeclaration* node)
 {
     return node;

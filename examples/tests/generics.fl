@@ -1,0 +1,7 @@
+constraint Stringifieable<T> {
+    fn toString(v: T): str
+}
+
+fn toString(v: i32): string {
+    return ""
+}
