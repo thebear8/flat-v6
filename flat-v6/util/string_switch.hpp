@@ -6,8 +6,7 @@
 #include <string_view>
 
 template<typename TValue>
-struct StringSwitch
-{
+struct StringSwitch {
 private:
     std::string_view str;
     std::optional<TValue> result;
@@ -16,9 +15,7 @@ public:
     StringSwitch(std::string_view str) : str(str), result(std::nullopt) {}
 
     StringSwitch(StringSwitch&& other)
-        : str(other.str), result(std::move(other.result))
-    {
-    }
+        : str(other.str), result(std::move(other.result)) {}
 
     StringSwitch(StringSwitch const&) = delete;
     void operator=(StringSwitch&&) = delete;
@@ -26,14 +23,12 @@ public:
     ~StringSwitch() = default;
 
 public:
-    StringSwitch& Case(std::string_view s, TValue r)
-    {
+    StringSwitch& Case(std::string_view s, TValue r) {
         result = ((s == str) ? std::move(r) : result);
         return *this;
     }
 
-    StringSwitch& CaseLower(std::string_view s, TValue r)
-    {
+    StringSwitch& CaseLower(std::string_view s, TValue r) {
         std::string left(s), right(str);
         std::transform(left.begin(), left.end(), left.begin(), tolower);
         std::transform(right.begin(), right.end(), right.begin(), tolower);
@@ -42,14 +37,12 @@ public:
         return *this;
     }
 
-    StringSwitch& StartsWith(std::string_view s, TValue r)
-    {
+    StringSwitch& StartsWith(std::string_view s, TValue r) {
         result = ((str.starts_with(s)) ? std::move(r) : result);
         return *this;
     }
 
-    StringSwitch& StartsWithLower(std::string_view s, TValue r)
-    {
+    StringSwitch& StartsWithLower(std::string_view s, TValue r) {
         std::string left(s), right(str);
         std::transform(left.begin(), left.end(), left.begin(), std::tolower);
         std::transform(right.begin(), right.end(), right.begin(), std::tolower);
@@ -58,14 +51,12 @@ public:
         return *this;
     }
 
-    StringSwitch& EndsWith(std::string_view s, TValue r)
-    {
+    StringSwitch& EndsWith(std::string_view s, TValue r) {
         result = ((str.ends_with(s)) ? std::move(r) : result);
         return *this;
     }
 
-    StringSwitch& EndsWithLower(std::string_view s, TValue r)
-    {
+    StringSwitch& EndsWithLower(std::string_view s, TValue r) {
         std::string left(s), right(str);
         std::transform(left.begin(), left.end(), left.begin(), std::tolower);
         std::transform(right.begin(), right.end(), right.begin(), std::tolower);
@@ -74,16 +65,14 @@ public:
         return *this;
     }
 
-    TValue Default(TValue value)
-    {
+    TValue Default(TValue value) {
         if (result.has_value())
             return std::move(*result);
 
         return value;
     }
 
-    TValue OrThrow()
-    {
+    TValue OrThrow() {
         if (!result.has_value())
             throw std::exception("StringSwitch with no matching case");
         return std::move(*result);

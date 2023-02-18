@@ -1,49 +1,40 @@
 #include "lowering_pass.hpp"
 
-IRSourceFile* OperatorLoweringPass::process(IRSourceFile* program)
-{
+IRSourceFile* OperatorLoweringPass::process(IRSourceFile* program) {
     return (IRSourceFile*)dispatch(program);
 }
 
-IRNode* OperatorLoweringPass::visit(IRIntegerExpression* node)
-{
+IRNode* OperatorLoweringPass::visit(IRIntegerExpression* node) {
     return node;
 }
 
-IRNode* OperatorLoweringPass::visit(IRBoolExpression* node)
-{
+IRNode* OperatorLoweringPass::visit(IRBoolExpression* node) {
     return node;
 }
 
-IRNode* OperatorLoweringPass::visit(IRCharExpression* node)
-{
+IRNode* OperatorLoweringPass::visit(IRCharExpression* node) {
     return node;
 }
 
-IRNode* OperatorLoweringPass::visit(IRStringExpression* node)
-{
+IRNode* OperatorLoweringPass::visit(IRStringExpression* node) {
     return node;
 }
 
-IRNode* OperatorLoweringPass::visit(IRIdentifierExpression* node)
-{
+IRNode* OperatorLoweringPass::visit(IRIdentifierExpression* node) {
     return node;
 }
 
-IRNode* OperatorLoweringPass::visit(IRStructExpression* node)
-{
+IRNode* OperatorLoweringPass::visit(IRStructExpression* node) {
     return node;
 }
 
-IRNode* OperatorLoweringPass::visit(IRUnaryExpression* node)
-{
+IRNode* OperatorLoweringPass::visit(IRUnaryExpression* node) {
     node->expression = checked_cast<IRExpression>(dispatch(node->expression));
 
     auto value = node->expression->type;
     if (unaryOperators.at(node->operation).category
             == OperatorCategory::UnaryArithmetic
-        && value->isIntegerType())
-    {
+        && value->isIntegerType()) {
         return node;
     }
     else if (
@@ -59,22 +50,21 @@ IRNode* OperatorLoweringPass::visit(IRUnaryExpression* node)
         && value->isBoolType())
     {
         return node;
-    }
-    else
-    {
+    } else {
         auto args = std::vector({ node->expression });
         auto identifier = modCtx.irCtx.make(IRIdentifierExpression(
-            node->location, unaryOperators.at(node->operation).name));
+            node->location, unaryOperators.at(node->operation).name
+        ));
         auto call = irCtx.make(
-            IRCallExpression(node->location, identifier, args, nullptr));
+            IRCallExpression(node->location, identifier, args, nullptr)
+        );
         call->type = node->type;
         call->target = node->target;
         return call;
     }
 }
 
-IRNode* OperatorLoweringPass::visit(IRBinaryExpression* node)
-{
+IRNode* OperatorLoweringPass::visit(IRBinaryExpression* node) {
     node->left = checked_cast<IRExpression>(dispatch(node->left));
     node->right = checked_cast<IRExpression>(dispatch(node->right));
 
@@ -83,8 +73,7 @@ IRNode* OperatorLoweringPass::visit(IRBinaryExpression* node)
 
     if (binaryOperators.at(node->operation).category
             == OperatorCategory::BinaryArithmetic
-        && (left->isIntegerType() && right->isIntegerType()))
-    {
+        && (left->isIntegerType() && right->isIntegerType())) {
         return node;
     }
     else if (
@@ -124,34 +113,35 @@ IRNode* OperatorLoweringPass::visit(IRBinaryExpression* node)
             || (left->isIntegerType() && right->isIntegerType())))
     {
         return node;
-    }
-    else
-    {
-        if (node->operation == BinaryOperator::Assign)
-        {
+    } else {
+        if (node->operation == BinaryOperator::Assign) {
             auto args = std::vector({ node->left, node->right });
             auto identifier = irCtx.make(IRIdentifierExpression(
-                node->location, 
-                binaryOperators.at(BinaryOperator::Assign).name));
+                node->location, binaryOperators.at(BinaryOperator::Assign).name
+            ));
             auto assignCall = irCtx.make(
-                IRCallExpression(node->location, identifier, args, nullptr));
+                IRCallExpression(node->location, identifier, args, nullptr)
+            );
             assignCall->type = node->type;
             assignCall->target = node->target;
 
             auto assign = irCtx.make(IRBinaryExpression(
-                node->location, 
-                BinaryOperator::Assign, node->left, assignCall, nullptr));
+                node->location,
+                BinaryOperator::Assign,
+                node->left,
+                assignCall,
+                nullptr
+            ));
             assign->type = node->type;
             return assign;
-        }
-        else
-        {
+        } else {
             auto args = std::vector({ node->left, node->right });
             auto identifier = irCtx.make(IRIdentifierExpression(
-                node->location, 
-                binaryOperators.at(node->operation).name));
+                node->location, binaryOperators.at(node->operation).name
+            ));
             auto call = irCtx.make(
-                IRCallExpression(node->location, identifier, args, nullptr));
+                IRCallExpression(node->location, identifier, args, nullptr)
+            );
             call->type = node->type;
             call->target = node->target;
             return call;
@@ -159,8 +149,7 @@ IRNode* OperatorLoweringPass::visit(IRBinaryExpression* node)
     }
 }
 
-IRNode* OperatorLoweringPass::visit(IRCallExpression* node)
-{
+IRNode* OperatorLoweringPass::visit(IRCallExpression* node) {
     node->expression = checked_cast<IRExpression>(dispatch(node->expression));
     for (auto& arg : node->args)
         arg = checked_cast<IRExpression>(dispatch(arg));
@@ -179,8 +168,7 @@ IRNode* OperatorLoweringPass::visit(IRCallExpression* node)
     return call;
 }
 
-IRNode* OperatorLoweringPass::visit(IRIndexExpression* node)
-{
+IRNode* OperatorLoweringPass::visit(IRIndexExpression* node) {
     node->expression = checked_cast<IRExpression>(dispatch(node->expression));
     for (auto& arg : node->args)
         arg = checked_cast<IRExpression>(dispatch(arg));
@@ -201,49 +189,42 @@ IRNode* OperatorLoweringPass::visit(IRIndexExpression* node)
     return call;
 }
 
-IRNode* OperatorLoweringPass::visit(IRFieldExpression* node)
-{
+IRNode* OperatorLoweringPass::visit(IRFieldExpression* node) {
     node->expression = checked_cast<IRExpression>(dispatch(node->expression));
     return node;
 }
 
-IRNode* OperatorLoweringPass::visit(IRBlockStatement* node)
-{
+IRNode* OperatorLoweringPass::visit(IRBlockStatement* node) {
     for (auto& statement : node->statements)
         statement = checked_cast<IRStatement>(dispatch(statement));
 
     return node;
 }
 
-IRNode* OperatorLoweringPass::visit(IRExpressionStatement* node)
-{
+IRNode* OperatorLoweringPass::visit(IRExpressionStatement* node) {
     node->expression = checked_cast<IRExpression>(dispatch(node->expression));
     return node;
 }
 
-IRNode* OperatorLoweringPass::visit(IRVariableStatement* node)
-{
+IRNode* OperatorLoweringPass::visit(IRVariableStatement* node) {
     for (auto& [name, value] : node->items)
         value = checked_cast<IRExpression>(dispatch(value));
 
     return node;
 }
 
-IRNode* OperatorLoweringPass::visit(IRReturnStatement* node)
-{
+IRNode* OperatorLoweringPass::visit(IRReturnStatement* node) {
     node->expression = checked_cast<IRExpression>(dispatch(node->expression));
     return node;
 }
 
-IRNode* OperatorLoweringPass::visit(IRWhileStatement* node)
-{
+IRNode* OperatorLoweringPass::visit(IRWhileStatement* node) {
     node->condition = checked_cast<IRExpression>(dispatch(node->condition));
     node->body = checked_cast<IRStatement>(dispatch(node->body));
     return node;
 }
 
-IRNode* OperatorLoweringPass::visit(IRIfStatement* node)
-{
+IRNode* OperatorLoweringPass::visit(IRIfStatement* node) {
     node->condition = checked_cast<IRExpression>(dispatch(node->condition));
     node->ifBody = checked_cast<IRStatement>(dispatch(node->ifBody));
     node->elseBody =
@@ -252,26 +233,22 @@ IRNode* OperatorLoweringPass::visit(IRIfStatement* node)
     return node;
 }
 
-IRNode* OperatorLoweringPass::visit(IRConstraintDeclaration* node)
-{
+IRNode* OperatorLoweringPass::visit(IRConstraintDeclaration* node) {
     return node;
 }
 
-IRNode* OperatorLoweringPass::visit(IRStructDeclaration* node)
-{
+IRNode* OperatorLoweringPass::visit(IRStructDeclaration* node) {
     return node;
 }
 
-IRNode* OperatorLoweringPass::visit(IRFunctionDeclaration* node)
-{
+IRNode* OperatorLoweringPass::visit(IRFunctionDeclaration* node) {
     node->body =
         ((node->body) ? checked_cast<IRStatement>(dispatch(node->body))
                       : nullptr);
     return node;
 }
 
-IRNode* OperatorLoweringPass::visit(IRSourceFile* node)
-{
+IRNode* OperatorLoweringPass::visit(IRSourceFile* node) {
     for (auto& decl : node->declarations)
         decl = checked_cast<IRDeclaration>(dispatch(decl));
 

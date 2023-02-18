@@ -50,8 +50,7 @@ using ASTTripleDispatchVisitor = triple_dispatch_visitor::TripleDispatchVisitor<
 template<typename TReturn>
 using ASTVisitor = ASTTripleDispatchVisitor::Visitor<TReturn>;
 
-struct ASTNode : ASTTripleDispatchVisitor::NodeBase
-{
+struct ASTNode : ASTTripleDispatchVisitor::NodeBase {
     SourceRef location;
 
     ASTNode(SourceRef const& location) : location(location) {}
@@ -61,115 +60,96 @@ struct ASTNode : ASTTripleDispatchVisitor::NodeBase
 
 //
 
-struct ASTExpression : public ASTNode
-{
+struct ASTExpression : public ASTNode {
     ASTType* type;
 
-    ASTExpression(SourceRef const& location) : ASTNode(location), type(nullptr)
-    {
-    }
+    ASTExpression(SourceRef const& location)
+        : ASTNode(location), type(nullptr) {}
 
     IMPLEMENT_ACCEPT()
 };
 
-struct ASTIntegerExpression : public ASTExpression
-{
+struct ASTIntegerExpression : public ASTExpression {
     std::string value;
     std::string suffix;
 
     ASTIntegerExpression(
         SourceRef const& location,
         std::string const& value,
-        std::string const& suffix)
-        : ASTExpression(location), value(value), suffix(suffix)
-    {
-    }
+        std::string const& suffix
+    )
+        : ASTExpression(location), value(value), suffix(suffix) {}
 
     IMPLEMENT_ACCEPT()
 };
 
-struct ASTBoolExpression : public ASTExpression
-{
+struct ASTBoolExpression : public ASTExpression {
     std::string value;
 
     ASTBoolExpression(SourceRef const& location, std::string const& value)
-        : ASTExpression(location), value(value)
-    {
-    }
+        : ASTExpression(location), value(value) {}
 
     IMPLEMENT_ACCEPT()
 };
 
-struct ASTCharExpression : public ASTExpression
-{
+struct ASTCharExpression : public ASTExpression {
     std::string value;
 
     ASTCharExpression(SourceRef const& location, std::string const& value)
-        : ASTExpression(location), value(value)
-    {
-    }
+        : ASTExpression(location), value(value) {}
 
     IMPLEMENT_ACCEPT()
 };
 
-struct ASTStringExpression : public ASTExpression
-{
+struct ASTStringExpression : public ASTExpression {
     std::string value;
 
     ASTStringExpression(SourceRef const& location, std::string const& value)
-        : ASTExpression(location), value(value)
-    {
-    }
+        : ASTExpression(location), value(value) {}
 
     IMPLEMENT_ACCEPT()
 };
 
-struct ASTIdentifierExpression : public ASTExpression
-{
+struct ASTIdentifierExpression : public ASTExpression {
     std::string value;
 
     ASTIdentifierExpression(SourceRef const& location, std::string const& value)
-        : ASTExpression(location), value(value)
-    {
-    }
+        : ASTExpression(location), value(value) {}
 
     IMPLEMENT_ACCEPT()
 };
 
-struct ASTStructExpression : public ASTExpression
-{
+struct ASTStructExpression : public ASTExpression {
     std::string structName;
     std::vector<std::pair<std::string, ASTExpression*>> fields;
 
     ASTStructExpression(
         SourceRef const& location,
         std::string const& structName,
-        std::vector<std::pair<std::string, ASTExpression*>> const& fields)
-        : ASTExpression(location), structName(structName), fields(fields)
-    {
-    }
+        std::vector<std::pair<std::string, ASTExpression*>> const& fields
+    )
+        : ASTExpression(location), structName(structName), fields(fields) {}
 
     IMPLEMENT_ACCEPT()
 };
 
-struct ASTUnaryExpression : public ASTExpression
-{
+struct ASTUnaryExpression : public ASTExpression {
     UnaryOperator operation;
     ASTExpression* expression;
 
     ASTUnaryExpression(
         SourceRef const& location,
         UnaryOperator operation,
-        ASTExpression* expression)
-        : ASTExpression(location), operation(operation), expression(expression)
-    {
-    }
+        ASTExpression* expression
+    )
+        : ASTExpression(location),
+          operation(operation),
+          expression(expression) {}
 
     IMPLEMENT_ACCEPT()
 };
 
-struct ASTBinaryExpression : public ASTExpression
-{
+struct ASTBinaryExpression : public ASTExpression {
     BinaryOperator operation;
     ASTExpression *left, *right;
 
@@ -177,173 +157,150 @@ struct ASTBinaryExpression : public ASTExpression
         SourceRef const& location,
         BinaryOperator operation,
         ASTExpression* left,
-        ASTExpression* right)
+        ASTExpression* right
+    )
         : ASTExpression(location),
           operation(operation),
           left(left),
-          right(right)
-    {
-    }
+          right(right) {}
 
     IMPLEMENT_ACCEPT()
 };
 
-struct ASTCallExpression : public ASTExpression
-{
+struct ASTCallExpression : public ASTExpression {
     ASTExpression* expression;
     std::vector<ASTExpression*> args;
 
     ASTCallExpression(
         SourceRef const& location,
         ASTExpression* expression,
-        std::vector<ASTExpression*> const& args)
-        : ASTExpression(location), expression(expression), args(args)
-    {
-    }
+        std::vector<ASTExpression*> const& args
+    )
+        : ASTExpression(location), expression(expression), args(args) {}
 
     IMPLEMENT_ACCEPT()
 };
 
-struct ASTBoundCallExpression : public ASTExpression
-{
+struct ASTBoundCallExpression : public ASTExpression {
     std::string identifier;
     std::vector<ASTExpression*> args;
 
     ASTBoundCallExpression(
         SourceRef const& location,
         std::string identifier,
-        std::vector<ASTExpression*> const& args)
-        : ASTExpression(location), identifier(identifier), args(args)
-    {
-    }
+        std::vector<ASTExpression*> const& args
+    )
+        : ASTExpression(location), identifier(identifier), args(args) {}
 
     IMPLEMENT_ACCEPT()
 };
 
-struct ASTIndexExpression : public ASTExpression
-{
+struct ASTIndexExpression : public ASTExpression {
     ASTExpression* expression;
     std::vector<ASTExpression*> args;
 
     ASTIndexExpression(
         SourceRef const& location,
         ASTExpression* expression,
-        std::vector<ASTExpression*> const& args)
-        : ASTExpression(location), expression(expression), args(args)
-    {
-    }
+        std::vector<ASTExpression*> const& args
+    )
+        : ASTExpression(location), expression(expression), args(args) {}
 
     IMPLEMENT_ACCEPT()
 };
 
-struct ASTBoundIndexExpression : public ASTExpression
-{
+struct ASTBoundIndexExpression : public ASTExpression {
     ASTExpression* expression;
     ASTExpression* index;
 
     ASTBoundIndexExpression(
         SourceRef const& location,
         ASTExpression* expression,
-        ASTExpression* index)
-        : ASTExpression(location), expression(expression), index(index)
-    {
-    }
+        ASTExpression* index
+    )
+        : ASTExpression(location), expression(expression), index(index) {}
 
     IMPLEMENT_ACCEPT()
 };
 
-struct ASTFieldExpression : public ASTExpression
-{
+struct ASTFieldExpression : public ASTExpression {
     ASTExpression* expression;
     std::string fieldName;
 
     ASTFieldExpression(
         SourceRef const& location,
         ASTExpression* expression,
-        std::string const& fieldName)
-        : ASTExpression(location), expression(expression), fieldName(fieldName)
-    {
-    }
+        std::string const& fieldName
+    )
+        : ASTExpression(location),
+          expression(expression),
+          fieldName(fieldName) {}
 
     IMPLEMENT_ACCEPT()
 };
 
 //
 
-struct ASTStatement : public ASTNode
-{
+struct ASTStatement : public ASTNode {
     ASTStatement(SourceRef const& location) : ASTNode(location) {}
 
     IMPLEMENT_ACCEPT()
 };
 
-struct ASTBlockStatement : public ASTStatement
-{
+struct ASTBlockStatement : public ASTStatement {
     std::vector<ASTStatement*> statements;
 
     ASTBlockStatement(
-        SourceRef const& location, std::vector<ASTStatement*> statements)
-        : ASTStatement(location), statements(statements)
-    {
-    }
+        SourceRef const& location, std::vector<ASTStatement*> statements
+    )
+        : ASTStatement(location), statements(statements) {}
 
     IMPLEMENT_ACCEPT()
 };
 
-struct ASTExpressionStatement : public ASTStatement
-{
+struct ASTExpressionStatement : public ASTStatement {
     ASTExpression* expression;
 
     ASTExpressionStatement(SourceRef const& location, ASTExpression* expression)
-        : ASTStatement(location), expression(expression)
-    {
-    }
+        : ASTStatement(location), expression(expression) {}
 
     IMPLEMENT_ACCEPT()
 };
 
-struct ASTVariableStatement : public ASTStatement
-{
+struct ASTVariableStatement : public ASTStatement {
     std::vector<std::pair<std::string, ASTExpression*>> items;
 
     ASTVariableStatement(
         SourceRef const& location,
-        std::vector<std::pair<std::string, ASTExpression*>> const& items)
-        : ASTStatement(location), items(items)
-    {
-    }
+        std::vector<std::pair<std::string, ASTExpression*>> const& items
+    )
+        : ASTStatement(location), items(items) {}
 
     IMPLEMENT_ACCEPT()
 };
 
-struct ASTReturnStatement : public ASTStatement
-{
+struct ASTReturnStatement : public ASTStatement {
     ASTExpression* expression;
 
     ASTReturnStatement(SourceRef const& location, ASTExpression* expression)
-        : ASTStatement(location), expression(expression)
-    {
-    }
+        : ASTStatement(location), expression(expression) {}
 
     IMPLEMENT_ACCEPT()
 };
 
-struct ASTWhileStatement : public ASTStatement
-{
+struct ASTWhileStatement : public ASTStatement {
     ASTExpression* condition;
     ASTStatement* body;
 
     ASTWhileStatement(
-        SourceRef const& location, ASTExpression* condition, ASTStatement* body)
-        : ASTStatement(location), condition(condition), body(body)
-    {
-    }
+        SourceRef const& location, ASTExpression* condition, ASTStatement* body
+    )
+        : ASTStatement(location), condition(condition), body(body) {}
 
     IMPLEMENT_ACCEPT()
 };
 
-struct ASTIfStatement : public ASTStatement
-{
+struct ASTIfStatement : public ASTStatement {
     ASTExpression* condition;
     ASTStatement *ifBody, *elseBody;
 
@@ -351,21 +308,19 @@ struct ASTIfStatement : public ASTStatement
         SourceRef const& location,
         ASTExpression* condition,
         ASTStatement* ifBody,
-        ASTStatement* elseBody)
+        ASTStatement* elseBody
+    )
         : ASTStatement(location),
           condition(condition),
           ifBody(ifBody),
-          elseBody(elseBody)
-    {
-    }
+          elseBody(elseBody) {}
 
     IMPLEMENT_ACCEPT()
 };
 
 //
 
-struct ASTDeclaration : public ASTNode
-{
+struct ASTDeclaration : public ASTNode {
     std::vector<std::string> typeParams;
     std::vector<std::pair<std::string, std::vector<ASTType*>>> requirements;
 
@@ -373,16 +328,16 @@ struct ASTDeclaration : public ASTNode
         SourceRef const& location,
         std::vector<std::string> const& typeParams,
         std::vector<std::pair<std::string, std::vector<ASTType*>>> const&
-        requirements)
-        : ASTNode(location), typeParams(typeParams), requirements(requirements)
-    {
-    }
+            requirements
+    )
+        : ASTNode(location),
+          typeParams(typeParams),
+          requirements(requirements) {}
 
     IMPLEMENT_ACCEPT()
 };
 
-struct ASTConstraintDeclaration : public ASTDeclaration
-{
+struct ASTConstraintDeclaration : public ASTDeclaration {
     std::string name;
     std::vector<ASTDeclaration*> conditions;
 
@@ -392,18 +347,16 @@ struct ASTConstraintDeclaration : public ASTDeclaration
         std::vector<std::string> const& typeParams,
         std::vector<std::pair<std::string, std::vector<ASTType*>>> const&
             requirements,
-        std::vector<ASTDeclaration*> const& conditions)
+        std::vector<ASTDeclaration*> const& conditions
+    )
         : ASTDeclaration(location, typeParams, requirements),
           name(name),
-          conditions(conditions)
-    {
-    }
+          conditions(conditions) {}
 
     IMPLEMENT_ACCEPT()
 };
 
-struct ASTStructDeclaration : public ASTDeclaration
-{
+struct ASTStructDeclaration : public ASTDeclaration {
     std::string name;
     std::vector<std::pair<std::string, ASTType*>> fields;
 
@@ -413,18 +366,16 @@ struct ASTStructDeclaration : public ASTDeclaration
         std::vector<std::string> const& typeParams,
         std::vector<std::pair<std::string, std::vector<ASTType*>>> const&
             requirements,
-        std::vector<std::pair<std::string, ASTType*>> const& fields)
+        std::vector<std::pair<std::string, ASTType*>> const& fields
+    )
         : ASTDeclaration(location, typeParams, requirements),
           name(name),
-          fields(fields)
-    {
-    }
+          fields(fields) {}
 
     IMPLEMENT_ACCEPT()
 };
 
-struct ASTFunctionDeclaration : public ASTDeclaration
-{
+struct ASTFunctionDeclaration : public ASTDeclaration {
     std::string name;
     ASTType* result;
     std::vector<std::pair<std::string, ASTType*>> parameters;
@@ -438,20 +389,18 @@ struct ASTFunctionDeclaration : public ASTDeclaration
             requirements,
         ASTType* result,
         std::vector<std::pair<std::string, ASTType*>> const& parameters,
-        ASTStatement* body)
+        ASTStatement* body
+    )
         : ASTDeclaration(location, typeParams, requirements),
           name(name),
           result(result),
           parameters(parameters),
-          body(body)
-    {
-    }
+          body(body) {}
 
     IMPLEMENT_ACCEPT()
 };
 
-struct ASTExternFunctionDeclaration : public ASTDeclaration
-{
+struct ASTExternFunctionDeclaration : public ASTDeclaration {
     std::string lib;
     std::string name;
     ASTType* result;
@@ -465,71 +414,60 @@ struct ASTExternFunctionDeclaration : public ASTDeclaration
         std::vector<std::pair<std::string, std::vector<ASTType*>>> const&
             requirements,
         ASTType* result,
-        std::vector<std::pair<std::string, ASTType*>> const& parameters)
+        std::vector<std::pair<std::string, ASTType*>> const& parameters
+    )
         : ASTDeclaration(location, typeParams, requirements),
           lib(lib),
           name(name),
           result(result),
-          parameters(parameters)
-    {
-    }
+          parameters(parameters) {}
 
     IMPLEMENT_ACCEPT()
 };
 
 //
 
-struct ASTType : public ASTNode
-{
+struct ASTType : public ASTNode {
     ASTType(SourceRef const& location) : ASTNode(location) {}
 
     IMPLEMENT_ACCEPT()
 };
 
-struct ASTNamedType : public ASTType
-{
+struct ASTNamedType : public ASTType {
     std::string name;
     std::vector<ASTType*> typeArgs;
 
     ASTNamedType(
         SourceRef const& location,
         std::string const& name,
-        std::vector<ASTType*> const& typeArgs)
-        : ASTType(location), name(name), typeArgs(typeArgs)
-    {
-    }
+        std::vector<ASTType*> const& typeArgs
+    )
+        : ASTType(location), name(name), typeArgs(typeArgs) {}
 
     IMPLEMENT_ACCEPT()
 };
 
-struct ASTPointerType : public ASTType
-{
+struct ASTPointerType : public ASTType {
     ASTType* base;
 
     ASTPointerType(SourceRef const& location, ASTType* base)
-        : ASTType(location), base(base)
-    {
-    }
+        : ASTType(location), base(base) {}
 
     IMPLEMENT_ACCEPT()
 };
 
-struct ASTArrayType : public ASTType
-{
+struct ASTArrayType : public ASTType {
     ASTType* base;
 
     ASTArrayType(SourceRef const& location, ASTType* base)
-        : ASTType(location), base(base)
-    {
-    }
+        : ASTType(location), base(base) {}
 
     IMPLEMENT_ACCEPT()
 };
 
 //
 
-struct ASTSourceFile : public ASTNode
-{
+struct ASTSourceFile : public ASTNode {
     std::string modulePath;
     std::vector<std::string> importPaths;
     std::vector<ASTDeclaration*> declarations;
@@ -538,13 +476,12 @@ struct ASTSourceFile : public ASTNode
         SourceRef const& location,
         std::string const& modulePath,
         std::vector<std::string> const& importPaths,
-        std::vector<ASTDeclaration*> const& declarations)
+        std::vector<ASTDeclaration*> const& declarations
+    )
         : ASTNode(location),
           modulePath(modulePath),
           importPaths(importPaths),
-          declarations(declarations)
-    {
-    }
+          declarations(declarations) {}
 
     IMPLEMENT_ACCEPT()
 };

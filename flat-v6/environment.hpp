@@ -5,8 +5,7 @@
 
 /// @brief Manages contained data of an environment, e.g. functions, structs,
 /// local variables, generic parameters etc.
-class Environment
-{
+class Environment {
 protected:
     std::string m_name;
     Environment* m_parent;
@@ -20,9 +19,7 @@ protected:
 
 public:
     Environment(std::string name, Environment* parent)
-        : m_name(name), m_parent(parent)
-    {
-    }
+        : m_name(name), m_parent(parent) {}
 
 public:
     /// @brief Get the name of this environment
@@ -66,7 +63,8 @@ public:
     /// @return The added constraint declaration or nullptr if a constraint
     /// declaration with the same name already exists
     virtual IRConstraintDeclaration* addConstraint(
-        IRConstraintDeclaration* constraint);
+        IRConstraintDeclaration* constraint
+    );
 
     /// @brief Search for a constraint declaration by name in this environment
     /// only
@@ -111,14 +109,16 @@ public:
     /// @param params Parameters of the function
     /// @return The found function or nullptr if the function was not found
     virtual IRFunctionDeclaration* getFunction(
-        std::string const& name, std::vector<IRType*> const& params);
+        std::string const& name, std::vector<IRType*> const& params
+    );
 
     /// @brief Search for a function by name and params in the environment chain
     /// @param name Name of the function
     /// @param params Parameters of the function
     /// @return The found function or nullptr if the function was not found
     virtual IRFunctionDeclaration* findFunction(
-        std::string const& name, std::vector<IRType*> const& params);
+        std::string const& name, std::vector<IRType*> const& params
+    );
 
     /// @brief Add a type for a variable of given name to the current
     /// environment
@@ -127,7 +127,8 @@ public:
     /// @return The added type or nullptr if a type for the variable already
     /// exists
     virtual IRType* addVariableType(
-        std::string const& name, IRType* variableType);
+        std::string const& name, IRType* variableType
+    );
 
     /// @brief Search for a variable's type by name in this environment
     /// @param name Name of the variable

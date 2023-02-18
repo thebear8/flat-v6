@@ -5,8 +5,7 @@
 #include "../data/source_ref.hpp"
 
 /// @brief Transforms AST Nodes into IR Nodes
-class IRPass : public ASTVisitor<IRNode*>
-{
+class IRPass : public ASTVisitor<IRNode*> {
 private:
     ErrorLogger& logger;
     CompilationContext& compCtx;
@@ -18,10 +17,9 @@ public:
         ErrorLogger& logger,
         CompilationContext& compCtx,
         ModuleContext& modCtx,
-        GraphContext& irCtx)
-        : logger(logger), compCtx(compCtx), modCtx(modCtx), irCtx(irCtx)
-    {
-    }
+        GraphContext& irCtx
+    )
+        : logger(logger), compCtx(compCtx), modCtx(modCtx), irCtx(irCtx) {}
 
 public:
     IRSourceFile* process(ASTSourceFile* sourceFile);
@@ -58,36 +56,36 @@ private:
 
 private:
     std::vector<IRDeclaration*> transformConstraintConditions(
-        std::vector<ASTDeclaration*> const& conditions);
+        std::vector<ASTDeclaration*> const& conditions
+    );
 
     std::vector<std::pair<std::string, std::vector<IRType*>>>
     transformRequirements(
         std::vector<std::pair<std::string, std::vector<ASTType*>>> const&
-            requirements);
+            requirements
+    );
 
 private:
     std::vector<uint8_t> unescapeStringUTF8(
-        std::string const& input, SourceRef const& location);
+        std::string const& input, SourceRef const& location
+    );
     uint32_t unescapeCodePoint(
-        std::string const& value, size_t& position, SourceRef const& location);
+        std::string const& value, size_t& position, SourceRef const& location
+    );
 
     bool isDigit(char c) { return (c >= '0' && c <= '9'); }
     bool isBinaryDigit(char c) { return (c >= '0' && c <= '1'); }
-    bool isHexDigit(char c)
-    {
+    bool isHexDigit(char c) {
         return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')
             || (c >= 'A' && c <= 'F');
     }
-    bool isLetter(char c)
-    {
+    bool isLetter(char c) {
         return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
     }
-    bool isWhitespace(char c)
-    {
+    bool isWhitespace(char c) {
         return (c == ' ' || c == '\t' || c == '\r' || c == '\n');
     }
-    bool isIdentifier(char c)
-    {
+    bool isIdentifier(char c) {
         return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
             || (c >= '0' && c <= '9') || (c == '_');
     }

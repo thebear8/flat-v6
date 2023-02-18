@@ -1,7 +1,6 @@
 #include "semantic_pass.hpp"
 
-IRType* SemanticPass::visit(IRFunctionDeclaration* node)
-{
+IRType* SemanticPass::visit(IRFunctionDeclaration* node) {
     if (!node->body)
         return nullptr;
 
@@ -10,23 +9,25 @@ IRType* SemanticPass::visit(IRFunctionDeclaration* node)
     for (auto& name : node->typeParams)
         m_env->addGeneric(m_genericCtx.make(IRGenericType(name)));
 
-    for (auto& [name, args] : node->requirements)
-    {
+    for (auto& [name, args] : node->requirements) {
         auto constraint = m_env->getConstraint(name);
         if (!constraint)
             return logger.error(
-                node->location, "No constraint named " + name, nullptr);
+                node->location, "No constraint named " + name, nullptr
+            );
 
-        for (auto condition : constraint->conditions)
-        {
+        for (auto condition : constraint->conditions) {
             assert(condition && "Condition cannot be nullptr");
-            if (auto function = dynamic_cast<IRFunctionDeclaration*>(condition))
-            {
-                if(!m_env->addFunction(function))
+            if (auto function =
+                    dynamic_cast<IRFunctionDeclaration*>(condition)) {
+                if (!m_env->addFunction(function))
                     return lo
-            }
-            else
-                return logger.error(condition->location, "Constraint condition has to be a function declaration", nullptr);
+            } else
+                return logger.error(
+                    condition->location,
+                    "Constraint condition has to be a function declaration",
+                    nullptr
+                );
         }
     }
 
@@ -45,13 +46,13 @@ IRType* SemanticPass::visit(IRFunctionDeclaration* node)
             node->location,
             "Missing return statement in function " + node->name
                 + ", should return " + m_expectedResult->toString(),
-            nullptr);
+            nullptr
+        );
 
     return nullptr;
 }
 
-IRType* SemanticPass::visit(IRSourceFile* node)
-{
+IRType* SemanticPass::visit(IRSourceFile* node) {
     for (auto& decl : node->declarations)
         dispatch(decl);
     return nullptr;

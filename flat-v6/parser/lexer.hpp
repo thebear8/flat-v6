@@ -6,8 +6,7 @@
 #include "../data/token.hpp"
 #include "../util/error_logger.hpp"
 
-class Lexer
-{
+class Lexer {
 private:
     static constexpr std::pair<Token, std::string_view> tokens[] = {
         { Token::NewLine, "\n" },     { Token::NewLine, "\r\n" },
@@ -53,9 +52,7 @@ protected:
 
 public:
     Lexer(ErrorLogger& logger, std::string_view input, size_t id)
-        : logger(logger), input(input), id(id), position(0), value("")
-    {
-    }
+        : logger(logger), input(input), id(id), position(0), value("") {}
 
 private:
     Token advance();
@@ -74,21 +71,17 @@ public:
 private:
     bool isDigit(char c) { return (c >= '0' && c <= '9'); }
     bool isBinaryDigit(char c) { return (c >= '0' && c <= '1'); }
-    bool isHexDigit(char c)
-    {
+    bool isHexDigit(char c) {
         return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')
             || (c >= 'A' && c <= 'F');
     }
-    bool isLetter(char c)
-    {
+    bool isLetter(char c) {
         return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
     }
-    bool isWhitespace(char c)
-    {
+    bool isWhitespace(char c) {
         return (c == ' ' || c == '\t' || c == '\r' || c == '\n');
     }
-    bool isIdentifier(char c)
-    {
+    bool isIdentifier(char c) {
         return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
             || (c >= '0' && c <= '9') || (c == '_');
     }

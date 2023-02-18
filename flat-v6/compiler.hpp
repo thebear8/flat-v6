@@ -12,8 +12,7 @@
 #include "util/error_logger.hpp"
 #include "util/graph_context.hpp"
 
-struct TargetDescriptor
-{
+struct TargetDescriptor {
     std::string targetTriple;
     std::string cpuDesc;
     std::string featureDesc;
@@ -23,15 +22,15 @@ struct TargetDescriptor
     TargetDescriptor(
         std::string const& targetTriple,
         std::string const& cpuDesc,
-        std::string const& featureDesc)
-        : targetTriple(targetTriple), cpuDesc(cpuDesc), featureDesc(featureDesc)
-    {
-    }
+        std::string const& featureDesc
+    )
+        : targetTriple(targetTriple),
+          cpuDesc(cpuDesc),
+          featureDesc(featureDesc) {}
 };
 
 class ModuleContext;
-class CompilationContext : public Environment
-{
+class CompilationContext : public Environment {
     friend class ModuleContext;
 
 private:
@@ -64,8 +63,8 @@ private:
 
 public:
     CompilationContext(
-        TargetDescriptor const& targetDesc,
-        std::ostream& logStream = std::cout);
+        TargetDescriptor const& targetDesc, std::ostream& logStream = std::cout
+    );
     ~CompilationContext();
 
 public:
@@ -87,7 +86,8 @@ public:
     /// @return The added llvm::Function or nullptr if the function already
     /// exists
     llvm::Function* addLLVMFunction(
-        IRFunctionDeclaration* function, llvm::Function* llvmFunction);
+        IRFunctionDeclaration* function, llvm::Function* llvmFunction
+    );
 
     /// @brief Get an llvm::Function for an IR function. This doesn't actually
     /// belong in CompilationContext, but is here for now for lack of a better
@@ -166,8 +166,7 @@ public:
     IRStringType* getString() { return m_string; }
 };
 
-class ModuleContext : public Environment
-{
+class ModuleContext : public Environment {
 public:
     CompilationContext& compCtx;
     GraphContext astCtx;
@@ -178,9 +177,7 @@ public:
 
 public:
     ModuleContext(CompilationContext& compCtx, std::string const& name)
-        : Environment(name, &compCtx), compCtx(compCtx), name(name)
-    {
-    }
+        : Environment(name, &compCtx), compCtx(compCtx), name(name) {}
 
 public:
     auto const& getFunctionList() { return m_functions; }

@@ -3,8 +3,7 @@
 #include "../util/graph_context.hpp"
 #include "lexer.hpp"
 
-class Parser : protected Lexer
-{
+class Parser : protected Lexer {
 private:
     ErrorLogger& logger;
     GraphContext& ctx;
@@ -15,10 +14,9 @@ public:
         ErrorLogger& logger,
         GraphContext& ctx,
         std::string_view input,
-        size_t id)
-        : Lexer(logger, input, id), logger(logger), ctx(ctx), id(id)
-    {
-    }
+        size_t id
+    )
+        : Lexer(logger, input, id), logger(logger), ctx(ctx), id(id) {}
 
 public:
     ASTExpression* l0();

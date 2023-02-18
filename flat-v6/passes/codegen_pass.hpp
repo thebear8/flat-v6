@@ -13,8 +13,7 @@
 #include "../data/operator.hpp"
 #include "../util/error_logger.hpp"
 
-class LLVMCodegenPass : protected IRVisitor<llvm::Value*>
-{
+class LLVMCodegenPass : protected IRVisitor<llvm::Value*> {
 private:
     ErrorLogger& logger;
     CompilationContext& compCtx;
@@ -33,15 +32,14 @@ public:
         CompilationContext& compCtx,
         ModuleContext& modCtx,
         llvm::LLVMContext& llvmCtx,
-        llvm::Module& mod)
+        llvm::Module& mod
+    )
         : logger(logger),
           compCtx(compCtx),
           modCtx(modCtx),
           llvmCtx(llvmCtx),
           mod(mod),
-          builder(llvmCtx)
-    {
-    }
+          builder(llvmCtx) {}
 
 public:
     void process(IRSourceFile* source);
@@ -75,5 +73,6 @@ private:
     llvm::Type* getLLVMType(IRType* type);
     std::string getMangledTypeName(IRType* type);
     std::string getMangledFunctionName(
-        std::string const& function, std::vector<IRType*> const& params);
+        std::string const& function, std::vector<IRType*> const& params
+    );
 };
