@@ -49,6 +49,32 @@ IRGenericType* Environment::findGeneric(std::string const& genericName)
     return nullptr;
 }
 
+IRConstraintDeclaration* Environment::addConstraint(IRConstraintDeclaration* constraint)
+{
+    if (m_constraints.contains(constraint->name))
+        return nullptr;
+
+    m_constraints.try_emplace(constraint->name, constraint);
+    return m_constraints.at(constraint->name);
+}
+
+IRConstraintDeclaration* Environment::getConstraint(std::string const& constraintName)
+{
+    if (m_constraints.contains(constraintName))
+        return m_constraints.at(constraintName);
+    return nullptr;
+}
+
+IRConstraintDeclaration* Environment::findConstraint(std::string const& constraintName)
+{
+    if (auto constraint = getConstraint(constraintName))
+        return constraint;
+    else if (m_parent)
+        return m_parent->findConstraint(constraintName);
+
+    return nullptr;
+}
+
 IRStructType* Environment::addStruct(IRStructType* structType)
 {
     if (m_structs.contains(structType->name))

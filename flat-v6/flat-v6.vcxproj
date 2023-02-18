@@ -177,9 +177,11 @@
     <ClCompile Include="passes\codegen_pass.cpp" />
     <ClCompile Include="passes\function_extraction_pass.cpp" />
     <ClCompile Include="passes\ir_pass.cpp" />
+    <ClCompile Include="passes\ir_pass_.cpp" />
     <ClCompile Include="passes\lowering_pass.cpp" />
     <ClCompile Include="passes\no_op_pass.cpp" />
     <ClCompile Include="passes\semantic_pass.cpp" />
+    <ClCompile Include="passes\semantic_pass_.cpp" />
     <ClCompile Include="passes\struct_extraction_pass.cpp" />
     <ClCompile Include="util\error_logger.cpp" />
   </ItemGroup>
@@ -197,9 +199,11 @@
     <ClInclude Include="passes\codegen_pass.hpp" />
     <ClInclude Include="passes\function_extraction_pass.hpp" />
     <ClInclude Include="passes\ir_pass.hpp" />
+    <ClInclude Include="passes\ir_pass_.hpp" />
     <ClInclude Include="passes\lowering_pass.hpp" />
     <ClInclude Include="passes\no_op_pass.hpp" />
     <ClInclude Include="passes\semantic_pass.hpp" />
+    <ClInclude Include="passes\semantic_pass_.hpp" />
     <ClInclude Include="passes\struct_extraction_pass.hpp" />
     <ClInclude Include="util\error_logger.hpp" />
     <ClInclude Include="util\graph_context.hpp" />

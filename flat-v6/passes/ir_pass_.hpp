@@ -8,15 +8,10 @@
 class IRPass : public ASTVisitor<IRNode*>
 {
 private:
-    ErrorLogger& m_logger;
-    CompilationContext& m_compCtx;
-    ModuleContext& m_modCtx;
-    GraphContext& m_irCtx;
-
-    GraphContext m_envCtx;
-    GraphContext m_genericCtx;
-
-    Environment* m_env;
+    ErrorLogger& logger;
+    CompilationContext& compCtx;
+    ModuleContext& modCtx;
+    GraphContext& irCtx;
 
 public:
     IRPass(
@@ -24,11 +19,7 @@ public:
         CompilationContext& compCtx,
         ModuleContext& modCtx,
         GraphContext& irCtx)
-        : m_logger(logger),
-          m_compCtx(compCtx),
-          m_modCtx(modCtx),
-          m_irCtx(irCtx),
-          m_env(nullptr)
+        : logger(logger), compCtx(compCtx), modCtx(modCtx), irCtx(irCtx)
     {
     }
 
@@ -66,6 +57,9 @@ private:
     virtual IRNode* visit(ASTArrayType* node) override;
 
 private:
+    std::vector<IRDeclaration*> transformConstraintConditions(
+        std::vector<ASTDeclaration*> const& conditions);
+
     std::vector<std::pair<std::string, std::vector<IRType*>>>
     transformRequirements(
         std::vector<std::pair<std::string, std::vector<ASTType*>>> const&

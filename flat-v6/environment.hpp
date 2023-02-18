@@ -11,6 +11,7 @@ protected:
     std::string m_name;
     Environment* m_parent;
 
+    std::unordered_map<std::string, IRConstraintDeclaration*> m_constraints;
     std::unordered_map<std::string, IRStructType*> m_structs;
     std::unordered_multimap<std::string, IRFunctionDeclaration*> m_functions;
 
@@ -60,8 +61,29 @@ public:
     /// found
     virtual IRGenericType* findGeneric(std::string const& name);
 
+    /// @brief Add a constraint declaration to this environment
+    /// @param constraint Constraint declaration to add
+    /// @return The added constraint declaration or nullptr if a constraint
+    /// declaration with the same name already exists
+    virtual IRConstraintDeclaration* addConstraint(
+        IRConstraintDeclaration* constraint);
+
+    /// @brief Search for a constraint declaration by name in this environment
+    /// only
+    /// @param name Name of the constraint declaration
+    /// @return The found constraint declaration or nullptr if the constraint
+    /// declaration was not found
+    virtual IRConstraintDeclaration* getConstraint(std::string const& name);
+
+    /// @brief Search for a constraint declaration by name in the environment
+    /// chain
+    /// @param name Name of the constraint declaration
+    /// @return The found constraint declaration or nullptr if the constraint
+    /// declaration was not found
+    virtual IRConstraintDeclaration* findConstraint(std::string const& name);
+
     /// @brief Add a struct type to this environment
-    /// @param name Name of the struct type
+    /// @param structType Struct type to add
     /// @return The added struct type or nullptr if a struct type with the same
     /// name already exists
     virtual IRStructType* addStruct(IRStructType* structType);
@@ -104,7 +126,8 @@ public:
     /// @param variableType Type of the variable
     /// @return The added type or nullptr if a type for the variable already
     /// exists
-    virtual IRType* addVariableType(std::string const& name, IRType* variableType);
+    virtual IRType* addVariableType(
+        std::string const& name, IRType* variableType);
 
     /// @brief Search for a variable's type by name in this environment
     /// @param name Name of the variable

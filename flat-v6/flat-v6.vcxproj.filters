@@ -42,7 +42,7 @@
     <ClCompile Include="passes\no_op_pass.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="passes\ir_pass.cpp">
+    <ClCompile Include="passes\ir_pass_.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
     <ClCompile Include="passes\struct_extraction_pass.cpp">
@@ -52,6 +52,12 @@
       <Filter>Quelldateien</Filter>
     </ClCompile>
     <ClCompile Include="environment.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="passes\semantic_pass_.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="passes\ir_pass.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
   </ItemGroup>
@@ -107,7 +113,7 @@
     <ClInclude Include="util\graph_context.hpp">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="passes\ir_pass.hpp">
+    <ClInclude Include="passes\ir_pass_.hpp">
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="passes\struct_extraction_pass.hpp">
@@ -117,6 +123,12 @@
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="environment.hpp">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="passes\semantic_pass_.hpp">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="passes\ir_pass.hpp">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>

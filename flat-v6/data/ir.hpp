@@ -359,12 +359,12 @@ struct IRIfStatement : public IRStatement
 
 struct IRDeclaration : public IRNode
 {
-    std::vector<std::string> typeParams;
+    std::vector<IRGenericType*> typeParams;
     std::vector<std::pair<std::string, std::vector<IRType*>>> requirements;
 
     IRDeclaration(
         SourceRef const& location,
-        std::vector<std::string> const& typeParams,
+        std::vector<IRGenericType*> const& typeParams,
         std::vector<std::pair<std::string, std::vector<IRType*>>> const&
             requirements)
         : IRNode(location), typeParams(typeParams), requirements(requirements)
@@ -382,7 +382,7 @@ struct IRConstraintDeclaration : public IRDeclaration
     IRConstraintDeclaration(
         SourceRef const& location,
         std::string const& name,
-        std::vector<std::string> const& typeParams,
+        std::vector<IRGenericType*> const& typeParams,
         std::vector<std::pair<std::string, std::vector<IRType*>>> const&
             requirements,
         std::vector<IRDeclaration*> const& conditions)
@@ -403,7 +403,7 @@ struct IRStructDeclaration : public IRDeclaration
     IRStructDeclaration(
         SourceRef const& location,
         std::string const& name,
-        std::vector<std::string> const& typeParams,
+        std::vector<IRGenericType*> const& typeParams,
         std::vector<std::pair<std::string, std::vector<IRType*>>> const&
             requirements,
         std::vector<std::pair<std::string, IRType*>> const& fields)
@@ -425,7 +425,7 @@ struct IRFunctionDeclaration : public IRDeclaration
     IRFunctionDeclaration(
         SourceRef const& location,
         std::string const& name,
-        std::vector<std::string> const& typeParams,
+        std::vector<IRGenericType*> const& typeParams,
         std::vector<std::pair<std::string, std::vector<IRType*>>> const&
             requirements,
         IRType* result,
@@ -444,7 +444,7 @@ struct IRFunctionDeclaration : public IRDeclaration
         SourceRef const& location,
         std::string const& lib,
         std::string const& name,
-        std::vector<std::string> const& typeParams,
+        std::vector<IRGenericType*> const& typeParams,
         std::vector<std::pair<std::string, std::vector<IRType*>>> const&
             requirements,
         IRType* result,

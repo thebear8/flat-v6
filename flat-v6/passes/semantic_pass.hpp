@@ -16,17 +16,23 @@ private:
     CompilationContext& compCtx;
     ModuleContext& modCtx;
 
-    IRType *functionResult, *expectedFunctionResult;
-    std::unordered_map<std::string, IRType*> localVariables;
+    GraphContext m_envCtx;
+    GraphContext m_genericCtx;
+
+    Environment* m_env;
+
+    IRType* m_result;
+    IRType* m_expectedResult;
 
 public:
     SemanticPass(
         ErrorLogger& logger, CompilationContext& compCtx, ModuleContext& modCtx)
         : logger(logger),
-          compCtx(compCtx),
-          modCtx(modCtx),
-          functionResult(nullptr),
-          expectedFunctionResult(nullptr)
+        compCtx(compCtx),
+        modCtx(modCtx),
+        m_env(&modCtx),
+        m_result(nullptr),
+        m_expectedResult(nullptr)
     {
     }
 
