@@ -11,10 +11,10 @@
 class OperatorLoweringPass : protected IRVisitor<IRNode*>
 {
 private:
-    ErrorLogger& logger;
-    CompilationContext& compCtx;
-    ModuleContext& modCtx;
-    GraphContext& irCtx;
+    ErrorLogger& m_logger;
+    CompilationContext& m_compCtx;
+    ModuleContext& m_modCtx;
+    GraphContext& m_irCtx;
 
 public:
     OperatorLoweringPass(
@@ -23,7 +23,7 @@ public:
         ModuleContext& modCtx,
         GraphContext& irCtx
     )
-        : logger(logger), compCtx(compCtx), modCtx(modCtx), irCtx(irCtx)
+        : m_logger(logger), m_compCtx(compCtx), m_modCtx(modCtx), m_irCtx(irCtx)
     {
     }
 
@@ -54,14 +54,4 @@ protected:
     virtual IRNode* visit(IRStructDeclaration* node) override;
     virtual IRNode* visit(IRFunctionDeclaration* node) override;
     virtual IRNode* visit(IRSourceFile* node) override;
-
-private:
-    template<typename Tr, typename Tv>
-    Tr* checked_cast(Tv* value)
-    {
-        auto ptr = dynamic_cast<Tr*>(value);
-        if (!ptr)
-            throw std::exception("bad check_cast");
-        return ptr;
-    }
 };
