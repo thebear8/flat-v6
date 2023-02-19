@@ -16,13 +16,13 @@
 class LLVMCodegenPass : protected IRVisitor<llvm::Value*>
 {
 private:
-    ErrorLogger& logger;
-    CompilationContext& compCtx;
-    ModuleContext& modCtx;
+    ErrorLogger& m_logger;
+    CompilationContext& m_compCtx;
+    ModuleContext& m_modCtx;
 
-    llvm::LLVMContext& llvmCtx;
-    llvm::Module& mod;
-    llvm::IRBuilder<> builder;
+    llvm::LLVMContext& m_llvmCtx;
+    llvm::Module& m_llvmMod;
+    llvm::IRBuilder<> m_builder;
 
     std::unordered_map<IRType*, llvm::Type*> llvmTypes;
     std::unordered_map<std::string, llvm::Value*> localValues;
@@ -35,12 +35,12 @@ public:
         llvm::LLVMContext& llvmCtx,
         llvm::Module& mod
     )
-        : logger(logger),
-          compCtx(compCtx),
-          modCtx(modCtx),
-          llvmCtx(llvmCtx),
-          mod(mod),
-          builder(llvmCtx)
+        : m_logger(logger),
+          m_compCtx(compCtx),
+          m_modCtx(modCtx),
+          m_llvmCtx(llvmCtx),
+          m_llvmMod(mod),
+          m_builder(llvmCtx)
     {
     }
 

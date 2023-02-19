@@ -6,7 +6,7 @@
 
 void LLVMCodegenPass::process(IRSourceFile* source)
 {
-    for (auto& [functionName, function] : modCtx.getFunctionList())
+    for (auto& [functionName, function] : m_modCtx.getFunctionList())
     {
         std::vector<IRType*> params;
         for (auto& [name, type] : function->params)
@@ -23,9 +23,12 @@ void LLVMCodegenPass::process(IRSourceFile* source)
             ((function->body) ? getMangledFunctionName(function->name, params)
                               : function->name);
         auto llvmFunction = llvm::Function::Create(
-            type, llvm::GlobalValue::LinkageTypes::ExternalLinkage, name, mod
+            type,
+            llvm::GlobalValue::LinkageTypes::ExternalLinkage,
+            name,
+            m_llvmMod
         );
-        compCtx.addLLVMFunction(function, llvmFunction);
+        m_compCtx.addLLVMFunction(function, llvmFunction);
 
         if (!function->body)
         {
@@ -54,23 +57,27 @@ void LLVMCodegenPass::optimize()
     pb.crossRegisterProxies(lam, fam, cgam, mam);
 
     auto mpm = pb.buildPerModuleDefaultPipeline(llvm::OptimizationLevel::O1);
-    mpm.run(mod, mam);
+    mpm.run(m_llvmMod, mam);
 }
 
 llvm::Value* LLVMCodegenPass::visit(IRIntegerExpression* node)
 {
-    auto type = llvm::IntegerType::get(llvmCtx, (unsigned int)node->width);
+    auto type = llvm::IntegerType::get(m_llvmCtx, (unsigned int)node->width);
     return llvm::ConstantInt::get(type, node->value, (uint8_t)node->radix);
 }
 
 llvm::Value* LLVMCodegenPass::visit(IRBoolExpression* node)
 {
-    return llvm::ConstantInt::get(llvm::Type::getInt1Ty(llvmCtx), node->value);
+    return llvm::ConstantInt::get(
+        llvm::Type::getInt1Ty(m_llvmCtx), node->value
+    );
 }
 
 llvm::Value* LLVMCodegenPass::visit(IRCharExpression* node)
 {
-    return llvm::ConstantInt::get(llvm::Type::getInt32Ty(llvmCtx), node->value);
+    return llvm::ConstantInt::get(
+        llvm::Type::getInt32Ty(m_llvmCtx), node->value
+    );
 }
 
 llvm::Value* LLVMCodegenPass::visit(IRStringExpression* node)
@@ -78,24 +85,24 @@ llvm::Value* LLVMCodegenPass::visit(IRStringExpression* node)
     std::vector<llvm::Constant*> stringBytes;
     for (auto c : node->value)
         stringBytes.push_back(
-            llvm::ConstantInt::get(llvm::Type::getInt8Ty(llvmCtx), c)
+            llvm::ConstantInt::get(llvm::Type::getInt8Ty(m_llvmCtx), c)
         );
 
     auto fieldTypes = std::vector<llvm::Type*>(
-        { llvm::Type::getInt64Ty(llvmCtx),
+        { llvm::Type::getInt64Ty(m_llvmCtx),
           llvm::ArrayType::get(
-              llvm::Type::getInt8Ty(llvmCtx), stringBytes.size()
+              llvm::Type::getInt8Ty(m_llvmCtx), stringBytes.size()
           ) }
     );
-    auto structType = llvm::StructType::get(llvmCtx, fieldTypes);
+    auto structType = llvm::StructType::get(m_llvmCtx, fieldTypes);
 
     auto fieldValues = std::vector<llvm::Constant*>(
         { llvm::ConstantInt::get(
-              llvm::Type::getInt64Ty(llvmCtx), stringBytes.size()
+              llvm::Type::getInt64Ty(m_llvmCtx), stringBytes.size()
           ),
           llvm::ConstantArray::get(
               llvm::ArrayType::get(
-                  llvm::Type::getInt8Ty(llvmCtx), stringBytes.size()
+                  llvm::Type::getInt8Ty(m_llvmCtx), stringBytes.size()
               ),
               stringBytes
           ) }
@@ -103,7 +110,7 @@ llvm::Value* LLVMCodegenPass::visit(IRStringExpression* node)
     auto structValue = llvm::ConstantStruct::get(structType, fieldValues);
 
     return new llvm::GlobalVariable(
-        mod,
+        m_llvmMod,
         structType,
         true,
         llvm::GlobalValue::LinkageTypes::InternalLinkage,
@@ -117,16 +124,18 @@ llvm::Value* LLVMCodegenPass::visit(IRIdentifierExpression* node)
         localValues.contains(node->value)
         && "Undefined local Variable in identifier expression"
     );
-    return builder.CreateLoad(
-        getLLVMType(node->type), localValues.at(node->value), node->value + "_"
+    return m_builder.CreateLoad(
+        getLLVMType(node->getMD<IRType*>().value()),
+        localValues.at(node->value),
+        node->value + "_"
     );
 }
 
 llvm::Value* LLVMCodegenPass::visit(IRStructExpression* node)
 {
-    auto type = dynamic_cast<IRStructType*>(node->type);
+    auto type = dynamic_cast<IRStructType*>(node->getMD<IRType*>().value());
     auto structPtr =
-        builder.CreateAlloca(getLLVMType(type), nullptr, type->name + "_");
+        m_builder.CreateAlloca(getLLVMType(type), nullptr, type->name + "_");
 
     for (int i = 0; i < type->fields.size(); i++)
     {
@@ -136,13 +145,13 @@ llvm::Value* LLVMCodegenPass::visit(IRStructExpression* node)
             {
                 auto const& fieldName = node->fields.at(j).first;
                 auto fieldValue = dispatch(node->fields.at(j).second);
-                auto fieldPtr = builder.CreateStructGEP(
+                auto fieldPtr = m_builder.CreateStructGEP(
                     getLLVMType(type),
                     structPtr,
                     i,
                     type->name + "." + fieldName + "_"
                 );
-                builder.CreateStore(fieldValue, fieldPtr);
+                m_builder.CreateStore(fieldValue, fieldPtr);
                 break;
             }
 
@@ -151,7 +160,7 @@ llvm::Value* LLVMCodegenPass::visit(IRStructExpression* node)
         }
     }
 
-    return builder.CreateLoad(getLLVMType(type), structPtr);
+    return m_builder.CreateLoad(getLLVMType(type), structPtr);
 }
 
 llvm::Value* LLVMCodegenPass::visit(IRUnaryExpression* node)
@@ -162,15 +171,15 @@ llvm::Value* LLVMCodegenPass::visit(IRUnaryExpression* node)
     }
     else if (node->operation == UnaryOperator::Negative)
     {
-        return builder.CreateNeg(dispatch(node->expression));
+        return m_builder.CreateNeg(dispatch(node->expression));
     }
     else if (node->operation == UnaryOperator::BitwiseNot)
     {
-        return builder.CreateNot(dispatch(node->expression));
+        return m_builder.CreateNot(dispatch(node->expression));
     }
     else if (node->operation == UnaryOperator::LogicalNot)
     {
-        return builder.CreateNot(dispatch(node->expression));
+        return m_builder.CreateNot(dispatch(node->expression));
     }
     else
     {
@@ -187,97 +196,103 @@ llvm::Value* LLVMCodegenPass::visit(IRBinaryExpression* node)
             dynamic_cast<IRIdentifierExpression*>(node->left)->value;
         assert(localValues.contains(name) && "Undefined local variable");
 
-        builder.CreateStore(dispatch(node->right), localValues.at(name));
-        return builder.CreateLoad(
-            getLLVMType(node->type), localValues.at(name), name + "_"
+        m_builder.CreateStore(dispatch(node->right), localValues.at(name));
+        return m_builder.CreateLoad(
+            getLLVMType(node->getMD<IRType*>().value()),
+            localValues.at(name),
+            name + "_"
         );
     }
     else
     {
         auto left = dispatch(node->left);
         auto right =
-            ((node->left->type->isSigned())
-                 ? builder.CreateSExtOrTrunc(
-                     dispatch(node->right), getLLVMType(node->left->type)
+            ((node->left->getMD<IRType*>().value()->isSigned())
+                 ? m_builder.CreateSExtOrTrunc(
+                     dispatch(node->right),
+                     getLLVMType(node->left->getMD<IRType*>().value())
                  )
-                 : builder.CreateZExtOrTrunc(
-                     dispatch(node->right), getLLVMType(node->left->type)
+                 : m_builder.CreateZExtOrTrunc(
+                     dispatch(node->right),
+                     getLLVMType(node->left->getMD<IRType*>().value())
                  ));
 
         if (node->operation == BinaryOperator::Add)
         {
-            return builder.CreateAdd(left, right);
+            return m_builder.CreateAdd(left, right);
         }
         else if (node->operation == BinaryOperator::Subtract)
         {
-            return builder.CreateSub(left, right);
+            return m_builder.CreateSub(left, right);
         }
         else if (node->operation == BinaryOperator::Multiply)
         {
-            return builder.CreateMul(left, right);
+            return m_builder.CreateMul(left, right);
         }
         else if (node->operation == BinaryOperator::Divide)
         {
             return (
-                node->left->type->isSigned() ? builder.CreateSDiv(left, right)
-                                             : builder.CreateUDiv(left, right)
+                node->left->getMD<IRType*>().value()->isSigned()
+                    ? m_builder.CreateSDiv(left, right)
+                    : m_builder.CreateUDiv(left, right)
             );
         }
         else if (node->operation == BinaryOperator::Modulo)
         {
             return (
-                node->left->type->isSigned() ? builder.CreateSRem(left, right)
-                                             : builder.CreateURem(left, right)
+                node->left->getMD<IRType*>().value()->isSigned()
+                    ? m_builder.CreateSRem(left, right)
+                    : m_builder.CreateURem(left, right)
             );
         }
         else if (node->operation == BinaryOperator::BitwiseAnd)
         {
-            return builder.CreateAnd(left, right);
+            return m_builder.CreateAnd(left, right);
         }
         else if (node->operation == BinaryOperator::BitwiseOr)
         {
-            return builder.CreateOr(left, right);
+            return m_builder.CreateOr(left, right);
         }
         else if (node->operation == BinaryOperator::BitwiseXor)
         {
-            return builder.CreateXor(left, right);
+            return m_builder.CreateXor(left, right);
         }
         else if (node->operation == BinaryOperator::ShiftLeft)
         {
-            return builder.CreateShl(left, right);
+            return m_builder.CreateShl(left, right);
         }
         else if (node->operation == BinaryOperator::ShiftRight)
         {
-            return builder.CreateAShr(left, right);
+            return m_builder.CreateAShr(left, right);
         }
         else if (node->operation == BinaryOperator::LogicalAnd)
         {
-            return builder.CreateLogicalAnd(left, right);
+            return m_builder.CreateLogicalAnd(left, right);
         }
         else if (node->operation == BinaryOperator::LogicalOr)
         {
-            return builder.CreateLogicalOr(left, right);
+            return m_builder.CreateLogicalOr(left, right);
         }
         else if (node->operation == BinaryOperator::Equal)
         {
-            return builder.CreateCmp(
+            return m_builder.CreateCmp(
                 llvm::CmpInst::Predicate::ICMP_EQ, left, right
             );
         }
         else if (node->operation == BinaryOperator::NotEqual)
         {
-            return builder.CreateCmp(
+            return m_builder.CreateCmp(
                 llvm::CmpInst::Predicate::ICMP_NE, left, right
             );
         }
         else if (node->operation == BinaryOperator::LessThan)
         {
             return (
-                node->left->type->isSigned()
-                    ? builder.CreateCmp(
+                node->left->getMD<IRType*>().value()->isSigned()
+                    ? m_builder.CreateCmp(
                         llvm::CmpInst::Predicate::ICMP_SLT, left, right
                     )
-                    : builder.CreateCmp(
+                    : m_builder.CreateCmp(
                         llvm::CmpInst::Predicate::ICMP_ULT, left, right
                     )
             );
@@ -285,11 +300,11 @@ llvm::Value* LLVMCodegenPass::visit(IRBinaryExpression* node)
         else if (node->operation == BinaryOperator::GreaterThan)
         {
             return (
-                node->left->type->isSigned()
-                    ? builder.CreateCmp(
+                node->left->getMD<IRType*>().value()->isSigned()
+                    ? m_builder.CreateCmp(
                         llvm::CmpInst::Predicate::ICMP_SGT, left, right
                     )
-                    : builder.CreateCmp(
+                    : m_builder.CreateCmp(
                         llvm::CmpInst::Predicate::ICMP_UGT, left, right
                     )
             );
@@ -297,11 +312,11 @@ llvm::Value* LLVMCodegenPass::visit(IRBinaryExpression* node)
         else if (node->operation == BinaryOperator::LessOrEqual)
         {
             return (
-                node->left->type->isSigned()
-                    ? builder.CreateCmp(
+                node->left->getMD<IRType*>().value()->isSigned()
+                    ? m_builder.CreateCmp(
                         llvm::CmpInst::Predicate::ICMP_SLE, left, right
                     )
-                    : builder.CreateCmp(
+                    : m_builder.CreateCmp(
                         llvm::CmpInst::Predicate::ICMP_ULE, left, right
                     )
             );
@@ -309,11 +324,11 @@ llvm::Value* LLVMCodegenPass::visit(IRBinaryExpression* node)
         else if (node->operation == BinaryOperator::GreaterOrEqual)
         {
             return (
-                node->left->type->isSigned()
-                    ? builder.CreateCmp(
+                node->left->getMD<IRType*>().value()->isSigned()
+                    ? m_builder.CreateCmp(
                         llvm::CmpInst::Predicate::ICMP_SGE, left, right
                     )
-                    : builder.CreateCmp(
+                    : m_builder.CreateCmp(
                         llvm::CmpInst::Predicate::ICMP_UGE, left, right
                     )
             );
@@ -331,7 +346,7 @@ llvm::Value* LLVMCodegenPass::visit(IRCallExpression* node)
     auto target = node->target;
     assert(target && "Target of call expression is undefined");
 
-    auto function = compCtx.getLLVMFunction(target);
+    auto function = m_compCtx.getLLVMFunction(target);
     assert(
         function
         && "LLVM Function object for target of call expression is undefined"
@@ -341,7 +356,7 @@ llvm::Value* LLVMCodegenPass::visit(IRCallExpression* node)
     for (auto& arg : node->args)
         args.push_back(dispatch(arg));
 
-    return builder.CreateCall(function, args);
+    return m_builder.CreateCall(function, args);
 }
 
 llvm::Value* LLVMCodegenPass::visit(IRIndexExpression* node)
@@ -351,47 +366,50 @@ llvm::Value* LLVMCodegenPass::visit(IRIndexExpression* node)
         && "Index expression must have exactly one operand"
     );
     assert(
-        node->args.front()->type->isIntegerType()
+        node->args.front()->getMD<IRType*>().value()->isIntegerType()
         && "Index of index expression must be of integer type"
     );
     assert(
-        (node->expression->type->isArrayType()
-         || node->expression->type->isStringType())
+        (node->expression->getMD<IRType*>().value()->isArrayType()
+         || node->expression->getMD<IRType*>().value()->isStringType())
         && "Operand of index expression must be of string or array type"
     );
 
     auto fieldTypes = std::vector<llvm::Type*>(
-        { llvm::Type::getInt64Ty(llvmCtx),
-          llvm::ArrayType::get(getLLVMType(node->type), 0) }
+        { llvm::Type::getInt64Ty(m_llvmCtx),
+          llvm::ArrayType::get(getLLVMType(node->getMD<IRType*>().value()), 0) }
     );
-    auto arrayType = llvm::StructType::get(llvmCtx, fieldTypes);
+    auto arrayType = llvm::StructType::get(m_llvmCtx, fieldTypes);
 
     auto indexes = std::vector<llvm::Value*>(
-        { llvm::ConstantInt::get(llvm::Type::getInt64Ty(llvmCtx), 0),
-          llvm::ConstantInt::get(llvm::Type::getInt32Ty(llvmCtx), 1),
+        { llvm::ConstantInt::get(llvm::Type::getInt64Ty(m_llvmCtx), 0),
+          llvm::ConstantInt::get(llvm::Type::getInt32Ty(m_llvmCtx), 1),
           dispatch(node->args.front()) }
     );
 
     auto ptr =
-        builder.CreateGEP(arrayType, dispatch(node->expression), indexes);
-    return builder.CreateLoad(getLLVMType(node->type), ptr);
+        m_builder.CreateGEP(arrayType, dispatch(node->expression), indexes);
+    return m_builder.CreateLoad(
+        getLLVMType(node->getMD<IRType*>().value()), ptr
+    );
 }
 
 llvm::Value* LLVMCodegenPass::visit(IRFieldExpression* node)
 {
-    auto structType = dynamic_cast<IRStructType*>(node->expression->type);
+    auto structType =
+        dynamic_cast<IRStructType*>(node->expression->getMD<IRType*>().value());
     for (int i = 0; i < structType->fields.size(); i++)
     {
         if (structType->fields[i].first == node->fieldName)
         {
-            auto value = builder.CreateAlloca(
+            auto value = m_builder.CreateAlloca(
                 getLLVMType(structType), nullptr, structType->name + "_"
             );
-            builder.CreateStore(dispatch(node->expression), value);
+            m_builder.CreateStore(dispatch(node->expression), value);
             auto ptr =
-                builder.CreateStructGEP(getLLVMType(structType), value, i);
-            return builder.CreateLoad(
-                getLLVMType(node->type),
+                m_builder.CreateStructGEP(getLLVMType(structType), value, i);
+            return m_builder.CreateLoad(
+                getLLVMType(node->getMD<IRType*>().value()),
                 ptr,
                 structType->toString() + "." + node->fieldName + "_"
             );
@@ -427,9 +445,12 @@ llvm::Value* LLVMCodegenPass::visit(IRVariableStatement* node)
         assert(!localValues.contains(name) && "Local variable already defined");
 
         localValues.try_emplace(
-            name, builder.CreateAlloca(getLLVMType(value->type), nullptr, name)
+            name,
+            m_builder.CreateAlloca(
+                getLLVMType(value->getMD<IRType*>().value()), nullptr, name
+            )
         );
-        builder.CreateStore(dispatch(value), localValues.at(name));
+        m_builder.CreateStore(dispatch(value), localValues.at(name));
     }
 
     return nullptr;
@@ -438,34 +459,35 @@ llvm::Value* LLVMCodegenPass::visit(IRVariableStatement* node)
 llvm::Value* LLVMCodegenPass::visit(IRReturnStatement* node)
 {
     if (node->expression)
-        builder.CreateRet(dispatch(node->expression));
+        m_builder.CreateRet(dispatch(node->expression));
     else
-        builder.CreateRetVoid();
+        m_builder.CreateRetVoid();
 
     return nullptr;
 }
 
 llvm::Value* LLVMCodegenPass::visit(IRWhileStatement* node)
 {
-    auto parentFunction = builder.GetInsertBlock()->getParent();
+    auto parentFunction = m_builder.GetInsertBlock()->getParent();
 
-    auto conditionBlock = llvm::BasicBlock::Create(llvmCtx, "while_cond_block");
-    auto bodyBlock = llvm::BasicBlock::Create(llvmCtx, "while_body_block");
-    auto endBlock = llvm::BasicBlock::Create(llvmCtx, "while_end_block");
+    auto conditionBlock =
+        llvm::BasicBlock::Create(m_llvmCtx, "while_cond_block");
+    auto bodyBlock = llvm::BasicBlock::Create(m_llvmCtx, "while_body_block");
+    auto endBlock = llvm::BasicBlock::Create(m_llvmCtx, "while_end_block");
 
-    builder.CreateBr(conditionBlock);
+    m_builder.CreateBr(conditionBlock);
 
     parentFunction->getBasicBlockList().push_back(conditionBlock);
-    builder.SetInsertPoint(conditionBlock);
-    builder.CreateCondBr(dispatch(node->condition), bodyBlock, endBlock);
+    m_builder.SetInsertPoint(conditionBlock);
+    m_builder.CreateCondBr(dispatch(node->condition), bodyBlock, endBlock);
 
     parentFunction->getBasicBlockList().push_back(bodyBlock);
-    builder.SetInsertPoint(bodyBlock);
+    m_builder.SetInsertPoint(bodyBlock);
     dispatch(node->body);
-    builder.CreateBr(conditionBlock);
+    m_builder.CreateBr(conditionBlock);
 
     parentFunction->getBasicBlockList().push_back(endBlock);
-    builder.SetInsertPoint(endBlock);
+    m_builder.SetInsertPoint(endBlock);
 
     return nullptr;
 }
@@ -473,33 +495,33 @@ llvm::Value* LLVMCodegenPass::visit(IRWhileStatement* node)
 llvm::Value* LLVMCodegenPass::visit(IRIfStatement* node)
 {
     auto hasElse = (node->elseBody != nullptr);
-    auto parentFunction = builder.GetInsertBlock()->getParent();
+    auto parentFunction = m_builder.GetInsertBlock()->getParent();
 
-    auto ifBlock = llvm::BasicBlock::Create(llvmCtx, "if_then_block");
+    auto ifBlock = llvm::BasicBlock::Create(m_llvmCtx, "if_then_block");
     auto elseBlock =
-        (hasElse ? llvm::BasicBlock::Create(llvmCtx, "if_else_block") : nullptr
-        );
-    auto endBlock = llvm::BasicBlock::Create(llvmCtx, "if_end_block");
+        (hasElse ? llvm::BasicBlock::Create(m_llvmCtx, "if_else_block")
+                 : nullptr);
+    auto endBlock = llvm::BasicBlock::Create(m_llvmCtx, "if_end_block");
 
-    builder.CreateCondBr(
+    m_builder.CreateCondBr(
         dispatch(node->condition), ifBlock, (hasElse ? elseBlock : endBlock)
     );
 
     parentFunction->getBasicBlockList().push_back(ifBlock);
-    builder.SetInsertPoint(ifBlock);
+    m_builder.SetInsertPoint(ifBlock);
     dispatch(node->ifBody);
-    builder.CreateBr(endBlock);
+    m_builder.CreateBr(endBlock);
 
     if (hasElse)
     {
         parentFunction->getBasicBlockList().push_back(elseBlock);
-        builder.SetInsertPoint(elseBlock);
+        m_builder.SetInsertPoint(elseBlock);
         dispatch(node->elseBody);
-        builder.CreateBr(endBlock);
+        m_builder.CreateBr(endBlock);
     }
 
     parentFunction->getBasicBlockList().push_back(endBlock);
-    builder.SetInsertPoint(endBlock);
+    m_builder.SetInsertPoint(endBlock);
 
     return nullptr;
 }
@@ -511,7 +533,7 @@ llvm::Value* LLVMCodegenPass::visit(IRStructDeclaration* node)
 
 llvm::Value* LLVMCodegenPass::visit(IRFunctionDeclaration* node)
 {
-    auto function = compCtx.getLLVMFunction(node);
+    auto function = m_compCtx.getLLVMFunction(node);
     assert(
         function && "No matching llvm function object for function declaration"
     );
@@ -519,11 +541,11 @@ llvm::Value* LLVMCodegenPass::visit(IRFunctionDeclaration* node)
     if (!node->body)
         return nullptr;
 
-    auto entryBlock = llvm::BasicBlock::Create(llvmCtx, "entry");
-    auto bodyBlock = llvm::BasicBlock::Create(llvmCtx, "body");
+    auto entryBlock = llvm::BasicBlock::Create(m_llvmCtx, "entry");
+    auto bodyBlock = llvm::BasicBlock::Create(m_llvmCtx, "body");
 
     function->getBasicBlockList().push_back(entryBlock);
-    builder.SetInsertPoint(entryBlock);
+    m_builder.SetInsertPoint(entryBlock);
 
     localValues.clear();
     for (int i = 0; i < node->params.size(); i++)
@@ -536,21 +558,21 @@ llvm::Value* LLVMCodegenPass::visit(IRFunctionDeclaration* node)
 
         localValues.try_emplace(
             paramName,
-            builder.CreateAlloca(
+            m_builder.CreateAlloca(
                 getLLVMType(paramType), nullptr, paramName + "_"
             )
         );
-        builder.CreateStore(function->getArg(i), localValues.at(paramName));
+        m_builder.CreateStore(function->getArg(i), localValues.at(paramName));
     }
 
-    builder.CreateBr(bodyBlock);
+    m_builder.CreateBr(bodyBlock);
     function->getBasicBlockList().push_back(bodyBlock);
-    builder.SetInsertPoint(bodyBlock);
+    m_builder.SetInsertPoint(bodyBlock);
     dispatch(node->body);
 
     if (node->result->isVoidType()
-        && !builder.GetInsertBlock()->getTerminator())
-        builder.CreateRetVoid();
+        && !m_builder.GetInsertBlock()->getTerminator())
+        m_builder.CreateRetVoid();
 
     return nullptr;
 }
@@ -571,31 +593,31 @@ llvm::Type* LLVMCodegenPass::getLLVMType(IRType* type)
     }
     else if (type->isVoidType())
     {
-        llvmTypes.try_emplace(type, llvm::Type::getVoidTy(llvmCtx));
+        llvmTypes.try_emplace(type, llvm::Type::getVoidTy(m_llvmCtx));
         return llvmTypes.at(type);
     }
     else if (type->isBoolType())
     {
-        llvmTypes.try_emplace(type, llvm::Type::getInt1Ty(llvmCtx));
+        llvmTypes.try_emplace(type, llvm::Type::getInt1Ty(m_llvmCtx));
         return llvmTypes.at(type);
     }
     else if (type->isIntegerType())
     {
         llvmTypes.try_emplace(
             type,
-            llvm::Type::getIntNTy(llvmCtx, (unsigned int)type->getBitSize())
+            llvm::Type::getIntNTy(m_llvmCtx, (unsigned int)type->getBitSize())
         );
         return llvmTypes.at(type);
     }
     else if (type->isCharType())
     {
-        llvmTypes.try_emplace(type, llvm::Type::getInt32Ty(llvmCtx));
+        llvmTypes.try_emplace(type, llvm::Type::getInt32Ty(m_llvmCtx));
         return llvmTypes.at(type);
     }
     else if (type->isStringType())
     {
         llvmTypes.try_emplace(
-            type, getLLVMType(compCtx.getArrayType(compCtx.getU8()))
+            type, getLLVMType(m_compCtx.getArrayType(m_compCtx.getU8()))
         );
         return llvmTypes.at(type);
     }
@@ -607,7 +629,7 @@ llvm::Type* LLVMCodegenPass::getLLVMType(IRType* type)
         for (auto& [fieldName, fieldType] : structType->fields)
             fields.push_back(getLLVMType(fieldType));
 
-        llvmTypes.try_emplace(type, llvm::StructType::get(llvmCtx, fields));
+        llvmTypes.try_emplace(type, llvm::StructType::get(m_llvmCtx, fields));
         return llvmTypes.at(type);
     }
     else if (type->isPointerType())
@@ -620,12 +642,12 @@ llvm::Type* LLVMCodegenPass::getLLVMType(IRType* type)
     {
         auto base = dynamic_cast<IRArrayType*>(type)->base;
         auto fields = std::vector<llvm::Type*>(
-            { llvm::Type::getInt64Ty(llvmCtx),
+            { llvm::Type::getInt64Ty(m_llvmCtx),
               llvm::ArrayType::get(getLLVMType(base), 0) }
         );
 
         llvmTypes.try_emplace(
-            type, llvm::StructType::get(llvmCtx, fields)->getPointerTo()
+            type, llvm::StructType::get(m_llvmCtx, fields)->getPointerTo()
         );
         return llvmTypes.at(type);
     }

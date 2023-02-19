@@ -124,6 +124,7 @@
         "__tuple": "cpp",
         "__verbose_abort": "cpp",
         "propagate_const": "cpp",
-        "__memory": "cpp"
+        "__memory": "cpp",
+        "*.def": "cpp"
     }
 }
