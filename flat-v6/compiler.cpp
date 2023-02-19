@@ -21,6 +21,7 @@
 #include "passes/function_extraction_pass.hpp"
 #include "passes/ir_pass.hpp"
 #include "passes/lowering_pass.hpp"
+#include "passes/module_extraction_pass.hpp"
 #include "passes/semantic_pass.hpp"
 #include "passes/struct_extraction_pass.hpp"
 #include "util/string_switch.hpp"
@@ -93,7 +94,7 @@ void CompilationContext::compile(
     std::string const& sourceDir, llvm::raw_pwrite_stream& output
 )
 {
-    GraphContext astCtx;
+    GraphContext astCtx, irCtx;
     std::vector<ASTSourceFile*> astSourceFiles;
     std::unordered_map<size_t, std::string> sources;
     ErrorLogger logger(std::cout, sources);
@@ -113,6 +114,9 @@ void CompilationContext::compile(
         Parser parser(logger, astCtx, input, id);
         astSourceFiles.push_back(parser.sourceFile());
     }
+
+    for (auto sf : astSourceFiles)
+        ModuleExtractionPass(logger, *this, irCtx).process(sf);
 
     for (auto sf : astSourceFiles)
         StructExtractionPass(logger, *this, *getModule(sf->modulePath))
@@ -179,10 +183,19 @@ IRType* CompilationContext::getType(std::string const& name)
     return Environment::getType(name);
 }
 
+ModuleContext* CompilationContext::addModule(ModuleContext* mod)
+{
+    if (modules.contains(mod->name))
+        return nullptr;
+
+    modules.try_emplace(mod->name);
+    return modules.at(mod->name);
+}
+
 ModuleContext* CompilationContext::getModule(std::string const& name)
 {
     if (!modules.contains(name))
-        modules.try_emplace(name, new ModuleContext(*this, name));
+        return nullptr;
     return modules.at(name);
 }
 

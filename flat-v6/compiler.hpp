@@ -75,9 +75,15 @@ public:
     IRType* getType(std::string const& name) override;
 
 public:
-    /// @brief Get or create a ModuleContext for the specified module
-    /// @param name The module name
-    /// @return Retrieved or created ModuleContext
+    /// @brief Add a module to this compilation context
+    /// @param mod The module to add
+    /// @return The added module or nullptr if a module with the same name
+    /// already exists
+    ModuleContext* addModule(ModuleContext* mod);
+
+    /// @brief Search for a module by name in this compilation context
+    /// @param name The name of the module to find
+    /// @return The found module or nullptr if the module was not found
     ModuleContext* getModule(std::string const& name);
 
     /// @brief Add an llvm::Function for an IR function. This doesn't actually
