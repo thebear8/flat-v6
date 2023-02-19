@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "../util/md_container.hpp"
 #include "../util/visitor.hpp"
 #include "operator.hpp"
 #include "source_ref.hpp"
@@ -48,24 +49,35 @@ using IRTripleDispatchVisitor = triple_dispatch_visitor::TripleDispatchVisitor<
     struct IRPointerType,
     struct IRArrayType>;
 
+using IRMetadataContainer = MetadataContainer<SourceRef, IRType*>;
+
 template<typename TReturn>
 using IRVisitor = IRTripleDispatchVisitor::Visitor<TReturn>;
 
-struct IRNode : IRTripleDispatchVisitor::NodeBase {
-    SourceRef location;
-
-    IRNode(SourceRef const& location) : location(location) {}
-
+struct IRNode : IRTripleDispatchVisitor::NodeBase, private IRMetadataContainer {
     IMPLEMENT_ACCEPT()
+
+    template<typename TValue>
+    std::optional<TValue> const& getMD() {
+        return IRMetadataContainer::setMD<TValue>();
+    }
+
+    template<typename TValue>
+    IRNode* setMD(TValue&& v) {
+        IRMetadataContainer::setMD<TValue>(std::forward<TValue>(v));
+        return this;
+    }
+
+    template<typename TValue>
+    IRNode* setMD(TValue const& v) {
+        IRMetadataContainer::setMD<TValue>(std::forward<TValue>(v));
+        return this;
+    }
 };
 
 //
 
 struct IRExpression : public IRNode {
-    IRType* type;
-
-    IRExpression(SourceRef const& location) : IRNode(location), type(nullptr) {}
-
     IMPLEMENT_ACCEPT()
 };
 
@@ -75,17 +87,9 @@ struct IRIntegerExpression : public IRExpression {
     std::string value;
 
     IRIntegerExpression(
-        SourceRef const& location,
-        bool isSigned,
-        size_t width,
-        size_t radix,
-        std::string const& value
+        bool isSigned, size_t width, size_t radix, std::string const& value
     )
-        : IRExpression(location),
-          isSigned(isSigned),
-          width(width),
-          radix(radix),
-          value(value) {}
+        : isSigned(isSigned), width(width), radix(radix), value(value) {}
 
     IMPLEMENT_ACCEPT()
 };
@@ -93,8 +97,7 @@ struct IRIntegerExpression : public IRExpression {
 struct IRBoolExpression : public IRExpression {
     bool value;
 
-    IRBoolExpression(SourceRef const& location, bool value)
-        : IRExpression(location), value(value) {}
+    IRBoolExpression(bool value) : value(value) {}
 
     IMPLEMENT_ACCEPT()
 };
@@ -102,8 +105,7 @@ struct IRBoolExpression : public IRExpression {
 struct IRCharExpression : public IRExpression {
     uint32_t value;
 
-    IRCharExpression(SourceRef const& location, uint32_t value)
-        : IRExpression(location), value(value) {}
+    IRCharExpression(uint32_t value) : value(value) {}
 
     IMPLEMENT_ACCEPT()
 };
@@ -111,10 +113,7 @@ struct IRCharExpression : public IRExpression {
 struct IRStringExpression : public IRExpression {
     std::vector<uint8_t> value;
 
-    IRStringExpression(
-        SourceRef const& location, std::vector<uint8_t> const& value
-    )
-        : IRExpression(location), value(value) {}
+    IRStringExpression(std::vector<uint8_t> const& value) : value(value) {}
 
     IMPLEMENT_ACCEPT()
 };
@@ -122,8 +121,7 @@ struct IRStringExpression : public IRExpression {
 struct IRIdentifierExpression : public IRExpression {
     std::string value;
 
-    IRIdentifierExpression(SourceRef const& location, std::string const& value)
-        : IRExpression(location), value(value) {}
+    IRIdentifierExpression(std::string const& value) : value(value) {}
 
     IMPLEMENT_ACCEPT()
 };
@@ -133,11 +131,10 @@ struct IRStructExpression : public IRExpression {
     std::vector<std::pair<std::string, IRExpression*>> fields;
 
     IRStructExpression(
-        SourceRef const& location,
         std::string const& structName,
         std::vector<std::pair<std::string, IRExpression*>> const& fields
     )
-        : IRExpression(location), structName(structName), fields(fields) {}
+        : structName(structName), fields(fields) {}
 
     IMPLEMENT_ACCEPT()
 };
@@ -148,15 +145,11 @@ struct IRUnaryExpression : public IRExpression {
     IRFunctionDeclaration* target;
 
     IRUnaryExpression(
-        SourceRef const& location,
         UnaryOperator operation,
         IRExpression* expression,
         IRFunctionDeclaration* target
     )
-        : IRExpression(location),
-          operation(operation),
-          expression(expression),
-          target(target) {}
+        : operation(operation), expression(expression), target(target) {}
 
     IMPLEMENT_ACCEPT()
 };
@@ -167,17 +160,12 @@ struct IRBinaryExpression : public IRExpression {
     IRFunctionDeclaration* target;
 
     IRBinaryExpression(
-        SourceRef const& location,
         BinaryOperator operation,
         IRExpression* left,
         IRExpression* right,
         IRFunctionDeclaration* target
     )
-        : IRExpression(location),
-          operation(operation),
-          left(left),
-          right(right),
-          target(target) {}
+        : operation(operation), left(left), right(right), target(target) {}
 
     IMPLEMENT_ACCEPT()
 };
@@ -188,15 +176,11 @@ struct IRCallExpression : public IRExpression {
     IRFunctionDeclaration* target;
 
     IRCallExpression(
-        SourceRef const& location,
         IRExpression* expression,
         std::vector<IRExpression*> const& args,
         IRFunctionDeclaration* target
     )
-        : IRExpression(location),
-          expression(expression),
-          args(args),
-          target(target) {}
+        : expression(expression), args(args), target(target) {}
 
     IMPLEMENT_ACCEPT()
 };
@@ -207,15 +191,11 @@ struct IRIndexExpression : public IRExpression {
     IRFunctionDeclaration* target;
 
     IRIndexExpression(
-        SourceRef const& location,
         IRExpression* expression,
         std::vector<IRExpression*> const& args,
         IRFunctionDeclaration* target
     )
-        : IRExpression(location),
-          expression(expression),
-          args(args),
-          target(target) {}
+        : expression(expression), args(args), target(target) {}
 
     IMPLEMENT_ACCEPT()
 };
@@ -224,14 +204,8 @@ struct IRFieldExpression : public IRExpression {
     IRExpression* expression;
     std::string fieldName;
 
-    IRFieldExpression(
-        SourceRef const& location,
-        IRExpression* expression,
-        std::string const& fieldName
-    )
-        : IRExpression(location),
-          expression(expression),
-          fieldName(fieldName) {}
+    IRFieldExpression(IRExpression* expression, std::string const& fieldName)
+        : expression(expression), fieldName(fieldName) {}
 
     IMPLEMENT_ACCEPT()
 };
@@ -239,18 +213,14 @@ struct IRFieldExpression : public IRExpression {
 //
 
 struct IRStatement : public IRNode {
-    IRStatement(SourceRef const& location) : IRNode(location) {}
-
     IMPLEMENT_ACCEPT()
 };
 
 struct IRBlockStatement : public IRStatement {
     std::vector<IRStatement*> statements;
 
-    IRBlockStatement(
-        SourceRef const& location, std::vector<IRStatement*> const& statements
-    )
-        : IRStatement(location), statements(statements) {}
+    IRBlockStatement(std::vector<IRStatement*> const& statements)
+        : statements(statements) {}
 
     IMPLEMENT_ACCEPT()
 };
@@ -258,8 +228,7 @@ struct IRBlockStatement : public IRStatement {
 struct IRExpressionStatement : public IRStatement {
     IRExpression* expression;
 
-    IRExpressionStatement(SourceRef const& location, IRExpression* expression)
-        : IRStatement(location), expression(expression) {}
+    IRExpressionStatement(IRExpression* expression) : expression(expression) {}
 
     IMPLEMENT_ACCEPT()
 };
@@ -268,10 +237,9 @@ struct IRVariableStatement : public IRStatement {
     std::vector<std::pair<std::string, IRExpression*>> items;
 
     IRVariableStatement(
-        SourceRef const& location,
         std::vector<std::pair<std::string, IRExpression*>> const& items
     )
-        : IRStatement(location), items(items) {}
+        : items(items) {}
 
     IMPLEMENT_ACCEPT()
 };
@@ -279,8 +247,7 @@ struct IRVariableStatement : public IRStatement {
 struct IRReturnStatement : public IRStatement {
     IRExpression* expression;
 
-    IRReturnStatement(SourceRef const& location, IRExpression* expression)
-        : IRStatement(location), expression(expression) {}
+    IRReturnStatement(IRExpression* expression) : expression(expression) {}
 
     IMPLEMENT_ACCEPT()
 };
@@ -289,10 +256,8 @@ struct IRWhileStatement : public IRStatement {
     IRExpression* condition;
     IRStatement* body;
 
-    IRWhileStatement(
-        SourceRef const& location, IRExpression* condition, IRStatement* body
-    )
-        : IRStatement(location), condition(condition), body(body) {}
+    IRWhileStatement(IRExpression* condition, IRStatement* body)
+        : condition(condition), body(body) {}
 
     IMPLEMENT_ACCEPT()
 };
@@ -302,15 +267,9 @@ struct IRIfStatement : public IRStatement {
     IRStatement *ifBody, *elseBody;
 
     IRIfStatement(
-        SourceRef const& location,
-        IRExpression* condition,
-        IRStatement* ifBody,
-        IRStatement* elseBody
+        IRExpression* condition, IRStatement* ifBody, IRStatement* elseBody
     )
-        : IRStatement(location),
-          condition(condition),
-          ifBody(ifBody),
-          elseBody(elseBody) {}
+        : condition(condition), ifBody(ifBody), elseBody(elseBody) {}
 
     IMPLEMENT_ACCEPT()
 };
@@ -322,14 +281,11 @@ struct IRDeclaration : public IRNode {
     std::vector<std::pair<std::string, std::vector<IRType*>>> requirements;
 
     IRDeclaration(
-        SourceRef const& location,
         std::vector<IRGenericType*> const& typeParams,
         std::vector<std::pair<std::string, std::vector<IRType*>>> const&
             requirements
     )
-        : IRNode(location),
-          typeParams(typeParams),
-          requirements(requirements) {}
+        : typeParams(typeParams), requirements(requirements) {}
 
     IMPLEMENT_ACCEPT()
 };
@@ -339,14 +295,13 @@ struct IRConstraintDeclaration : public IRDeclaration {
     std::vector<IRDeclaration*> conditions;
 
     IRConstraintDeclaration(
-        SourceRef const& location,
         std::string const& name,
         std::vector<IRGenericType*> const& typeParams,
         std::vector<std::pair<std::string, std::vector<IRType*>>> const&
             requirements,
         std::vector<IRDeclaration*> const& conditions
     )
-        : IRDeclaration(location, typeParams, requirements),
+        : IRDeclaration(typeParams, requirements),
           name(name),
           conditions(conditions) {}
 
@@ -358,16 +313,13 @@ struct IRStructDeclaration : public IRDeclaration {
     std::vector<std::pair<std::string, IRType*>> fields;
 
     IRStructDeclaration(
-        SourceRef const& location,
         std::string const& name,
         std::vector<IRGenericType*> const& typeParams,
         std::vector<std::pair<std::string, std::vector<IRType*>>> const&
             requirements,
         std::vector<std::pair<std::string, IRType*>> const& fields
     )
-        : IRDeclaration(location, typeParams, requirements),
-          name(name),
-          fields(fields) {}
+        : IRDeclaration(typeParams, requirements), name(name), fields(fields) {}
 
     IMPLEMENT_ACCEPT()
 };
@@ -380,7 +332,6 @@ struct IRFunctionDeclaration : public IRDeclaration {
     IRStatement* body;
 
     IRFunctionDeclaration(
-        SourceRef const& location,
         std::string const& name,
         std::vector<IRGenericType*> const& typeParams,
         std::vector<std::pair<std::string, std::vector<IRType*>>> const&
@@ -389,7 +340,7 @@ struct IRFunctionDeclaration : public IRDeclaration {
         std::vector<std::pair<std::string, IRType*>> const& params,
         IRStatement* body
     )
-        : IRDeclaration(location, typeParams, requirements),
+        : IRDeclaration(typeParams, requirements),
           lib(""),
           name(name),
           result(result),
@@ -397,7 +348,6 @@ struct IRFunctionDeclaration : public IRDeclaration {
           body(body) {}
 
     IRFunctionDeclaration(
-        SourceRef const& location,
         std::string const& lib,
         std::string const& name,
         std::vector<IRGenericType*> const& typeParams,
@@ -406,7 +356,7 @@ struct IRFunctionDeclaration : public IRDeclaration {
         IRType* result,
         std::vector<std::pair<std::string, IRType*>> const& params
     )
-        : IRDeclaration(location, typeParams, requirements),
+        : IRDeclaration(typeParams, requirements),
           lib(lib),
           name(name),
           result(result),
@@ -419,8 +369,6 @@ struct IRFunctionDeclaration : public IRDeclaration {
 //
 
 struct IRType : public IRNode {
-    IRType(SourceRef const& location = SourceRef(0, 0)) : IRNode(location) {}
-
     virtual size_t getBitSize() {
         throw std::exception("getBitSize() called on type that has no size");
     };
@@ -545,15 +493,11 @@ struct IRSourceFile : public IRNode {
     std::vector<IRDeclaration*> declarations;
 
     IRSourceFile(
-        SourceRef const& location,
         std::string const& path,
         std::vector<std::string> const& imports,
         std::vector<IRDeclaration*> const& declarations
     )
-        : IRNode(location),
-          path(path),
-          imports(imports),
-          declarations(declarations) {}
+        : path(path), imports(imports), declarations(declarations) {}
 
     IMPLEMENT_ACCEPT()
 };
