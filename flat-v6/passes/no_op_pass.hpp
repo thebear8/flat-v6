@@ -1,7 +1,8 @@
 #pragma once
 #include "../data/ast.hpp"
 
-class NoOpPass : public ASTVisitor<ASTNode*> {
+class NoOpPass : public ASTVisitor<ASTNode*>
+{
     virtual ASTNode* visit(ASTIntegerExpression* node) override;
     virtual ASTNode* visit(ASTBoolExpression* node) override;
     virtual ASTNode* visit(ASTCharExpression* node) override;

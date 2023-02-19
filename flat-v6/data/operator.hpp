@@ -46,7 +46,8 @@ DEFINE_ENUM(BinaryOperator, BINARY_OPERATOR_LIST)
     ENTRY(BinaryAssign)
 DEFINE_ENUM(OperatorCategory, OPERATOR_CATEGORY_LIST)
 
-struct OperatorInfo {
+struct OperatorInfo
+{
     std::string name;
     std::string symbol;
     OperatorCategory category;

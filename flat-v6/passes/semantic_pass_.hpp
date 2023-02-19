@@ -9,7 +9,8 @@
 #include "../data/operator.hpp"
 #include "../util/error_logger.hpp"
 
-class SemanticPass : IRVisitor<IRType*> {
+class SemanticPass : IRVisitor<IRType*>
+{
 private:
     ErrorLogger& logger;
     CompilationContext& compCtx;
@@ -26,7 +27,9 @@ public:
           compCtx(compCtx),
           modCtx(modCtx),
           functionResult(nullptr),
-          expectedFunctionResult(nullptr) {}
+          expectedFunctionResult(nullptr)
+    {
+    }
 
 public:
     void analyze(IRSourceFile* source);

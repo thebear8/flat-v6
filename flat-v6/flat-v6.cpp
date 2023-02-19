@@ -10,7 +10,8 @@
 #include "passes/no_op_pass.hpp"
 #include "util/string_switch.hpp"
 
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[])
+{
     CLI::App app("flat compiler v6", "flat-v6");
     std::string sourceDir, output, target, cpuDesc, featureDesc;
 

@@ -1,33 +1,40 @@
 #include "semantic_pass_.hpp"
 
-void SemanticPass::analyze(IRSourceFile* program) {
+void SemanticPass::analyze(IRSourceFile* program)
+{
     dispatch(program);
 }
 
-IRType* SemanticPass::visit(IRIntegerExpression* node) {
+IRType* SemanticPass::visit(IRIntegerExpression* node)
+{
     return (node->type = compCtx.getIntegerType(node->width, node->isSigned));
 }
 
-IRType* SemanticPass::visit(IRBoolExpression* node) {
+IRType* SemanticPass::visit(IRBoolExpression* node)
+{
     return (node->type = compCtx.getBool());
 }
 
-IRType* SemanticPass::visit(IRCharExpression* node) {
+IRType* SemanticPass::visit(IRCharExpression* node)
+{
     return (node->type = compCtx.getChar());
 }
 
-IRType* SemanticPass::visit(IRStringExpression* node) {
+IRType* SemanticPass::visit(IRStringExpression* node)
+{
     return (node->type = compCtx.getString());
 }
 
-IRType* SemanticPass::visit(IRIdentifierExpression* node) {
+IRType* SemanticPass::visit(IRIdentifierExpression* node)
+{
     if (!localVariables.contains(node->value))
         return logger.error(node->location, "Undefined Identifier", nullptr);
 
     return (node->type = localVariables.at(node->value));
 }
 
-IRType* SemanticPass::visit(IRStructExpression* node) {
+IRType* SemanticPass::visit(IRStructExpression* node)
+{
     auto structType = modCtx.findStruct(node->structName);
     if (!structType)
         return logger.error(
@@ -37,10 +44,13 @@ IRType* SemanticPass::visit(IRStructExpression* node) {
     for (auto& [name, value] : node->fields)
         dispatch(value);
 
-    for (auto& [name, value] : node->fields) {
-        for (int i = 0; i < structType->fields.size(); i++) {
+    for (auto& [name, value] : node->fields)
+    {
+        for (int i = 0; i < structType->fields.size(); i++)
+        {
             auto& [fieldName, fieldType] = structType->fields[i];
-            if (fieldName == name) {
+            if (fieldName == name)
+            {
                 if (fieldType != value->type)
                     return logger.error(
                         node->location,
@@ -61,10 +71,13 @@ IRType* SemanticPass::visit(IRStructExpression* node) {
         }
     }
 
-    for (auto& [fieldName, fieldType] : structType->fields) {
-        for (int i = 0; i < node->fields.size(); i++) {
+    for (auto& [fieldName, fieldType] : structType->fields)
+    {
+        for (int i = 0; i < node->fields.size(); i++)
+        {
             auto& [name, value] = node->fields[i];
-            if (name == fieldName) {
+            if (name == fieldName)
+            {
                 if (value->type != fieldType)
                     return logger.error(
                         node->location,
@@ -88,11 +101,13 @@ IRType* SemanticPass::visit(IRStructExpression* node) {
     return (node->type = structType);
 }
 
-IRType* SemanticPass::visit(IRUnaryExpression* node) {
+IRType* SemanticPass::visit(IRUnaryExpression* node)
+{
     auto value = dispatch(node->expression);
     if (unaryOperators.at(node->operation).category
             == OperatorCategory::UnaryArithmetic
-        && value->isIntegerType()) {
+        && value->isIntegerType())
+    {
         return (node->type = value);
     }
     else if (
@@ -108,7 +123,9 @@ IRType* SemanticPass::visit(IRUnaryExpression* node) {
         && value->isBoolType())
     {
         return (node->type = compCtx.getBool());
-    } else {
+    }
+    else
+    {
         auto args = std::vector({ value });
         auto function =
             modCtx.findFunction(unaryOperators.at(node->operation).name, args);
@@ -126,13 +143,15 @@ IRType* SemanticPass::visit(IRUnaryExpression* node) {
     }
 }
 
-IRType* SemanticPass::visit(IRBinaryExpression* node) {
+IRType* SemanticPass::visit(IRBinaryExpression* node)
+{
     auto left = dispatch(node->left);
     auto right = dispatch(node->right);
 
     if (binaryOperators.at(node->operation).category
             == OperatorCategory::BinaryArithmetic
-        && (left->isIntegerType() && right->isIntegerType())) {
+        && (left->isIntegerType() && right->isIntegerType()))
+    {
         return (
             node->type =
                 ((left->getBitSize() >= right->getBitSize()) ? left : right)
@@ -190,7 +209,9 @@ IRType* SemanticPass::visit(IRBinaryExpression* node) {
             );
 
         return (node->type = left);
-    } else {
+    }
+    else
+    {
         auto args = std::vector({ left, right });
         auto function =
             modCtx.findFunction(binaryOperators.at(node->operation).name, args);
@@ -217,13 +238,15 @@ IRType* SemanticPass::visit(IRBinaryExpression* node) {
     }
 }
 
-IRType* SemanticPass::visit(IRCallExpression* node) {
+IRType* SemanticPass::visit(IRCallExpression* node)
+{
     std::vector<IRType*> args;
     for (auto arg : node->args)
         args.push_back(dispatch(arg));
 
     if (auto identifierExpression =
-            dynamic_cast<IRIdentifierExpression*>(node->expression)) {
+            dynamic_cast<IRIdentifierExpression*>(node->expression))
+    {
         auto function = modCtx.findFunction(identifierExpression->value, args);
         if (!function)
             return logger.error(
@@ -234,7 +257,9 @@ IRType* SemanticPass::visit(IRCallExpression* node) {
 
         node->target = function;
         return (node->type = function->result);
-    } else {
+    }
+    else
+    {
         args.insert(args.begin(), dispatch(node->expression));
         auto function = modCtx.findFunction("__call__", args);
         if (!function)
@@ -250,20 +275,25 @@ IRType* SemanticPass::visit(IRCallExpression* node) {
     }
 }
 
-IRType* SemanticPass::visit(IRIndexExpression* node) {
+IRType* SemanticPass::visit(IRIndexExpression* node)
+{
     std::vector<IRType*> args;
     for (auto arg : node->args)
         args.push_back(dispatch(arg));
 
     auto value = dispatch(node->expression);
     if (value->isArrayType() && args.size() == 1
-        && args.front()->isIntegerType()) {
+        && args.front()->isIntegerType())
+    {
         return (node->type = dynamic_cast<IRArrayType*>(value)->base);
     }
     if (value->isStringType() && args.size() == 1
-        && args.front()->isIntegerType()) {
+        && args.front()->isIntegerType())
+    {
         return (node->type = compCtx.getU8());
-    } else {
+    }
+    else
+    {
         args.insert(args.begin(), value);
         auto function = modCtx.findFunction("__index__", args);
         if (!function)
@@ -279,7 +309,8 @@ IRType* SemanticPass::visit(IRIndexExpression* node) {
     }
 }
 
-IRType* SemanticPass::visit(IRFieldExpression* node) {
+IRType* SemanticPass::visit(IRFieldExpression* node)
+{
     auto value = dispatch(node->expression);
     if (!value->isStructType())
         return logger.error(
@@ -289,7 +320,8 @@ IRType* SemanticPass::visit(IRFieldExpression* node) {
         );
 
     auto structType = dynamic_cast<IRStructType*>(value);
-    for (int i = 0; i < structType->fields.size(); i++) {
+    for (int i = 0; i < structType->fields.size(); i++)
+    {
         if (structType->fields[i].first == node->fieldName)
             return (node->type = structType->fields[i].second);
     }
@@ -302,20 +334,24 @@ IRType* SemanticPass::visit(IRFieldExpression* node) {
     );
 }
 
-IRType* SemanticPass::visit(IRBlockStatement* node) {
+IRType* SemanticPass::visit(IRBlockStatement* node)
+{
     for (auto& statement : node->statements)
         dispatch(statement);
 
     return nullptr;
 }
 
-IRType* SemanticPass::visit(IRExpressionStatement* node) {
+IRType* SemanticPass::visit(IRExpressionStatement* node)
+{
     dispatch(node->expression);
     return nullptr;
 }
 
-IRType* SemanticPass::visit(IRVariableStatement* node) {
-    for (auto& [name, value] : node->items) {
+IRType* SemanticPass::visit(IRVariableStatement* node)
+{
+    for (auto& [name, value] : node->items)
+    {
         if (localVariables.contains(name))
             return logger.error(
                 node->location, "Variable is already defined", nullptr
@@ -332,9 +368,11 @@ IRType* SemanticPass::visit(IRVariableStatement* node) {
     return nullptr;
 }
 
-IRType* SemanticPass::visit(IRReturnStatement* node) {
+IRType* SemanticPass::visit(IRReturnStatement* node)
+{
     functionResult = dispatch(node->expression);
-    if (functionResult != expectedFunctionResult) {
+    if (functionResult != expectedFunctionResult)
+    {
         functionResult = nullptr;
         return logger.error(
             node->location,
@@ -346,7 +384,8 @@ IRType* SemanticPass::visit(IRReturnStatement* node) {
     return nullptr;
 }
 
-IRType* SemanticPass::visit(IRWhileStatement* node) {
+IRType* SemanticPass::visit(IRWhileStatement* node)
+{
     auto condition = dispatch(node->condition);
     if (!condition->isBoolType())
         return logger.error(
@@ -360,7 +399,8 @@ IRType* SemanticPass::visit(IRWhileStatement* node) {
     return nullptr;
 }
 
-IRType* SemanticPass::visit(IRIfStatement* node) {
+IRType* SemanticPass::visit(IRIfStatement* node)
+{
     auto condition = dispatch(node->condition);
     if (!condition->isBoolType())
         return logger.error(
@@ -385,15 +425,18 @@ IRType* SemanticPass::visit(IRIfStatement* node) {
     return nullptr;
 }
 
-IRType* SemanticPass::visit(IRConstraintDeclaration* node) {
+IRType* SemanticPass::visit(IRConstraintDeclaration* node)
+{
     return nullptr;
 }
 
-IRType* SemanticPass::visit(IRStructDeclaration* node) {
+IRType* SemanticPass::visit(IRStructDeclaration* node)
+{
     return nullptr;
 }
 
-IRType* SemanticPass::visit(IRFunctionDeclaration* node) {
+IRType* SemanticPass::visit(IRFunctionDeclaration* node)
+{
     if (!node->body)
         return nullptr;
 
@@ -417,7 +460,8 @@ IRType* SemanticPass::visit(IRFunctionDeclaration* node) {
     return nullptr;
 }
 
-IRType* SemanticPass::visit(IRSourceFile* node) {
+IRType* SemanticPass::visit(IRSourceFile* node)
+{
     for (auto& decl : node->declarations)
         dispatch(decl);
 

@@ -5,7 +5,8 @@
 
 /// @brief Manages contained data of an environment, e.g. functions, structs,
 /// local variables, generic parameters etc.
-class Environment {
+class Environment
+{
 protected:
     std::string m_name;
     Environment* m_parent;
@@ -19,7 +20,9 @@ protected:
 
 public:
     Environment(std::string name, Environment* parent)
-        : m_name(name), m_parent(parent) {}
+        : m_name(name), m_parent(parent)
+    {
+    }
 
 public:
     /// @brief Get the name of this environment

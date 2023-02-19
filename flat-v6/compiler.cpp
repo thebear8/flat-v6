@@ -45,7 +45,8 @@ CompilationContext::CompilationContext(
       m_u32(new IRIntegerType(false, 32)),
       m_u64(new IRIntegerType(false, 64)),
       m_char(new IRCharType()),
-      m_string(new IRStringType()) {
+      m_string(new IRStringType())
+{
     m_signedIntegerTypes.try_emplace(8, m_i8);
     m_signedIntegerTypes.try_emplace(16, m_i16);
     m_signedIntegerTypes.try_emplace(32, m_i32);
@@ -82,21 +83,24 @@ CompilationContext::CompilationContext(
     llvmMod.setTargetTriple(targetDesc.targetTriple);
 }
 
-CompilationContext::~CompilationContext() {
+CompilationContext::~CompilationContext()
+{
     for (auto const& [name, mod] : modules)
         delete mod;
 }
 
 void CompilationContext::compile(
     std::string const& sourceDir, llvm::raw_pwrite_stream& output
-) {
+)
+{
     GraphContext astCtx;
     std::vector<ASTSourceFile*> astSourceFiles;
     std::unordered_map<size_t, std::string> sources;
     ErrorLogger logger(std::cout, sources);
 
     for (auto const& entry :
-         std::filesystem::recursive_directory_iterator(sourceDir)) {
+         std::filesystem::recursive_directory_iterator(sourceDir))
+    {
         if (!entry.is_regular_file() || entry.path().extension() != ".fl")
             continue;
 
@@ -168,13 +172,15 @@ void CompilationContext::compile(
     output.flush();
 }
 
-IRType* CompilationContext::getType(std::string const& name) {
+IRType* CompilationContext::getType(std::string const& name)
+{
     if (auto b = getBuiltinType(name))
         return b;
     return Environment::getType(name);
 }
 
-ModuleContext* CompilationContext::getModule(std::string const& name) {
+ModuleContext* CompilationContext::getModule(std::string const& name)
+{
     if (!modules.contains(name))
         modules.try_emplace(name, new ModuleContext(*this, name));
     return modules.at(name);
@@ -182,7 +188,8 @@ ModuleContext* CompilationContext::getModule(std::string const& name) {
 
 llvm::Function* CompilationContext::addLLVMFunction(
     IRFunctionDeclaration* function, llvm::Function* llvmFunction
-) {
+)
+{
     if (llvmFunctions.contains(function))
         return nullptr;
     llvmFunctions.try_emplace(function, llvmFunction);
@@ -191,13 +198,15 @@ llvm::Function* CompilationContext::addLLVMFunction(
 
 llvm::Function* CompilationContext::getLLVMFunction(
     IRFunctionDeclaration* function
-) {
+)
+{
     if (!llvmFunctions.contains(function))
         return nullptr;
     return llvmFunctions.at(function);
 }
 
-IRType* CompilationContext::getBuiltinType(std::string const& name) {
+IRType* CompilationContext::getBuiltinType(std::string const& name)
+{
     return StringSwitch<IRType*>(name)
         .Case("void", getVoid())
         .Case("bool", getBool())
@@ -214,14 +223,18 @@ IRType* CompilationContext::getBuiltinType(std::string const& name) {
         .Default(nullptr);
 }
 
-IRIntegerType* CompilationContext::getIntegerType(size_t width, bool isSigned) {
-    if (isSigned) {
+IRIntegerType* CompilationContext::getIntegerType(size_t width, bool isSigned)
+{
+    if (isSigned)
+    {
         if (!m_signedIntegerTypes.contains(width))
             m_signedIntegerTypes.try_emplace(
                 width, new IRIntegerType(true, width)
             );
         return m_signedIntegerTypes.at(width);
-    } else {
+    }
+    else
+    {
         if (!m_unsignedIntegerTypes.contains(width))
             m_unsignedIntegerTypes.try_emplace(
                 width, new IRIntegerType(false, width)
@@ -230,13 +243,15 @@ IRIntegerType* CompilationContext::getIntegerType(size_t width, bool isSigned) {
     }
 }
 
-IRPointerType* CompilationContext::getPointerType(IRType* base) {
+IRPointerType* CompilationContext::getPointerType(IRType* base)
+{
     if (!m_pointerTypes.contains(base))
         m_pointerTypes.try_emplace(base, new IRPointerType(base));
     return m_pointerTypes.at(base);
 }
 
-IRArrayType* CompilationContext::getArrayType(IRType* base) {
+IRArrayType* CompilationContext::getArrayType(IRType* base)
+{
     if (!m_arrayTypes.contains(base))
         m_arrayTypes.try_emplace(base, new IRArrayType(base));
     return m_arrayTypes.at(base);

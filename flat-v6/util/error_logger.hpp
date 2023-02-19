@@ -6,7 +6,8 @@
 
 #include "../data/source_ref.hpp"
 
-class ErrorLogger {
+class ErrorLogger
+{
 private:
     std::ostream& output;
     std::unordered_map<size_t, std::string> const& sources;
@@ -16,7 +17,9 @@ public:
         std::ostream& output,
         std::unordered_map<size_t, std::string> const& sources
     )
-        : output(output), sources(sources) {}
+        : output(output), sources(sources)
+    {
+    }
 
 public:
     [[noreturn]] void fatal(std::string const& message);
@@ -29,7 +32,8 @@ public:
     void warning(SourceRef const& location, std::string const& message);
 
     template<typename ReturnType>
-    ReturnType error(std::string const& message, ReturnType&& returnValue) {
+    ReturnType error(std::string const& message, ReturnType&& returnValue)
+    {
         error(message);
         return std::forward<ReturnType>(returnValue);
     }
@@ -39,13 +43,15 @@ public:
         SourceRef const& location,
         std::string const& message,
         ReturnType&& returnValue
-    ) {
+    )
+    {
         error(location, message);
         return std::forward<ReturnType>(returnValue);
     }
 
     template<typename ReturnType>
-    ReturnType warning(std::string const& message, ReturnType&& returnValue) {
+    ReturnType warning(std::string const& message, ReturnType&& returnValue)
+    {
         warning(message);
         return std::forward<ReturnType>(returnValue);
     }
@@ -55,7 +61,8 @@ public:
         SourceRef const& location,
         std::string const& message,
         ReturnType&& returnValue
-    ) {
+    )
+    {
         warning(location, message);
         return std::forward<ReturnType>(returnValue);
     }

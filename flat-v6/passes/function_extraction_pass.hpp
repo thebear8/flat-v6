@@ -3,7 +3,8 @@
 #include "../data/ast.hpp"
 #include "../data/ir.hpp"
 
-class FunctionExtractionPass : IRVisitor<void> {
+class FunctionExtractionPass : IRVisitor<void>
+{
 private:
     ErrorLogger& logger;
     CompilationContext& compCtx;
@@ -13,7 +14,9 @@ public:
     FunctionExtractionPass(
         ErrorLogger& logger, CompilationContext& compCtx, ModuleContext& modCtx
     )
-        : logger(logger), compCtx(compCtx), modCtx(modCtx) {}
+        : logger(logger), compCtx(compCtx), modCtx(modCtx)
+    {
+    }
 
 public:
     void process(IRSourceFile* sourceFile);

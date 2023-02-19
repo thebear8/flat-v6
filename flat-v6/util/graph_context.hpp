@@ -1,14 +1,17 @@
 #pragma once
 #include <vector>
 
-class GraphContext {
+class GraphContext
+{
 private:
-    struct NodeContainer {
+    struct NodeContainer
+    {
         virtual ~NodeContainer() = default;
     };
 
     template<typename TNode>
-    struct TNodeContainer : public NodeContainer, public TNode {
+    struct TNodeContainer : public NodeContainer, public TNode
+    {
         TNodeContainer(TNode&& value) : TNode(std::forward<TNode>(value)) {}
 
         TNode* get() { return this; }
@@ -19,13 +22,15 @@ private:
 
 public:
     template<typename TNode>
-    TNode* make(TNode&& node) {
+    TNode* make(TNode&& node)
+    {
         auto container = new TNodeContainer<TNode>(std::forward<TNode>(node));
         m_nodes.push_back(container);
         return container->get();
     }
 
-    ~GraphContext() {
+    ~GraphContext()
+    {
         for (auto node : m_nodes)
             delete node;
     }

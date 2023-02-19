@@ -8,7 +8,8 @@
 #include "../data/operator.hpp"
 #include "../util/error_logger.hpp"
 
-class OperatorLoweringPass : protected IRVisitor<IRNode*> {
+class OperatorLoweringPass : protected IRVisitor<IRNode*>
+{
 private:
     ErrorLogger& logger;
     CompilationContext& compCtx;
@@ -22,7 +23,9 @@ public:
         ModuleContext& modCtx,
         GraphContext& irCtx
     )
-        : logger(logger), compCtx(compCtx), modCtx(modCtx), irCtx(irCtx) {}
+        : logger(logger), compCtx(compCtx), modCtx(modCtx), irCtx(irCtx)
+    {
+    }
 
 public:
     IRSourceFile* process(IRSourceFile* source);
@@ -54,7 +57,8 @@ protected:
 
 private:
     template<typename Tr, typename Tv>
-    Tr* checked_cast(Tv* value) {
+    Tr* checked_cast(Tv* value)
+    {
         auto ptr = dynamic_cast<Tr*>(value);
         if (!ptr)
             throw std::exception("bad check_cast");

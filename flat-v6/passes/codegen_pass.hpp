@@ -13,7 +13,8 @@
 #include "../data/operator.hpp"
 #include "../util/error_logger.hpp"
 
-class LLVMCodegenPass : protected IRVisitor<llvm::Value*> {
+class LLVMCodegenPass : protected IRVisitor<llvm::Value*>
+{
 private:
     ErrorLogger& logger;
     CompilationContext& compCtx;
@@ -39,7 +40,9 @@ public:
           modCtx(modCtx),
           llvmCtx(llvmCtx),
           mod(mod),
-          builder(llvmCtx) {}
+          builder(llvmCtx)
+    {
+    }
 
 public:
     void process(IRSourceFile* source);

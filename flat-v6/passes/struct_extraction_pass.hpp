@@ -3,7 +3,8 @@
 #include "../data/ast.hpp"
 #include "../data/ir.hpp"
 
-class StructExtractionPass : ASTVisitor<void> {
+class StructExtractionPass : ASTVisitor<void>
+{
 private:
     ErrorLogger& logger;
     CompilationContext& compCtx;
@@ -13,7 +14,9 @@ public:
     StructExtractionPass(
         ErrorLogger& logger, CompilationContext& compCtx, ModuleContext& modCtx
     )
-        : logger(logger), compCtx(compCtx), modCtx(modCtx) {}
+        : logger(logger), compCtx(compCtx), modCtx(modCtx)
+    {
+    }
 
 public:
     void process(ASTSourceFile* sourceFile);

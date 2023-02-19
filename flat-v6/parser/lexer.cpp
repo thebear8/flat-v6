@@ -1,39 +1,50 @@
 #include "lexer.hpp"
 
-Token Lexer::advance() {
-    if (position >= input.length()) {
+Token Lexer::advance()
+{
+    if (position >= input.length())
+    {
         value = "";
         return Token::Eof;
     }
 
     size_t length = 0;
     Token type = (Token)(-1);
-    for (auto& token : tokens) {
+    for (auto& token : tokens)
+    {
         if (length < token.second.length()
-            && input.substr(position, token.second.length()) == token.second) {
+            && input.substr(position, token.second.length()) == token.second)
+        {
             length = token.second.length();
             type = token.first;
         }
     }
 
-    if (type != (Token)(-1)) {
+    if (type != (Token)(-1))
+    {
         value = input.substr(position, length);
         position += length;
         return type;
     }
 
-    if (isDigit(input[position])) {
+    if (isDigit(input[position]))
+    {
         size_t start = position;
         if (input[position] == '0' && (position + 1) < input.length()
-            && input[position + 1] == 'b') {
+            && input[position + 1] == 'b')
+        {
             position += 2;
             while (position < input.length() && isBinaryDigit(input[position]))
                 position++;
-        } else if (input[position] == '0' && (position + 1) < input.length() && input[position + 1] == 'x') {
+        }
+        else if (input[position] == '0' && (position + 1) < input.length() && input[position + 1] == 'x')
+        {
             position += 2;
             while (position < input.length() && isHexDigit(input[position]))
                 position++;
-        } else {
+        }
+        else
+        {
             while (position < input.length() && isDigit(input[position]))
                 position++;
         }
@@ -42,7 +53,8 @@ Token Lexer::advance() {
 
         size_t suffixStart = position;
         if (position < input.length()
-            && (input[position] == 'i' || input[position] == 'u')) {
+            && (input[position] == 'i' || input[position] == 'u'))
+        {
             position++;
             while (position < input.length() && isDigit(input[position]))
                 position++;
@@ -53,14 +65,17 @@ Token Lexer::advance() {
         return Token::Integer;
     }
 
-    if (isIdentifier(input[position])) {
+    if (isIdentifier(input[position]))
+    {
         size_t start = position;
         while (position < input.length() && isIdentifier(input[position]))
             position++;
         value = input.substr(start, position - start);
 
-        for (auto& keyword : keywords) {
-            if (input.substr(start, position - start) == keyword.second) {
+        for (auto& keyword : keywords)
+        {
+            if (input.substr(start, position - start) == keyword.second)
+            {
                 return keyword.first;
             }
         }
@@ -68,7 +83,8 @@ Token Lexer::advance() {
         return Token::Identifier;
     }
 
-    if (input[position] == '\'') {
+    if (input[position] == '\'')
+    {
         position++;
         size_t start = position;
         if (input[position] == '\'')
@@ -84,7 +100,8 @@ Token Lexer::advance() {
         return Token::CharLiteral;
     }
 
-    if (input[position] == '\"') {
+    if (input[position] == '\"')
+    {
         position++;
         size_t start = position;
 
@@ -104,9 +121,11 @@ Token Lexer::advance() {
     return Token::Error;
 }
 
-std::string_view Lexer::advanceChar() {
+std::string_view Lexer::advanceChar()
+{
     size_t start = position;
-    if (position < input.length() && input[position] == '\\') {
+    if (position < input.length() && input[position] == '\\')
+    {
         position++;
         if (position < input.length()
             && isDigit(input[position]))  // octal char literal
@@ -122,9 +141,10 @@ std::string_view Lexer::advanceChar() {
                 );
 
             return input.substr(start, (position - start));
-        } else if (position < input.length() && input[position] == 'x')  // hex
-                                                                         // char
-                                                                         // literal
+        }
+        else if (position < input.length() && input[position] == 'x')  // hex
+                                                                       // char
+                                                                       // literal
         {
             position++;
             size_t numStart = position;
@@ -138,10 +158,11 @@ std::string_view Lexer::advanceChar() {
                 );
 
             return input.substr(start, (position - start));
-        } else if (position < input.length() && input[position] == 'u')  // 0xhhhh
-                                                                         // unicode
-                                                                         // code
-                                                                         // point
+        }
+        else if (position < input.length() && input[position] == 'u')  // 0xhhhh
+                                                                       // unicode
+                                                                       // code
+                                                                       // point
         {
             position++;
             size_t numStart = position;
@@ -155,10 +176,11 @@ std::string_view Lexer::advanceChar() {
                 );
 
             return input.substr(start, (position - start));
-        } else if (position < input.length() && input[position] == 'U')  // 0xhhhhhhhh
-                                                                         // unicode
-                                                                         // code
-                                                                         // point
+        }
+        else if (position < input.length() && input[position] == 'U')  // 0xhhhhhhhh
+                                                                       // unicode
+                                                                       // code
+                                                                       // point
         {
             position++;
             size_t numStart = position;
@@ -172,7 +194,9 @@ std::string_view Lexer::advanceChar() {
                 );
 
             return input.substr(start, (position - start));
-        } else if (position < input.length()) {
+        }
+        else if (position < input.length())
+        {
             if (std::string("abefnrtv\\\'\"\?").find(input[position])
                 == std::string::npos)
                 logger.error(
@@ -181,27 +205,35 @@ std::string_view Lexer::advanceChar() {
 
             position++;
             return input.substr(start, (position - start));
-        } else {
+        }
+        else
+        {
             logger.error(
                 SourceRef(id, position), "Unexpected EOF in escape sequence"
             );
             return "";
         }
-    } else if (position < input.length()) {
+    }
+    else if (position < input.length())
+    {
         position++;
         return input.substr(start, (position - start));
-    } else {
+    }
+    else
+    {
         logger.error(SourceRef(id, position), "Unexpected EOF");
         return "";
     }
 }
 
-size_t Lexer::trim() {
+size_t Lexer::trim()
+{
     while (position < input.length() && isWhitespace(input[position]))
         position++;
 
     if ((position < input.length() && input[position] == '/')
-        && ((position + 1) < input.length() && input[position + 1] == '/')) {
+        && ((position + 1) < input.length() && input[position + 1] == '/'))
+    {
         while (position < input.length() && input[position] != '\n')
             position++;
         position++;
@@ -213,7 +245,8 @@ size_t Lexer::trim() {
     return position;
 }
 
-bool Lexer::match(Token expected) {
+bool Lexer::match(Token expected)
+{
     size_t before = position;
     Token token = advance();
     if (token == expected)
@@ -231,7 +264,8 @@ bool Lexer::match(Token expected) {
     return false;
 }
 
-bool Lexer::expect(Token expected) {
+bool Lexer::expect(Token expected)
+{
     size_t before = position;
     Token token = advance();
     if (token == expected)

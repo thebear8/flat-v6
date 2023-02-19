@@ -4,11 +4,13 @@
 
 #include "../util/string_switch.hpp"
 
-IRSourceFile* IRPass::process(ASTSourceFile* sourceFile) {
+IRSourceFile* IRPass::process(ASTSourceFile* sourceFile)
+{
     return (IRSourceFile*)dispatch(sourceFile);
 }
 
-IRNode* IRPass::visit(ASTIntegerExpression* node) {
+IRNode* IRPass::visit(ASTIntegerExpression* node)
+{
     auto radix = StringSwitch<size_t>(node->value)
                      .StartsWith("0x", 16)
                      .StartsWith("0b", 2)
@@ -44,7 +46,8 @@ IRNode* IRPass::visit(ASTIntegerExpression* node) {
         ->setMD(node->location);
 }
 
-IRNode* IRPass::visit(ASTBoolExpression* node) {
+IRNode* IRPass::visit(ASTBoolExpression* node)
+{
     auto value = StringSwitch<bool>(node->value)
                      .Case("true", true)
                      .Case("false", false)
@@ -53,7 +56,8 @@ IRNode* IRPass::visit(ASTBoolExpression* node) {
     return m_irCtx.make(IRBoolExpression(value))->setMD(node->location);
 }
 
-IRNode* IRPass::visit(ASTCharExpression* node) {
+IRNode* IRPass::visit(ASTCharExpression* node)
+{
     size_t position = 0;
     return m_irCtx
         .make(IRCharExpression(
@@ -62,19 +66,22 @@ IRNode* IRPass::visit(ASTCharExpression* node) {
         ->setMD(node->location);
 }
 
-IRNode* IRPass::visit(ASTStringExpression* node) {
+IRNode* IRPass::visit(ASTStringExpression* node)
+{
     return m_irCtx
         .make(IRStringExpression(unescapeStringUTF8(node->value, node->location)
         ))
         ->setMD(node->location);
 }
 
-IRNode* IRPass::visit(ASTIdentifierExpression* node) {
+IRNode* IRPass::visit(ASTIdentifierExpression* node)
+{
     return m_irCtx.make(IRIdentifierExpression(node->value))
         ->setMD(node->location);
 }
 
-IRNode* IRPass::visit(ASTStructExpression* node) {
+IRNode* IRPass::visit(ASTStructExpression* node)
+{
     std::vector<std::pair<std::string, IRExpression*>> fields;
     for (auto const& [name, value] : node->fields)
         fields.push_back({ name, (IRExpression*)dispatch(value) });
@@ -83,7 +90,8 @@ IRNode* IRPass::visit(ASTStructExpression* node) {
         ->setMD(node->location);
 }
 
-IRNode* IRPass::visit(ASTUnaryExpression* node) {
+IRNode* IRPass::visit(ASTUnaryExpression* node)
+{
     return m_irCtx
         .make(IRUnaryExpression(
             node->operation, (IRExpression*)dispatch(node->expression), nullptr
@@ -91,7 +99,8 @@ IRNode* IRPass::visit(ASTUnaryExpression* node) {
         ->setMD(node->location);
 }
 
-IRNode* IRPass::visit(ASTBinaryExpression* node) {
+IRNode* IRPass::visit(ASTBinaryExpression* node)
+{
     return m_irCtx
         .make(IRBinaryExpression(
             node->operation,
@@ -102,7 +111,8 @@ IRNode* IRPass::visit(ASTBinaryExpression* node) {
         ->setMD(node->location);
 }
 
-IRNode* IRPass::visit(ASTCallExpression* node) {
+IRNode* IRPass::visit(ASTCallExpression* node)
+{
     std::vector<IRExpression*> args;
     for (auto arg : node->args)
         args.push_back((IRExpression*)dispatch(arg));
@@ -114,7 +124,8 @@ IRNode* IRPass::visit(ASTCallExpression* node) {
         ->setMD(node->location);
 }
 
-IRNode* IRPass::visit(ASTIndexExpression* node) {
+IRNode* IRPass::visit(ASTIndexExpression* node)
+{
     std::vector<IRExpression*> args;
     for (auto arg : node->args)
         args.push_back((IRExpression*)dispatch(arg));
@@ -126,7 +137,8 @@ IRNode* IRPass::visit(ASTIndexExpression* node) {
         ->setMD(node->location);
 }
 
-IRNode* IRPass::visit(ASTFieldExpression* node) {
+IRNode* IRPass::visit(ASTFieldExpression* node)
+{
     return m_irCtx
         .make(IRFieldExpression(
             (IRExpression*)dispatch(node->expression), node->fieldName
@@ -134,7 +146,8 @@ IRNode* IRPass::visit(ASTFieldExpression* node) {
         ->setMD(node->location);
 }
 
-IRNode* IRPass::visit(ASTBlockStatement* node) {
+IRNode* IRPass::visit(ASTBlockStatement* node)
+{
     std::vector<IRStatement*> statements;
     for (auto statement : node->statements)
         statements.push_back((IRStatement*)dispatch(statement));
@@ -142,13 +155,15 @@ IRNode* IRPass::visit(ASTBlockStatement* node) {
     return m_irCtx.make(IRBlockStatement(statements))->setMD(node->location);
 }
 
-IRNode* IRPass::visit(ASTExpressionStatement* node) {
+IRNode* IRPass::visit(ASTExpressionStatement* node)
+{
     return m_irCtx
         .make(IRExpressionStatement((IRExpression*)dispatch(node->expression)))
         ->setMD(node->location);
 }
 
-IRNode* IRPass::visit(ASTVariableStatement* node) {
+IRNode* IRPass::visit(ASTVariableStatement* node)
+{
     std::vector<std::pair<std::string, IRExpression*>> items;
     for (auto const& [name, value] : node->items)
         items.push_back({ name, (IRExpression*)dispatch(value) });
@@ -156,13 +171,15 @@ IRNode* IRPass::visit(ASTVariableStatement* node) {
     return m_irCtx.make(IRVariableStatement(items))->setMD(node->location);
 }
 
-IRNode* IRPass::visit(ASTReturnStatement* node) {
+IRNode* IRPass::visit(ASTReturnStatement* node)
+{
     return m_irCtx
         .make(IRReturnStatement((IRExpression*)dispatch(node->expression)))
         ->setMD(node->location);
 }
 
-IRNode* IRPass::visit(ASTWhileStatement* node) {
+IRNode* IRPass::visit(ASTWhileStatement* node)
+{
     return m_irCtx
         .make(IRWhileStatement(
             (IRExpression*)dispatch(node->condition),
@@ -171,7 +188,8 @@ IRNode* IRPass::visit(ASTWhileStatement* node) {
         ->setMD(node->location);
 }
 
-IRNode* IRPass::visit(ASTIfStatement* node) {
+IRNode* IRPass::visit(ASTIfStatement* node)
+{
     return m_irCtx
         .make(IRIfStatement(
             (IRExpression*)dispatch(node->condition),
@@ -181,7 +199,8 @@ IRNode* IRPass::visit(ASTIfStatement* node) {
         ->setMD(node->location);
 }
 
-IRNode* IRPass::visit(ASTConstraintDeclaration* node) {
+IRNode* IRPass::visit(ASTConstraintDeclaration* node)
+{
     m_env = m_envCtx.make(Environment(node->name, m_env));
 
     auto typeParamRange = node->typeParams | std::views::transform([&](auto p) {
@@ -209,7 +228,8 @@ IRNode* IRPass::visit(ASTConstraintDeclaration* node) {
     return irNode->setMD(node->location);
 }
 
-IRNode* IRPass::visit(ASTStructDeclaration* node) {
+IRNode* IRPass::visit(ASTStructDeclaration* node)
+{
     m_env = m_envCtx.make(Environment(node->name, m_env));
 
     auto typeParamRange = node->typeParams | std::views::transform([&](auto p) {
@@ -242,7 +262,8 @@ IRNode* IRPass::visit(ASTStructDeclaration* node) {
     return irNode->setMD(node->location);
 }
 
-IRNode* IRPass::visit(ASTFunctionDeclaration* node) {
+IRNode* IRPass::visit(ASTFunctionDeclaration* node)
+{
     m_env = m_envCtx.make(Environment(node->name, m_env));
 
     auto typeParamRange = node->typeParams | std::views::transform([&](auto p) {
@@ -270,7 +291,8 @@ IRNode* IRPass::visit(ASTFunctionDeclaration* node) {
     return irNode->setMD(node->location);
 }
 
-IRNode* IRPass::visit(ASTExternFunctionDeclaration* node) {
+IRNode* IRPass::visit(ASTExternFunctionDeclaration* node)
+{
     m_env = m_envCtx.make(Environment(node->name, m_env));
 
     auto typeParamRange = node->typeParams | std::views::transform([&](auto p) {
@@ -298,7 +320,8 @@ IRNode* IRPass::visit(ASTExternFunctionDeclaration* node) {
     return irNode->setMD(node->location);
 }
 
-IRNode* IRPass::visit(ASTSourceFile* node) {
+IRNode* IRPass::visit(ASTSourceFile* node)
+{
     std::vector<IRDeclaration*> declarations;
     for (auto declaration : node->declarations)
         declarations.push_back((IRDeclaration*)dispatch(declaration));
@@ -308,7 +331,8 @@ IRNode* IRPass::visit(ASTSourceFile* node) {
         ->setMD(node->location);
 }
 
-IRNode* IRPass::visit(ASTNamedType* node) {
+IRNode* IRPass::visit(ASTNamedType* node)
+{
     if (auto type = m_modCtx.findType(node->name))
         return type;
 
@@ -317,11 +341,13 @@ IRNode* IRPass::visit(ASTNamedType* node) {
     );
 }
 
-IRNode* IRPass::visit(ASTPointerType* node) {
+IRNode* IRPass::visit(ASTPointerType* node)
+{
     return m_compCtx.getPointerType((IRType*)dispatch(node->base));
 }
 
-IRNode* IRPass::visit(ASTArrayType* node) {
+IRNode* IRPass::visit(ASTArrayType* node)
+{
     return m_compCtx.getArrayType((IRType*)dispatch(node->base));
 }
 
@@ -329,7 +355,8 @@ std::vector<std::pair<std::string, std::vector<IRType*>>>
 IRPass::transformRequirements(
     std::vector<std::pair<std::string, std::vector<ASTType*>>> const&
         requirements
-) {
+)
+{
     auto t = [&](std::pair<std::string, std::vector<ASTType*>> const& c) {
         auto t = [&](ASTType* t) {
             return (IRType*)dispatch(t);
@@ -346,27 +373,38 @@ IRPass::transformRequirements(
 
 std::vector<uint8_t> IRPass::unescapeStringUTF8(
     std::string const& input, SourceRef const& location
-) {
+)
+{
     std::vector<uint8_t> bytes;
 
     size_t position = 0;
-    while (position < input.length()) {
+    while (position < input.length())
+    {
         uint32_t cp = unescapeCodePoint(input, position, location);
-        if (cp < 0x7F) {
+        if (cp < 0x7F)
+        {
             bytes.push_back((uint8_t)cp);
-        } else if (cp <= 0x07FF) {
+        }
+        else if (cp <= 0x07FF)
+        {
             bytes.push_back(((cp >> 6) & 0x1F) | 0xC0);
             bytes.push_back(((cp >> 0) & 0x3F) | 0x80);
-        } else if (cp <= 0xFFFF) {
+        }
+        else if (cp <= 0xFFFF)
+        {
             bytes.push_back(((cp >> 12) & 0x0F) | 0xE0);
             bytes.push_back(((cp >> 6) & 0x3F) | 0x80);
             bytes.push_back(((cp >> 0) & 0x3F) | 0x80);
-        } else if (cp <= 0x10FFFF) {
+        }
+        else if (cp <= 0x10FFFF)
+        {
             bytes.push_back(((cp >> 18) & 0x07) | 0xF0);
             bytes.push_back(((cp >> 12) & 0x3F) | 0x80);
             bytes.push_back(((cp >> 6) & 0x3F) | 0x80);
             bytes.push_back(((cp >> 0) & 0x3F) | 0x80);
-        } else {
+        }
+        else
+        {
             return m_logger.error(
                 location, "Invalid Unicode code point", bytes
             );
@@ -379,8 +417,10 @@ std::vector<uint8_t> IRPass::unescapeStringUTF8(
 
 uint32_t IRPass::unescapeCodePoint(
     std::string const& input, size_t& position, SourceRef const& location
-) {
-    if (position < input.length() && input[position] == '\\') {
+)
+{
+    if (position < input.length() && input[position] == '\\')
+    {
         position++;
         if (position < input.length()
             && isDigit(input[position]))  // octal char
@@ -400,9 +440,10 @@ uint32_t IRPass::unescapeCodePoint(
             return std::stoul(
                 input.substr(start, (position - start)), nullptr, 8
             );
-        } else if (position < input.length() && input[position] == 'x')  // hex
-                                                                         // char
-                                                                         // literal
+        }
+        else if (position < input.length() && input[position] == 'x')  // hex
+                                                                       // char
+                                                                       // literal
         {
             position++;
             size_t start = position;
@@ -417,7 +458,8 @@ uint32_t IRPass::unescapeCodePoint(
             return std::stoul(
                 input.substr(start, (position - start)), nullptr, 16
             );
-        } else if (position < input.length() && input[position] == 'u')  // 0xhhhh
+        }
+        else if (position < input.length() && input[position] == 'u')  // 0xhhhh
         // unicode
         // code
         // point
@@ -437,7 +479,8 @@ uint32_t IRPass::unescapeCodePoint(
             return std::stoul(
                 input.substr(start, (position - start)), nullptr, 16
             );
-        } else if (position < input.length() && input[position] == 'U')  // 0xhhhhhhhh
+        }
+        else if (position < input.length() && input[position] == 'U')  // 0xhhhhhhhh
         // unicode
         // code
         // point
@@ -457,18 +500,26 @@ uint32_t IRPass::unescapeCodePoint(
             return std::stoul(
                 input.substr(start, (position - start)), nullptr, 16
             );
-        } else if (position < input.length()) {
+        }
+        else if (position < input.length())
+        {
             if (!escapeChars.contains(input[position]))
                 return m_logger.error(location, "Invalid escape sequence", 0);
 
             position++;
             return escapeChars.at(input[position]);
-        } else {
+        }
+        else
+        {
             return m_logger.error(location, "Incomplete escape sequence", 0);
         }
-    } else if (position < input.length()) {
+    }
+    else if (position < input.length())
+    {
         return input[position++];
-    } else {
+    }
+    else
+    {
         return m_logger.error(location, "Unexpected end of char sequence", 0);
     }
 }

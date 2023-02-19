@@ -4,8 +4,10 @@
 #include <llvm/Analysis/LoopAnalysisManager.h>
 #include <llvm/Passes/PassBuilder.h>
 
-void LLVMCodegenPass::process(IRSourceFile* source) {
-    for (auto& [functionName, function] : modCtx.getFunctionList()) {
+void LLVMCodegenPass::process(IRSourceFile* source)
+{
+    for (auto& [functionName, function] : modCtx.getFunctionList())
+    {
         std::vector<IRType*> params;
         for (auto& [name, type] : function->params)
             params.push_back(type);
@@ -25,7 +27,8 @@ void LLVMCodegenPass::process(IRSourceFile* source) {
         );
         compCtx.addLLVMFunction(function, llvmFunction);
 
-        if (!function->body) {
+        if (!function->body)
+        {
             llvmFunction->setCallingConv(llvm::CallingConv::Win64);
             llvmFunction->setDLLStorageClass(
                 llvm::GlobalValue::DLLStorageClassTypes::DLLImportStorageClass
@@ -36,7 +39,8 @@ void LLVMCodegenPass::process(IRSourceFile* source) {
     dispatch(source);
 }
 
-void LLVMCodegenPass::optimize() {
+void LLVMCodegenPass::optimize()
+{
     llvm::LoopAnalysisManager lam;
     llvm::FunctionAnalysisManager fam;
     llvm::CGSCCAnalysisManager cgam;
@@ -53,20 +57,24 @@ void LLVMCodegenPass::optimize() {
     mpm.run(mod, mam);
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRIntegerExpression* node) {
+llvm::Value* LLVMCodegenPass::visit(IRIntegerExpression* node)
+{
     auto type = llvm::IntegerType::get(llvmCtx, (unsigned int)node->width);
     return llvm::ConstantInt::get(type, node->value, (uint8_t)node->radix);
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRBoolExpression* node) {
+llvm::Value* LLVMCodegenPass::visit(IRBoolExpression* node)
+{
     return llvm::ConstantInt::get(llvm::Type::getInt1Ty(llvmCtx), node->value);
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRCharExpression* node) {
+llvm::Value* LLVMCodegenPass::visit(IRCharExpression* node)
+{
     return llvm::ConstantInt::get(llvm::Type::getInt32Ty(llvmCtx), node->value);
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRStringExpression* node) {
+llvm::Value* LLVMCodegenPass::visit(IRStringExpression* node)
+{
     std::vector<llvm::Constant*> stringBytes;
     for (auto c : node->value)
         stringBytes.push_back(
@@ -103,7 +111,8 @@ llvm::Value* LLVMCodegenPass::visit(IRStringExpression* node) {
     );
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRIdentifierExpression* node) {
+llvm::Value* LLVMCodegenPass::visit(IRIdentifierExpression* node)
+{
     assert(
         localValues.contains(node->value)
         && "Undefined local Variable in identifier expression"
@@ -113,14 +122,18 @@ llvm::Value* LLVMCodegenPass::visit(IRIdentifierExpression* node) {
     );
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRStructExpression* node) {
+llvm::Value* LLVMCodegenPass::visit(IRStructExpression* node)
+{
     auto type = dynamic_cast<IRStructType*>(node->type);
     auto structPtr =
         builder.CreateAlloca(getLLVMType(type), nullptr, type->name + "_");
 
-    for (int i = 0; i < type->fields.size(); i++) {
-        for (int j = 0; j < node->fields.size(); j++) {
-            if (node->fields.at(j).first == type->fields.at(i).first) {
+    for (int i = 0; i < type->fields.size(); i++)
+    {
+        for (int j = 0; j < node->fields.size(); j++)
+        {
+            if (node->fields.at(j).first == type->fields.at(i).first)
+            {
                 auto const& fieldName = node->fields.at(j).first;
                 auto fieldValue = dispatch(node->fields.at(j).second);
                 auto fieldPtr = builder.CreateStructGEP(
@@ -141,23 +154,35 @@ llvm::Value* LLVMCodegenPass::visit(IRStructExpression* node) {
     return builder.CreateLoad(getLLVMType(type), structPtr);
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRUnaryExpression* node) {
-    if (node->operation == UnaryOperator::Positive) {
+llvm::Value* LLVMCodegenPass::visit(IRUnaryExpression* node)
+{
+    if (node->operation == UnaryOperator::Positive)
+    {
         return dispatch(node->expression);
-    } else if (node->operation == UnaryOperator::Negative) {
+    }
+    else if (node->operation == UnaryOperator::Negative)
+    {
         return builder.CreateNeg(dispatch(node->expression));
-    } else if (node->operation == UnaryOperator::BitwiseNot) {
+    }
+    else if (node->operation == UnaryOperator::BitwiseNot)
+    {
         return builder.CreateNot(dispatch(node->expression));
-    } else if (node->operation == UnaryOperator::LogicalNot) {
+    }
+    else if (node->operation == UnaryOperator::LogicalNot)
+    {
         return builder.CreateNot(dispatch(node->expression));
-    } else {
+    }
+    else
+    {
         assert(0 && "Invalid operator in unary expression");
         return nullptr;
     }
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRBinaryExpression* node) {
-    if (dynamic_cast<IRIdentifierExpression*>(node->left)) {
+llvm::Value* LLVMCodegenPass::visit(IRBinaryExpression* node)
+{
+    if (dynamic_cast<IRIdentifierExpression*>(node->left))
+    {
         auto const& name =
             dynamic_cast<IRIdentifierExpression*>(node->left)->value;
         assert(localValues.contains(name) && "Undefined local variable");
@@ -166,7 +191,9 @@ llvm::Value* LLVMCodegenPass::visit(IRBinaryExpression* node) {
         return builder.CreateLoad(
             getLLVMType(node->type), localValues.at(name), name + "_"
         );
-    } else {
+    }
+    else
+    {
         auto left = dispatch(node->left);
         auto right =
             ((node->left->type->isSigned())
@@ -177,45 +204,74 @@ llvm::Value* LLVMCodegenPass::visit(IRBinaryExpression* node) {
                      dispatch(node->right), getLLVMType(node->left->type)
                  ));
 
-        if (node->operation == BinaryOperator::Add) {
+        if (node->operation == BinaryOperator::Add)
+        {
             return builder.CreateAdd(left, right);
-        } else if (node->operation == BinaryOperator::Subtract) {
+        }
+        else if (node->operation == BinaryOperator::Subtract)
+        {
             return builder.CreateSub(left, right);
-        } else if (node->operation == BinaryOperator::Multiply) {
+        }
+        else if (node->operation == BinaryOperator::Multiply)
+        {
             return builder.CreateMul(left, right);
-        } else if (node->operation == BinaryOperator::Divide) {
+        }
+        else if (node->operation == BinaryOperator::Divide)
+        {
             return (
                 node->left->type->isSigned() ? builder.CreateSDiv(left, right)
                                              : builder.CreateUDiv(left, right)
             );
-        } else if (node->operation == BinaryOperator::Modulo) {
+        }
+        else if (node->operation == BinaryOperator::Modulo)
+        {
             return (
                 node->left->type->isSigned() ? builder.CreateSRem(left, right)
                                              : builder.CreateURem(left, right)
             );
-        } else if (node->operation == BinaryOperator::BitwiseAnd) {
+        }
+        else if (node->operation == BinaryOperator::BitwiseAnd)
+        {
             return builder.CreateAnd(left, right);
-        } else if (node->operation == BinaryOperator::BitwiseOr) {
+        }
+        else if (node->operation == BinaryOperator::BitwiseOr)
+        {
             return builder.CreateOr(left, right);
-        } else if (node->operation == BinaryOperator::BitwiseXor) {
+        }
+        else if (node->operation == BinaryOperator::BitwiseXor)
+        {
             return builder.CreateXor(left, right);
-        } else if (node->operation == BinaryOperator::ShiftLeft) {
+        }
+        else if (node->operation == BinaryOperator::ShiftLeft)
+        {
             return builder.CreateShl(left, right);
-        } else if (node->operation == BinaryOperator::ShiftRight) {
+        }
+        else if (node->operation == BinaryOperator::ShiftRight)
+        {
             return builder.CreateAShr(left, right);
-        } else if (node->operation == BinaryOperator::LogicalAnd) {
+        }
+        else if (node->operation == BinaryOperator::LogicalAnd)
+        {
             return builder.CreateLogicalAnd(left, right);
-        } else if (node->operation == BinaryOperator::LogicalOr) {
+        }
+        else if (node->operation == BinaryOperator::LogicalOr)
+        {
             return builder.CreateLogicalOr(left, right);
-        } else if (node->operation == BinaryOperator::Equal) {
+        }
+        else if (node->operation == BinaryOperator::Equal)
+        {
             return builder.CreateCmp(
                 llvm::CmpInst::Predicate::ICMP_EQ, left, right
             );
-        } else if (node->operation == BinaryOperator::NotEqual) {
+        }
+        else if (node->operation == BinaryOperator::NotEqual)
+        {
             return builder.CreateCmp(
                 llvm::CmpInst::Predicate::ICMP_NE, left, right
             );
-        } else if (node->operation == BinaryOperator::LessThan) {
+        }
+        else if (node->operation == BinaryOperator::LessThan)
+        {
             return (
                 node->left->type->isSigned()
                     ? builder.CreateCmp(
@@ -225,7 +281,9 @@ llvm::Value* LLVMCodegenPass::visit(IRBinaryExpression* node) {
                         llvm::CmpInst::Predicate::ICMP_ULT, left, right
                     )
             );
-        } else if (node->operation == BinaryOperator::GreaterThan) {
+        }
+        else if (node->operation == BinaryOperator::GreaterThan)
+        {
             return (
                 node->left->type->isSigned()
                     ? builder.CreateCmp(
@@ -235,7 +293,9 @@ llvm::Value* LLVMCodegenPass::visit(IRBinaryExpression* node) {
                         llvm::CmpInst::Predicate::ICMP_UGT, left, right
                     )
             );
-        } else if (node->operation == BinaryOperator::LessOrEqual) {
+        }
+        else if (node->operation == BinaryOperator::LessOrEqual)
+        {
             return (
                 node->left->type->isSigned()
                     ? builder.CreateCmp(
@@ -245,7 +305,9 @@ llvm::Value* LLVMCodegenPass::visit(IRBinaryExpression* node) {
                         llvm::CmpInst::Predicate::ICMP_ULE, left, right
                     )
             );
-        } else if (node->operation == BinaryOperator::GreaterOrEqual) {
+        }
+        else if (node->operation == BinaryOperator::GreaterOrEqual)
+        {
             return (
                 node->left->type->isSigned()
                     ? builder.CreateCmp(
@@ -255,14 +317,17 @@ llvm::Value* LLVMCodegenPass::visit(IRBinaryExpression* node) {
                         llvm::CmpInst::Predicate::ICMP_UGE, left, right
                     )
             );
-        } else {
+        }
+        else
+        {
             assert(0 && "Invalid operator in binary expression");
             return nullptr;
         }
     }
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRCallExpression* node) {
+llvm::Value* LLVMCodegenPass::visit(IRCallExpression* node)
+{
     auto target = node->target;
     assert(target && "Target of call expression is undefined");
 
@@ -279,7 +344,8 @@ llvm::Value* LLVMCodegenPass::visit(IRCallExpression* node) {
     return builder.CreateCall(function, args);
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRIndexExpression* node) {
+llvm::Value* LLVMCodegenPass::visit(IRIndexExpression* node)
+{
     assert(
         node->args.size() == 1
         && "Index expression must have exactly one operand"
@@ -311,10 +377,13 @@ llvm::Value* LLVMCodegenPass::visit(IRIndexExpression* node) {
     return builder.CreateLoad(getLLVMType(node->type), ptr);
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRFieldExpression* node) {
+llvm::Value* LLVMCodegenPass::visit(IRFieldExpression* node)
+{
     auto structType = dynamic_cast<IRStructType*>(node->expression->type);
-    for (int i = 0; i < structType->fields.size(); i++) {
-        if (structType->fields[i].first == node->fieldName) {
+    for (int i = 0; i < structType->fields.size(); i++)
+    {
+        if (structType->fields[i].first == node->fieldName)
+        {
             auto value = builder.CreateAlloca(
                 getLLVMType(structType), nullptr, structType->name + "_"
             );
@@ -333,7 +402,8 @@ llvm::Value* LLVMCodegenPass::visit(IRFieldExpression* node) {
     return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRBlockStatement* node) {
+llvm::Value* LLVMCodegenPass::visit(IRBlockStatement* node)
+{
     auto prevLocalValues = localValues;
 
     for (auto& statement : node->statements)
@@ -344,13 +414,16 @@ llvm::Value* LLVMCodegenPass::visit(IRBlockStatement* node) {
     return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRExpressionStatement* node) {
+llvm::Value* LLVMCodegenPass::visit(IRExpressionStatement* node)
+{
     dispatch(node->expression);
     return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRVariableStatement* node) {
-    for (auto& [name, value] : node->items) {
+llvm::Value* LLVMCodegenPass::visit(IRVariableStatement* node)
+{
+    for (auto& [name, value] : node->items)
+    {
         assert(!localValues.contains(name) && "Local variable already defined");
 
         localValues.try_emplace(
@@ -362,7 +435,8 @@ llvm::Value* LLVMCodegenPass::visit(IRVariableStatement* node) {
     return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRReturnStatement* node) {
+llvm::Value* LLVMCodegenPass::visit(IRReturnStatement* node)
+{
     if (node->expression)
         builder.CreateRet(dispatch(node->expression));
     else
@@ -371,7 +445,8 @@ llvm::Value* LLVMCodegenPass::visit(IRReturnStatement* node) {
     return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRWhileStatement* node) {
+llvm::Value* LLVMCodegenPass::visit(IRWhileStatement* node)
+{
     auto parentFunction = builder.GetInsertBlock()->getParent();
 
     auto conditionBlock = llvm::BasicBlock::Create(llvmCtx, "while_cond_block");
@@ -395,7 +470,8 @@ llvm::Value* LLVMCodegenPass::visit(IRWhileStatement* node) {
     return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRIfStatement* node) {
+llvm::Value* LLVMCodegenPass::visit(IRIfStatement* node)
+{
     auto hasElse = (node->elseBody != nullptr);
     auto parentFunction = builder.GetInsertBlock()->getParent();
 
@@ -414,7 +490,8 @@ llvm::Value* LLVMCodegenPass::visit(IRIfStatement* node) {
     dispatch(node->ifBody);
     builder.CreateBr(endBlock);
 
-    if (hasElse) {
+    if (hasElse)
+    {
         parentFunction->getBasicBlockList().push_back(elseBlock);
         builder.SetInsertPoint(elseBlock);
         dispatch(node->elseBody);
@@ -427,11 +504,13 @@ llvm::Value* LLVMCodegenPass::visit(IRIfStatement* node) {
     return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRStructDeclaration* node) {
+llvm::Value* LLVMCodegenPass::visit(IRStructDeclaration* node)
+{
     return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRFunctionDeclaration* node) {
+llvm::Value* LLVMCodegenPass::visit(IRFunctionDeclaration* node)
+{
     auto function = compCtx.getLLVMFunction(node);
     assert(
         function && "No matching llvm function object for function declaration"
@@ -447,7 +526,8 @@ llvm::Value* LLVMCodegenPass::visit(IRFunctionDeclaration* node) {
     builder.SetInsertPoint(entryBlock);
 
     localValues.clear();
-    for (int i = 0; i < node->params.size(); i++) {
+    for (int i = 0; i < node->params.size(); i++)
+    {
         auto& [paramName, paramType] = node->params.at(i);
         assert(
             !localValues.contains(paramName)
@@ -475,37 +555,52 @@ llvm::Value* LLVMCodegenPass::visit(IRFunctionDeclaration* node) {
     return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRSourceFile* node) {
+llvm::Value* LLVMCodegenPass::visit(IRSourceFile* node)
+{
     for (auto& decl : node->declarations)
         dispatch(decl);
 
     return nullptr;
 }
 
-llvm::Type* LLVMCodegenPass::getLLVMType(IRType* type) {
-    if (llvmTypes.contains(type)) {
+llvm::Type* LLVMCodegenPass::getLLVMType(IRType* type)
+{
+    if (llvmTypes.contains(type))
+    {
         return llvmTypes.at(type);
-    } else if (type->isVoidType()) {
+    }
+    else if (type->isVoidType())
+    {
         llvmTypes.try_emplace(type, llvm::Type::getVoidTy(llvmCtx));
         return llvmTypes.at(type);
-    } else if (type->isBoolType()) {
+    }
+    else if (type->isBoolType())
+    {
         llvmTypes.try_emplace(type, llvm::Type::getInt1Ty(llvmCtx));
         return llvmTypes.at(type);
-    } else if (type->isIntegerType()) {
+    }
+    else if (type->isIntegerType())
+    {
         llvmTypes.try_emplace(
             type,
             llvm::Type::getIntNTy(llvmCtx, (unsigned int)type->getBitSize())
         );
         return llvmTypes.at(type);
-    } else if (type->isCharType()) {
+    }
+    else if (type->isCharType())
+    {
         llvmTypes.try_emplace(type, llvm::Type::getInt32Ty(llvmCtx));
         return llvmTypes.at(type);
-    } else if (type->isStringType()) {
+    }
+    else if (type->isStringType())
+    {
         llvmTypes.try_emplace(
             type, getLLVMType(compCtx.getArrayType(compCtx.getU8()))
         );
         return llvmTypes.at(type);
-    } else if (type->isStructType()) {
+    }
+    else if (type->isStructType())
+    {
         auto structType = dynamic_cast<IRStructType*>(type);
 
         std::vector<llvm::Type*> fields;
@@ -514,11 +609,15 @@ llvm::Type* LLVMCodegenPass::getLLVMType(IRType* type) {
 
         llvmTypes.try_emplace(type, llvm::StructType::get(llvmCtx, fields));
         return llvmTypes.at(type);
-    } else if (type->isPointerType()) {
+    }
+    else if (type->isPointerType())
+    {
         auto base = dynamic_cast<IRPointerType*>(type)->base;
         llvmTypes.try_emplace(type, getLLVMType(base)->getPointerTo());
         return llvmTypes.at(type);
-    } else if (type->isArrayType()) {
+    }
+    else if (type->isArrayType())
+    {
         auto base = dynamic_cast<IRArrayType*>(type)->base;
         auto fields = std::vector<llvm::Type*>(
             { llvm::Type::getInt64Ty(llvmCtx),
@@ -529,24 +628,38 @@ llvm::Type* LLVMCodegenPass::getLLVMType(IRType* type) {
             type, llvm::StructType::get(llvmCtx, fields)->getPointerTo()
         );
         return llvmTypes.at(type);
-    } else {
+    }
+    else
+    {
         throw std::exception();
     }
 }
 
-std::string LLVMCodegenPass::getMangledTypeName(IRType* type) {
-    if (type->isVoidType()) {
+std::string LLVMCodegenPass::getMangledTypeName(IRType* type)
+{
+    if (type->isVoidType())
+    {
         return "V";
-    } else if (type->isBoolType()) {
+    }
+    else if (type->isBoolType())
+    {
         return "B";
-    } else if (type->isIntegerType()) {
+    }
+    else if (type->isIntegerType())
+    {
         return (type->isSigned() ? "I" : "U")
             + std::to_string(type->getBitSize());
-    } else if (type->isCharType()) {
+    }
+    else if (type->isCharType())
+    {
         return "C";
-    } else if (type->isStringType()) {
+    }
+    else if (type->isStringType())
+    {
         return "Str";
-    } else if (type->isStructType()) {
+    }
+    else if (type->isStructType())
+    {
         auto structType = dynamic_cast<IRStructType*>(type);
         auto output = "S_" + structType->name + "_";
 
@@ -555,20 +668,27 @@ std::string LLVMCodegenPass::getMangledTypeName(IRType* type) {
 
         output += "_";
         return output;
-    } else if (type->isPointerType()) {
+    }
+    else if (type->isPointerType())
+    {
         auto ptrType = dynamic_cast<IRPointerType*>(type);
         return "P_" + getMangledTypeName(ptrType->base) + "_";
-    } else if (type->isArrayType()) {
+    }
+    else if (type->isArrayType())
+    {
         auto arrType = dynamic_cast<IRArrayType*>(type);
         return "A_" + getMangledTypeName(arrType->base) + "_";
-    } else {
+    }
+    else
+    {
         throw std::exception();
     }
 }
 
 std::string LLVMCodegenPass::getMangledFunctionName(
     std::string const& function, std::vector<IRType*> const& params
-) {
+)
+{
     auto output = function + "@";
     for (auto& param : params)
         output += getMangledTypeName(param);
