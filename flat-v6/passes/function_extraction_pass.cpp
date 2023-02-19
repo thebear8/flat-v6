@@ -7,10 +7,10 @@ void FunctionExtractionPass::process(IRSourceFile* sourceFile)
 
 void FunctionExtractionPass::visit(IRFunctionDeclaration* node)
 {
-    if (!modCtx.addFunction(node))
-        return logger.error(
-            node->location,
-            "Function " + node->name + " in module " + modCtx.name
+    if (!m_modCtx.addFunction(node))
+        return m_logger.error(
+            node->getMD<SourceRef>().value_or(SourceRef()),
+            "Function " + node->name + " in module " + m_modCtx.name
                 + " is already defined"
         );
 }

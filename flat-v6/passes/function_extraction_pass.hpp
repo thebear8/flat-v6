@@ -6,15 +6,15 @@
 class FunctionExtractionPass : IRVisitor<void>
 {
 private:
-    ErrorLogger& logger;
-    CompilationContext& compCtx;
-    ModuleContext& modCtx;
+    ErrorLogger& m_logger;
+    CompilationContext& m_compCtx;
+    ModuleContext& m_modCtx;
 
 public:
     FunctionExtractionPass(
         ErrorLogger& logger, CompilationContext& compCtx, ModuleContext& modCtx
     )
-        : logger(logger), compCtx(compCtx), modCtx(modCtx)
+        : m_logger(logger), m_compCtx(compCtx), m_modCtx(modCtx)
     {
     }
 
