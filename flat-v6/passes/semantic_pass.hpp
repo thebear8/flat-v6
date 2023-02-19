@@ -11,9 +11,9 @@
 
 class SemanticPass : IRVisitor<IRType*> {
 private:
-    ErrorLogger& logger;
-    CompilationContext& compCtx;
-    ModuleContext& modCtx;
+    ErrorLogger& m_logger;
+    CompilationContext& m_compCtx;
+    ModuleContext& m_modCtx;
 
     GraphContext m_envCtx;
     GraphContext m_genericCtx;
@@ -27,9 +27,9 @@ public:
     SemanticPass(
         ErrorLogger& logger, CompilationContext& compCtx, ModuleContext& modCtx
     )
-        : logger(logger),
-          compCtx(compCtx),
-          modCtx(modCtx),
+        : m_logger(logger),
+          m_compCtx(compCtx),
+          m_modCtx(modCtx),
           m_env(&modCtx),
           m_result(nullptr),
           m_expectedResult(nullptr) {}
@@ -61,4 +61,7 @@ private:
     virtual IRType* visit(IRStructDeclaration* node) override;
     virtual IRType* visit(IRFunctionDeclaration* node) override;
     virtual IRType* visit(IRSourceFile* node) override;
+
+private:
+    void setupEnvironment(IRDeclaration* node);
 };
