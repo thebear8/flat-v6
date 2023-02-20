@@ -18,7 +18,6 @@
 #include "ast/ast.hpp"
 #include "parser/parser.hpp"
 #include "passes/codegen_pass.hpp"
-#include "passes/function_extraction_pass.hpp"
 #include "passes/ir_pass.hpp"
 #include "passes/lowering_pass.hpp"
 #include "passes/module_extraction_pass.hpp"
@@ -119,35 +118,19 @@ void CompilationContext::compile(
         ModuleExtractionPass(logger, *this, irCtx).process(sf);
 
     for (auto sf : astSourceFiles)
-        StructExtractionPass(logger, *this, *getModule(sf->modulePath))
-            .process(sf);
-
-    std::vector<IRSourceFile*> irSourceFiles;
+        StructExtractionPass(logger, *this).process(sf);
 
     for (auto sf : astSourceFiles)
-        irSourceFiles.push_back(IRPass(
-                                    logger,
-                                    *this,
-                                    *getModule(sf->modulePath),
-                                    getModule(sf->modulePath)->irCtx
-        )
-                                    .process(sf));
+        IRPass(logger, *this).process(sf);
 
-    for (auto sf : irSourceFiles)
-        FunctionExtractionPass(logger, *this, *getModule(sf->path)).process(sf);
+    for (auto [moduleName, irModule] : modules)
+        SemanticPass(logger, *this).analyze(irModule);
 
-    for (auto sf : irSourceFiles)
-        SemanticPass(logger, *this, *getModule(sf->path)).analyze(sf);
+    for (auto [moduleName, irModule] : modules)
+        OperatorLoweringPass(logger, *this).process(irModule);
 
-    for (auto sf : irSourceFiles)
-        OperatorLoweringPass(
-            logger, *this, *getModule(sf->path), getModule(sf->path)->irCtx
-        )
-            .process(sf);
-
-    for (auto sf : irSourceFiles)
-        LLVMCodegenPass(logger, *this, *getModule(sf->path), llvmCtx, llvmMod)
-            .process(sf);
+    for (auto [moduleName, irModule] : modules)
+        LLVMCodegenPass(logger, *this, llvmCtx, llvmMod).process(irModule);
 
     llvm::LoopAnalysisManager lam;
     llvm::FunctionAnalysisManager fam;

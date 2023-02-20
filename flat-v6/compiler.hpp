@@ -30,7 +30,6 @@ struct TargetDescriptor
     }
 };
 
-class ModuleContext;
 class CompilationContext : public Environment
 {
     friend class ModuleContext;

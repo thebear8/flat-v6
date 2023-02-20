@@ -11,9 +11,9 @@ protected:
     std::string m_name;
     Environment* m_parent;
 
-    std::unordered_map<std::string, IRConstraintDeclaration*> m_constraints;
+    std::unordered_map<std::string, IRConstraint*> m_constraints;
     std::unordered_map<std::string, IRStructType*> m_structs;
-    std::unordered_multimap<std::string, IRFunctionDeclaration*> m_functions;
+    std::unordered_multimap<std::string, IRFunction*> m_functions;
 
     std::unordered_map<std::string, IRGenericType*> m_generics;
     std::unordered_map<std::string, IRType*> m_variableTypes;
@@ -65,23 +65,21 @@ public:
     /// @param constraint Constraint declaration to add
     /// @return The added constraint declaration or nullptr if a constraint
     /// declaration with the same name already exists
-    virtual IRConstraintDeclaration* addConstraint(
-        IRConstraintDeclaration* constraint
-    );
+    virtual IRConstraint* addConstraint(IRConstraint* constraint);
 
     /// @brief Search for a constraint declaration by name in this environment
     /// only
     /// @param name Name of the constraint declaration
     /// @return The found constraint declaration or nullptr if the constraint
     /// declaration was not found
-    virtual IRConstraintDeclaration* getConstraint(std::string const& name);
+    virtual IRConstraint* getConstraint(std::string const& name);
 
     /// @brief Search for a constraint declaration by name in the environment
     /// chain
     /// @param name Name of the constraint declaration
     /// @return The found constraint declaration or nullptr if the constraint
     /// declaration was not found
-    virtual IRConstraintDeclaration* findConstraint(std::string const& name);
+    virtual IRConstraint* findConstraint(std::string const& name);
 
     /// @brief Add a struct type to this environment
     /// @param structType Struct type to add
@@ -105,13 +103,13 @@ public:
     /// @param function Function to add
     /// @return The added function or nullptr if a function with the same name
     /// and parameters already exists
-    virtual IRFunctionDeclaration* addFunction(IRFunctionDeclaration* function);
+    virtual IRFunction* addFunction(IRFunction* function);
 
     /// @brief Search for a function by name and params in this environment
     /// @param name Name of the function
     /// @param params Parameters of the function
     /// @return The found function or nullptr if the function was not found
-    virtual IRFunctionDeclaration* getFunction(
+    virtual IRFunction* getFunction(
         std::string const& name, std::vector<IRType*> const& params
     );
 
@@ -119,7 +117,7 @@ public:
     /// @param name Name of the function
     /// @param params Parameters of the function
     /// @return The found function or nullptr if the function was not found
-    virtual IRFunctionDeclaration* findFunction(
+    virtual IRFunction* findFunction(
         std::string const& name, std::vector<IRType*> const& params
     );
 

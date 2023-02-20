@@ -49,9 +49,7 @@ IRGenericType* Environment::findGeneric(std::string const& genericName)
     return nullptr;
 }
 
-IRConstraintDeclaration* Environment::addConstraint(
-    IRConstraintDeclaration* constraint
-)
+IRConstraint* Environment::addConstraint(IRConstraint* constraint)
 {
     if (m_constraints.contains(constraint->name))
         return nullptr;
@@ -60,18 +58,14 @@ IRConstraintDeclaration* Environment::addConstraint(
     return m_constraints.at(constraint->name);
 }
 
-IRConstraintDeclaration* Environment::getConstraint(
-    std::string const& constraintName
-)
+IRConstraint* Environment::getConstraint(std::string const& constraintName)
 {
     if (m_constraints.contains(constraintName))
         return m_constraints.at(constraintName);
     return nullptr;
 }
 
-IRConstraintDeclaration* Environment::findConstraint(
-    std::string const& constraintName
-)
+IRConstraint* Environment::findConstraint(std::string const& constraintName)
 {
     if (auto constraint = getConstraint(constraintName))
         return constraint;
@@ -107,7 +101,7 @@ IRStructType* Environment::findStruct(std::string const& structName)
     return nullptr;
 }
 
-IRFunctionDeclaration* Environment::addFunction(IRFunctionDeclaration* function)
+IRFunction* Environment::addFunction(IRFunction* function)
 {
     for (auto [i, end] = m_functions.equal_range(function->name); i != end; ++i)
     {
@@ -128,7 +122,7 @@ IRFunctionDeclaration* Environment::addFunction(IRFunctionDeclaration* function)
     return function;
 }
 
-IRFunctionDeclaration* Environment::getFunction(
+IRFunction* Environment::getFunction(
     std::string const& functionName, std::vector<IRType*> const& params
 )
 {
@@ -149,7 +143,7 @@ IRFunctionDeclaration* Environment::getFunction(
     return nullptr;
 }
 
-IRFunctionDeclaration* Environment::findFunction(
+IRFunction* Environment::findFunction(
     std::string const& functionName, std::vector<IRType*> const& params
 )
 {

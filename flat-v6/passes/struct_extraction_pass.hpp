@@ -6,15 +6,19 @@
 class StructExtractionPass : ASTVisitor<void>
 {
 private:
-    ErrorLogger& logger;
-    CompilationContext& compCtx;
-    ModuleContext& modCtx;
+    ErrorLogger& m_logger;
+    CompilationContext& m_compCtx;
+
+    IRModule* m_module;
+    GraphContext* m_irCtx;
+    Environment* m_env;
 
 public:
-    StructExtractionPass(
-        ErrorLogger& logger, CompilationContext& compCtx, ModuleContext& modCtx
-    )
-        : logger(logger), compCtx(compCtx), modCtx(modCtx)
+    StructExtractionPass(ErrorLogger& logger, CompilationContext& compCtx)
+        : m_logger(logger),
+          m_compCtx(compCtx),
+          m_module(nullptr),
+          m_env(nullptr)
     {
     }
 

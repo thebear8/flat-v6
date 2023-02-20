@@ -10,19 +10,17 @@ class IRPass : public ASTVisitor<IRNode*>
 private:
     ErrorLogger& m_logger;
     CompilationContext& m_compCtx;
-    GraphContext& m_irCtx;
 
     IRModule* m_module;
+    GraphContext* m_irCtx;
     Environment* m_env;
 
 public:
-    IRPass(
-        ErrorLogger& logger, CompilationContext& compCtx, GraphContext& irCtx
-    )
+    IRPass(ErrorLogger& logger, CompilationContext& compCtx)
         : m_logger(logger),
           m_compCtx(compCtx),
-          m_irCtx(irCtx),
           m_module(nullptr),
+          m_irCtx(nullptr),
           m_env(nullptr)
     {
     }

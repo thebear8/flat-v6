@@ -45,8 +45,13 @@ template<typename TReturn>
 using IRVisitor = IRTripleDispatchVisitor::Visitor<TReturn>;
 
 class Environment;
-using IRMetadataContainer =
-    MetadataContainer<SourceRef, IRType*, IRFunction*, Environment*>;
+class GraphContext;
+using IRMetadataContainer = MetadataContainer<
+    SourceRef,
+    IRType*,
+    IRFunction*,
+    GraphContext*,
+    Environment*>;
 
 struct IRNode : IRTripleDispatchVisitor::NodeBase, private IRMetadataContainer
 {

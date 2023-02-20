@@ -2,24 +2,33 @@
 
 void ModuleExtractionPass::process(ASTSourceFile* node)
 {
+    return dispatch(node);
 }
 
-ModuleContext* ModuleExtractionPass::visit(ASTSourceFile* node)
+void ModuleExtractionPass::visit(ASTSourceFile* node)
 {
     std::string name;
     for (auto const& segment : node->modulePath)
         name += ((name.empty()) ? "" : ".") + segment;
 
     if (!m_compCtx.getModule(name))
-        m_compCtx.addModule(m_irCtx.make(ModuleContext(m_compCtx, name)));
-    auto modCtx = m_compCtx.getModule(name);
+    {
+        auto mod =
+            m_compCtx.addModule(m_irCtx.make(IRModule(name, {}, {}, {}, {})));
+        mod->setMD(m_irCtx.make(GraphContext()));
+        mod->setMD(mod->getMD<GraphContext*>().value()->make(
+            Environment(name, &m_compCtx)
+        ));
+    }
+    auto mod = m_compCtx.getModule(name);
 
+    std::set<std::string> imports;
     for (auto const& importPath : node->importPaths)
     {
         std::string importName;
         for (auto const& segment : importPath)
             importName += ((importName.empty()) ? "" : ".") + segment;
-        if (!modCtx->imports.contains(importName))
-            modCtx->imports.emplace(importName);
+        if (!mod->imports.contains(importName))
+            mod->imports.emplace(importName);
     }
 }

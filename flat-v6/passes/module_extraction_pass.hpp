@@ -2,7 +2,7 @@
 #include "../ast/ast.hpp"
 #include "../compiler.hpp"
 
-class ModuleExtractionPass : ASTVisitor<ModuleContext*>
+class ModuleExtractionPass : ASTVisitor<void>
 {
 private:
     ErrorLogger& m_logger;
@@ -21,5 +21,5 @@ public:
     void process(ASTSourceFile* sourceFile);
 
 public:
-    virtual ModuleContext* visit(ASTSourceFile* node) override;
+    virtual void visit(ASTSourceFile* node) override;
 };
