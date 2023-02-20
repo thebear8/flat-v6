@@ -11,7 +11,7 @@ ModuleContext* ModuleExtractionPass::visit(ASTSourceFile* node)
         name += ((name.empty()) ? "" : ".") + segment;
 
     if (!m_compCtx.getModule(name))
-        m_compCtx.addModule(m_memCtx.make(ModuleContext(m_compCtx, name)));
+        m_compCtx.addModule(m_irCtx.make(ModuleContext(m_compCtx, name)));
     auto modCtx = m_compCtx.getModule(name);
 
     for (auto const& importPath : node->importPaths)

@@ -1,19 +1,19 @@
 #pragma once
+#include "../ast/ast.hpp"
 #include "../compiler.hpp"
-#include "../data/ast.hpp"
 
 class ModuleExtractionPass : ASTVisitor<ModuleContext*>
 {
 private:
     ErrorLogger& m_logger;
     CompilationContext& m_compCtx;
-    GraphContext& m_memCtx;
+    GraphContext& m_irCtx;
 
 public:
     ModuleExtractionPass(
         ErrorLogger& logger, CompilationContext& compCtx, GraphContext& memCtx
     )
-        : m_logger(logger), m_compCtx(compCtx), m_memCtx(memCtx)
+        : m_logger(logger), m_compCtx(compCtx), m_irCtx(memCtx)
     {
     }
 

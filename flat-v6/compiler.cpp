@@ -15,7 +15,7 @@
 #include <filesystem>
 #include <fstream>
 
-#include "data/ast.hpp"
+#include "ast/ast.hpp"
 #include "parser/parser.hpp"
 #include "passes/codegen_pass.hpp"
 #include "passes/function_extraction_pass.hpp"
@@ -200,7 +200,7 @@ ModuleContext* CompilationContext::getModule(std::string const& name)
 }
 
 llvm::Function* CompilationContext::addLLVMFunction(
-    IRFunctionDeclaration* function, llvm::Function* llvmFunction
+    IRFunction* function, llvm::Function* llvmFunction
 )
 {
     if (llvmFunctions.contains(function))
@@ -209,9 +209,7 @@ llvm::Function* CompilationContext::addLLVMFunction(
     return llvmFunctions.at(function);
 }
 
-llvm::Function* CompilationContext::getLLVMFunction(
-    IRFunctionDeclaration* function
-)
+llvm::Function* CompilationContext::getLLVMFunction(IRFunction* function)
 {
     if (!llvmFunctions.contains(function))
         return nullptr;

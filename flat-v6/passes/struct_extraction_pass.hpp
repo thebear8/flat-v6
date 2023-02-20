@@ -1,6 +1,6 @@
 #pragma once
+#include "../ast/ast.hpp"
 #include "../compiler.hpp"
-#include "../data/ast.hpp"
 #include "../ir/ir.hpp"
 
 class StructExtractionPass : ASTVisitor<void>
@@ -25,6 +25,5 @@ private:
     virtual void visit(ASTStructDeclaration* node) override;
     virtual void visit(ASTConstraintDeclaration* node) override {}
     virtual void visit(ASTFunctionDeclaration* node) override {}
-    virtual void visit(ASTExternFunctionDeclaration* node) override {}
     virtual void visit(ASTSourceFile* node) override;
 };

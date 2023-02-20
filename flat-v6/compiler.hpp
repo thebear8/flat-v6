@@ -6,7 +6,7 @@
 
 #include <iostream>
 
-#include "data/ast.hpp"
+#include "ast/ast.hpp"
 #include "environment.hpp"
 #include "ir/ir.hpp"
 #include "util/error_logger.hpp"
@@ -43,7 +43,7 @@ private:
     llvm::TargetMachine* targetMachine;
 
     std::unordered_map<std::string, ModuleContext*> modules;
-    std::unordered_map<IRFunctionDeclaration*, llvm::Function*> llvmFunctions;
+    std::unordered_map<IRFunction*, llvm::Function*> llvmFunctions;
 
     std::unordered_map<size_t, IRIntegerType*> m_signedIntegerTypes;
     std::unordered_map<size_t, IRIntegerType*> m_unsignedIntegerTypes;
@@ -94,7 +94,7 @@ public:
     /// @return The added llvm::Function or nullptr if the function already
     /// exists
     llvm::Function* addLLVMFunction(
-        IRFunctionDeclaration* function, llvm::Function* llvmFunction
+        IRFunction* function, llvm::Function* llvmFunction
     );
 
     /// @brief Get an llvm::Function for an IR function. This doesn't actually
@@ -102,7 +102,7 @@ public:
     /// place.
     /// @param function The IR function to get an llvm::Function for
     /// @return The retrieved llvm::Function or nullptr on failure
-    llvm::Function* getLLVMFunction(IRFunctionDeclaration* function);
+    llvm::Function* getLLVMFunction(IRFunction* function);
 
     /// @brief Lookup a builtin type
     /// @param name Type name
