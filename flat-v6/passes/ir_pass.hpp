@@ -10,31 +10,25 @@ class IRPass : public ASTVisitor<IRNode*>
 private:
     ErrorLogger& m_logger;
     CompilationContext& m_compCtx;
-    ModuleContext& m_modCtx;
     GraphContext& m_irCtx;
 
-    GraphContext m_envCtx;
-    GraphContext m_genericCtx;
-
+    IRModule* m_module;
     Environment* m_env;
 
 public:
     IRPass(
-        ErrorLogger& logger,
-        CompilationContext& compCtx,
-        ModuleContext& modCtx,
-        GraphContext& irCtx
+        ErrorLogger& logger, CompilationContext& compCtx, GraphContext& irCtx
     )
         : m_logger(logger),
           m_compCtx(compCtx),
-          m_modCtx(modCtx),
           m_irCtx(irCtx),
+          m_module(nullptr),
           m_env(nullptr)
     {
     }
 
 public:
-    IRSourceFile* process(ASTSourceFile* sourceFile);
+    IRModule* process(ASTSourceFile* sourceFile);
 
 private:
     virtual IRNode* visit(ASTIntegerExpression* node) override;
@@ -59,7 +53,6 @@ private:
     virtual IRNode* visit(ASTConstraintDeclaration* node) override;
     virtual IRNode* visit(ASTStructDeclaration* node) override;
     virtual IRNode* visit(ASTFunctionDeclaration* node) override;
-    virtual IRNode* visit(ASTExternFunctionDeclaration* node) override;
     virtual IRNode* visit(ASTSourceFile* node) override;
 
     virtual IRNode* visit(ASTNamedType* node) override;

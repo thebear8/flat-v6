@@ -4,9 +4,9 @@
 
 #include "../util/string_switch.hpp"
 
-IRSourceFile* IRPass::process(ASTSourceFile* sourceFile)
+IRModule* IRPass::process(ASTSourceFile* sourceFile)
 {
-    return (IRSourceFile*)dispatch(sourceFile);
+    return (IRModule*)dispatch(sourceFile);
 }
 
 IRNode* IRPass::visit(ASTIntegerExpression* node)
@@ -94,7 +94,7 @@ IRNode* IRPass::visit(ASTUnaryExpression* node)
 {
     return m_irCtx
         .make(IRUnaryExpression(
-            node->operation, (IRExpression*)dispatch(node->expression), nullptr
+            node->operation, (IRExpression*)dispatch(node->expression)
         ))
         ->setMD(node->location);
 }
@@ -105,8 +105,7 @@ IRNode* IRPass::visit(ASTBinaryExpression* node)
         .make(IRBinaryExpression(
             node->operation,
             (IRExpression*)dispatch(node->left),
-            (IRExpression*)dispatch(node->right),
-            nullptr
+            (IRExpression*)dispatch(node->right)
         ))
         ->setMD(node->location);
 }
@@ -118,9 +117,7 @@ IRNode* IRPass::visit(ASTCallExpression* node)
         args.push_back((IRExpression*)dispatch(arg));
 
     return m_irCtx
-        .make(IRCallExpression(
-            (IRExpression*)dispatch(node->expression), args, nullptr
-        ))
+        .make(IRCallExpression((IRExpression*)dispatch(node->expression), args))
         ->setMD(node->location);
 }
 
@@ -131,9 +128,8 @@ IRNode* IRPass::visit(ASTIndexExpression* node)
         args.push_back((IRExpression*)dispatch(arg));
 
     return m_irCtx
-        .make(IRIndexExpression(
-            (IRExpression*)dispatch(node->expression), args, nullptr
-        ))
+        .make(IRIndexExpression((IRExpression*)dispatch(node->expression), args)
+        )
         ->setMD(node->location);
 }
 
@@ -201,7 +197,7 @@ IRNode* IRPass::visit(ASTIfStatement* node)
 
 IRNode* IRPass::visit(ASTConstraintDeclaration* node)
 {
-    m_env = m_envCtx.make(Environment(node->name, m_env));
+    m_env = m_irCtx.make(Environment(node->name, m_env));
 
     auto typeParamRange = node->typeParams | std::views::transform([&](auto p) {
                               return m_irCtx.make(IRGenericType(p));
@@ -211,13 +207,13 @@ IRNode* IRPass::visit(ASTConstraintDeclaration* node)
     for (auto p : typeParams)
         m_env->addGeneric(p);
 
-    auto conditionRange =
-        node->conditions | std::views::transform([&](ASTDeclaration* d) {
-            return (IRDeclaration*)dispatch(d);
-        });
+    auto conditionRange = node->conditions
+        | std::views::transform([&](ASTFunctionDeclaration* d) {
+                              return (IRFunction*)dispatch(d);
+                          });
     auto conditions = std::vector(conditionRange.begin(), conditionRange.end());
 
-    auto irNode = m_irCtx.make(IRConstraintDeclaration(
+    auto irNode = m_irCtx.make(IRConstraint(
         node->name,
         typeParams,
         transformRequirements(node->requirements),
@@ -230,7 +226,7 @@ IRNode* IRPass::visit(ASTConstraintDeclaration* node)
 
 IRNode* IRPass::visit(ASTStructDeclaration* node)
 {
-    m_env = m_envCtx.make(Environment(node->name, m_env));
+    m_env = m_irCtx.make(Environment(node->name, m_env));
 
     auto typeParamRange = node->typeParams | std::views::transform([&](auto p) {
                               return m_irCtx.make(IRGenericType(p));
@@ -251,7 +247,7 @@ IRNode* IRPass::visit(ASTStructDeclaration* node)
     );
     structType->fields = fields;
 
-    auto irNode = m_irCtx.make(IRStructDeclaration(
+    auto irNode = m_irCtx.make(IRStructType(
         node->name,
         typeParams,
         transformRequirements(node->requirements),
@@ -278,50 +274,48 @@ IRNode* IRPass::visit(ASTFunctionDeclaration* node)
     for (auto const& [name, type] : node->parameters)
         params.push_back({ name, (IRType*)dispatch(type) });
 
-    auto irNode = m_irCtx.make(IRFunctionDeclaration(
-        node->name,
-        typeParams,
-        transformRequirements(node->requirements),
-        (IRType*)dispatch(node->result),
-        params,
-        (IRStatement*)dispatch(node->body)
-    ));
-
-    m_env = m_env->getParent();
-    return irNode->setMD(node->location);
-}
-
-IRNode* IRPass::visit(ASTExternFunctionDeclaration* node)
-{
-    m_env = m_envCtx.make(Environment(node->name, m_env));
-
-    auto typeParamRange = node->typeParams | std::views::transform([&](auto p) {
-                              return m_irCtx.make(IRGenericType(p));
-                          });
-    auto typeParams = std::vector(typeParamRange.begin(), typeParamRange.end());
-
-    for (auto p : typeParams)
-        m_env->addGeneric(p);
-
-    std::vector<std::pair<std::string, IRType*>> params;
-    for (auto const& [name, type] : node->parameters)
-        params.push_back({ name, (IRType*)dispatch(type) });
-
-    auto irNode = m_irCtx.make(IRFunctionDeclaration(
-        node->lib,
-        node->name,
-        typeParams,
-        transformRequirements(node->requirements),
-        (IRType*)dispatch(node->result),
-        params
-    ));
-
-    m_env = m_env->getParent();
-    return irNode->setMD(node->location);
+    if (node->body)
+    {
+        auto irNode = m_irCtx.make(IRFunction(
+            node->name,
+            typeParams,
+            transformRequirements(node->requirements),
+            params,
+            (IRType*)dispatch(node->result),
+            (IRStatement*)dispatch(node->body)
+        ));
+        irNode->setMD(node->location);
+        m_env = m_env->getParent();
+        return irNode;
+    }
+    else
+    {
+        auto irNode = m_irCtx.make(IRFunction(
+            node->lib,
+            node->name,
+            typeParams,
+            transformRequirements(node->requirements),
+            params,
+            (IRType*)dispatch(node->result)
+        ));
+        irNode->setMD(node->location);
+        m_env = m_env->getParent();
+        return irNode;
+    }
 }
 
 IRNode* IRPass::visit(ASTSourceFile* node)
 {
+    std::string name;
+    for (auto const& segment : node->modulePath)
+        name += ((name.empty()) ? "" : ".") + segment;
+
+    m_module = m_compCtx.getModule(name);
+    assert(
+        m_module
+        && "Module has to exists, should be created by ModuleExtractionPass"
+    );
+
     std::vector<IRDeclaration*> declarations;
     for (auto declaration : node->declarations)
         declarations.push_back((IRDeclaration*)dispatch(declaration));

@@ -42,7 +42,7 @@ private:
     llvm::Target const* target;
     llvm::TargetMachine* targetMachine;
 
-    std::unordered_map<std::string, ModuleContext*> modules;
+    std::unordered_map<std::string, IRModule*> modules;
     std::unordered_map<IRFunction*, llvm::Function*> llvmFunctions;
 
     std::unordered_map<size_t, IRIntegerType*> m_signedIntegerTypes;
@@ -79,12 +79,12 @@ public:
     /// @param mod The module to add
     /// @return The added module or nullptr if a module with the same name
     /// already exists
-    ModuleContext* addModule(ModuleContext* mod);
+    IRModule* addModule(IRModule* mod);
 
     /// @brief Search for a module by name in this compilation context
     /// @param name The name of the module to find
     /// @return The found module or nullptr if the module was not found
-    ModuleContext* getModule(std::string const& name);
+    IRModule* getModule(std::string const& name);
 
     /// @brief Add an llvm::Function for an IR function. This doesn't actually
     /// belong in CompilationContext, but is here for now for lack of a better
@@ -172,24 +172,4 @@ public:
     /// @brief Get string type
     /// @return Type representing string
     IRStringType* getString() { return m_string; }
-};
-
-class ModuleContext : public Environment
-{
-public:
-    CompilationContext& compCtx;
-    GraphContext astCtx;
-    GraphContext irCtx;
-
-    std::string name;
-    std::set<std::string> imports;
-
-public:
-    ModuleContext(CompilationContext& compCtx, std::string const& name)
-        : Environment(name, &compCtx), compCtx(compCtx), name(name)
-    {
-    }
-
-public:
-    auto const& getFunctionList() { return m_functions; }
 };

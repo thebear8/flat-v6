@@ -25,7 +25,7 @@ struct ASTDeclaration : public ASTNode
 struct ASTConstraintDeclaration : public ASTDeclaration
 {
     std::string name;
-    std::vector<ASTDeclaration*> conditions;
+    std::vector<ASTFunctionDeclaration*> conditions;
 
     ASTConstraintDeclaration(
         SourceRef const& location,
@@ -33,7 +33,7 @@ struct ASTConstraintDeclaration : public ASTDeclaration
         std::vector<std::string> const& typeParams,
         std::vector<std::pair<std::string, std::vector<ASTType*>>> const&
             requirements,
-        std::vector<ASTDeclaration*> const& conditions
+        std::vector<ASTFunctionDeclaration*> const& conditions
     )
         : ASTDeclaration(location, typeParams, requirements),
           name(name),

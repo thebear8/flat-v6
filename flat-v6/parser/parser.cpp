@@ -510,15 +510,11 @@ ASTConstraintDeclaration* Parser::constraintDeclaration(size_t begin)
     auto constraints = constraintList();
 
     expect(Token::BraceOpen);
-    std::vector<ASTDeclaration*> declarations;
+    std::vector<ASTFunctionDeclaration*> declarations;
     while (!match(Token::BraceClose) && !match(Token::Eof))
     {
         auto declBegin = trim();
-        if (match(Token::Struct))
-        {
-            declarations.push_back(structDeclaration(declBegin));
-        }
-        else if (match(Token::Function))
+        if (match(Token::Function))
         {
             declarations.push_back(functionDeclaration(declBegin));
         }
@@ -530,7 +526,7 @@ ASTConstraintDeclaration* Parser::constraintDeclaration(size_t begin)
         {
             logger.error(
                 SourceRef(id, position),
-                "Expected eiter StructDeclaration, FunctionDeclaration or ExternFunctionDeclaration"
+                "Expected eiter FunctionDeclaration or ExternFunctionDeclaration"
             );
         }
     }

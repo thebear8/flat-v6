@@ -183,7 +183,7 @@ IRType* CompilationContext::getType(std::string const& name)
     return Environment::getType(name);
 }
 
-ModuleContext* CompilationContext::addModule(ModuleContext* mod)
+IRModule* CompilationContext::addModule(IRModule* mod)
 {
     if (modules.contains(mod->name))
         return nullptr;
@@ -192,7 +192,7 @@ ModuleContext* CompilationContext::addModule(ModuleContext* mod)
     return modules.at(mod->name);
 }
 
-ModuleContext* CompilationContext::getModule(std::string const& name)
+IRModule* CompilationContext::getModule(std::string const& name)
 {
     if (!modules.contains(name))
         return nullptr;
