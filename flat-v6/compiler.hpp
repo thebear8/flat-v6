@@ -7,8 +7,8 @@
 #include <iostream>
 
 #include "data/ast.hpp"
-#include "data/ir.hpp"
 #include "environment.hpp"
+#include "ir/ir.hpp"
 #include "util/error_logger.hpp"
 #include "util/graph_context.hpp"
 

@@ -1,7 +1,7 @@
 #pragma once
 #include "../compiler.hpp"
 #include "../data/ast.hpp"
-#include "../data/ir.hpp"
+#include "../ir/ir.hpp"
 
 class StructExtractionPass : ASTVisitor<void>
 {

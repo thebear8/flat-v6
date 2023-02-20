@@ -4,8 +4,8 @@
 #include <string_view>
 
 #include "../compiler.hpp"
-#include "../data/ir.hpp"
 #include "../data/operator.hpp"
+#include "../ir/ir.hpp"
 #include "../util/error_logger.hpp"
 
 class OperatorLoweringPass : protected IRVisitor<IRNode*>

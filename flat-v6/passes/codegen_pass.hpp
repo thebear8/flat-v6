@@ -9,8 +9,8 @@
 #include <unordered_map>
 
 #include "../compiler.hpp"
-#include "../data/ir.hpp"
 #include "../data/operator.hpp"
+#include "../ir/ir.hpp"
 #include "../util/error_logger.hpp"
 
 class LLVMCodegenPass : protected IRVisitor<llvm::Value*>

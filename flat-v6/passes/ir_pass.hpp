@@ -1,8 +1,8 @@
 #pragma once
 #include "../compiler.hpp"
 #include "../data/ast.hpp"
-#include "../data/ir.hpp"
 #include "../data/source_ref.hpp"
+#include "../ir/ir.hpp"
 
 /// @brief Transforms AST Nodes into IR Nodes
 class IRPass : public ASTVisitor<IRNode*>

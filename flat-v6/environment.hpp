@@ -1,7 +1,7 @@
 #include <string>
 #include <unordered_map>
 
-#include "data/ir.hpp"
+#include "ir/ir.hpp"
 
 /// @brief Manages contained data of an environment, e.g. functions, structs,
 /// local variables, generic parameters etc.
