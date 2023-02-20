@@ -1,6 +1,6 @@
 #pragma once
+#include "../ast/ast.hpp"
 #include "../compiler.hpp"
-#include "../data/ast.hpp"
 #include "../data/source_ref.hpp"
 #include "../ir/ir.hpp"
 

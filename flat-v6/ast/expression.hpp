@@ -2,8 +2,8 @@
 #include <string>
 #include <vector>
 
+#include "../data/operator.hpp"
 #include "ast_node.hpp"
-#include "operator.hpp"
 
 struct ASTExpression : public ASTNode
 {

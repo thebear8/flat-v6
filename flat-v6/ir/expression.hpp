@@ -83,14 +83,9 @@ struct IRUnaryExpression : public IRExpression
 {
     UnaryOperator operation;
     IRExpression* expression;
-    IRFunctionDeclaration* target;
 
-    IRUnaryExpression(
-        UnaryOperator operation,
-        IRExpression* expression,
-        IRFunctionDeclaration* target
-    )
-        : operation(operation), expression(expression), target(target)
+    IRUnaryExpression(UnaryOperator operation, IRExpression* expression)
+        : operation(operation), expression(expression)
     {
     }
 
@@ -101,15 +96,12 @@ struct IRBinaryExpression : public IRExpression
 {
     BinaryOperator operation;
     IRExpression *left, *right;
-    IRFunctionDeclaration* target;
+    IRFunction* target;
 
     IRBinaryExpression(
-        BinaryOperator operation,
-        IRExpression* left,
-        IRExpression* right,
-        IRFunctionDeclaration* target
+        BinaryOperator operation, IRExpression* left, IRExpression* right
     )
-        : operation(operation), left(left), right(right), target(target)
+        : operation(operation), left(left), right(right)
     {
     }
 
@@ -120,14 +112,12 @@ struct IRCallExpression : public IRExpression
 {
     IRExpression* expression;
     std::vector<IRExpression*> args;
-    IRFunctionDeclaration* target;
+    IRFunction* target;
 
     IRCallExpression(
-        IRExpression* expression,
-        std::vector<IRExpression*> const& args,
-        IRFunctionDeclaration* target
+        IRExpression* expression, std::vector<IRExpression*> const& args
     )
-        : expression(expression), args(args), target(target)
+        : expression(expression), args(args)
     {
     }
 
@@ -138,14 +128,12 @@ struct IRIndexExpression : public IRExpression
 {
     IRExpression* expression;
     std::vector<IRExpression*> args;
-    IRFunctionDeclaration* target;
+    IRFunction* target;
 
     IRIndexExpression(
-        IRExpression* expression,
-        std::vector<IRExpression*> const& args,
-        IRFunctionDeclaration* target
+        IRExpression* expression, std::vector<IRExpression*> const& args
     )
-        : expression(expression), args(args), target(target)
+        : expression(expression), args(args)
     {
     }
 

@@ -1,6 +1,6 @@
 #pragma once
+#include "../data/source_ref.hpp"
 #include "../util/visitor.hpp"
-#include "source_ref.hpp"
 
 using ASTTripleDispatchVisitor = triple_dispatch_visitor::TripleDispatchVisitor<
     struct ASTNode,

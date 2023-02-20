@@ -612,13 +612,13 @@ ASTFunctionDeclaration* Parser::functionDeclaration(size_t begin)
         name,
         typeParams,
         constraints,
-        result,
         parameters,
+        result,
         body
     ));
 }
 
-ASTExternFunctionDeclaration* Parser::externFunctionDeclaration(size_t begin)
+ASTFunctionDeclaration* Parser::externFunctionDeclaration(size_t begin)
 {
     expect(Token::ParenOpen);
     expect(Token::Identifier);
@@ -651,14 +651,14 @@ ASTExternFunctionDeclaration* Parser::externFunctionDeclaration(size_t begin)
 
     auto constraints = constraintList();
 
-    return ctx.make(ASTExternFunctionDeclaration(
+    return ctx.make(ASTFunctionDeclaration(
         SourceRef(id, begin, position),
         lib,
         name,
         typeParams,
         constraints,
-        result,
-        parameters
+        parameters,
+        result
     ));
 }
 

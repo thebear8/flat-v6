@@ -1,5 +1,5 @@
 #pragma once
-#include "../data/ast.hpp"
+#include "../ast/ast.hpp"
 #include "../util/graph_context.hpp"
 #include "lexer.hpp"
 
@@ -45,7 +45,7 @@ public:
     ASTConstraintDeclaration* constraintDeclaration(size_t begin);
     ASTStructDeclaration* structDeclaration(size_t begin);
     ASTFunctionDeclaration* functionDeclaration(size_t begin);
-    ASTExternFunctionDeclaration* externFunctionDeclaration(size_t begin);
+    ASTFunctionDeclaration* externFunctionDeclaration(size_t begin);
 
     ASTSourceFile* sourceFile();
 

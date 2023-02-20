@@ -44,7 +44,9 @@ using IRTripleDispatchVisitor = triple_dispatch_visitor::TripleDispatchVisitor<
 template<typename TReturn>
 using IRVisitor = IRTripleDispatchVisitor::Visitor<TReturn>;
 
-using IRMetadataContainer = MetadataContainer<SourceRef, IRType*>;
+class Environment;
+using IRMetadataContainer =
+    MetadataContainer<SourceRef, IRType*, IRFunction*, Environment*>;
 
 struct IRNode : IRTripleDispatchVisitor::NodeBase, private IRMetadataContainer
 {
