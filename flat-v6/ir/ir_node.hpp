@@ -1,3 +1,4 @@
+#pragma once
 #include "../data/source_ref.hpp"
 #include "../util/md_container.hpp"
 #include "../util/visitor.hpp"
@@ -26,11 +27,8 @@ using IRTripleDispatchVisitor = triple_dispatch_visitor::TripleDispatchVisitor<
     struct IRWhileStatement,
     struct IRIfStatement,
 
-    struct IRDeclaration,
-    struct IRConstraintDeclaration,
-    struct IRStructDeclaration,
-    struct IRFunctionDeclaration,
-    struct IRSourceFile,
+    struct IRConstraint,
+    struct IRFunction,
 
     struct IRType,
     struct IRGenericType,
