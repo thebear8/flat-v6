@@ -2,9 +2,9 @@
 
 #include <ranges>
 
-void SemanticPass::analyze(IRSourceFile* program)
+void SemanticPass::process(IRModule* mod)
 {
-    dispatch(program);
+    dispatch(mod);
 }
 
 IRType* SemanticPass::visit(IRIntegerExpression* node)
@@ -35,24 +35,28 @@ IRType* SemanticPass::visit(IRIdentifierExpression* node)
 {
     node->setMD<IRType*>(m_env->findVariableType(node->value));
     if (!node->getMD<IRType*>().value())
+    {
         return m_logger.error(
             node->getMD<SourceRef>().value_or(SourceRef()),
             "Undefined Identifier",
             nullptr
         );
+    }
 
     return node->getMD<IRType*>().value();
 }
 
 IRType* SemanticPass::visit(IRStructExpression* node)
 {
-    auto structType = m_modCtx.findStruct(node->structName);
+    auto structType = m_env->findStruct(node->structName);
     if (!structType)
+    {
         return m_logger.error(
             node->getMD<SourceRef>().value_or(SourceRef()),
             "Undefined Struct Type " + node->structName,
             nullptr
         );
+    }
 
     for (auto& [name, value] : node->fields)
         dispatch(value);
@@ -65,6 +69,7 @@ IRType* SemanticPass::visit(IRStructExpression* node)
             if (fieldName == name)
             {
                 if (fieldType != value->getMD<IRType*>().value())
+                {
                     return m_logger.error(
                         node->getMD<SourceRef>().value_or(SourceRef()),
                         "Field " + name + " has type " + fieldType->toString()
@@ -72,16 +77,19 @@ IRType* SemanticPass::visit(IRStructExpression* node)
                             + value->getMD<IRType*>().value()->toString(),
                         nullptr
                     );
+                }
                 break;
             }
 
             if (i == structType->fields.size() - 1)
+            {
                 return m_logger.error(
                     node->getMD<SourceRef>().value_or(SourceRef()),
                     "Struct " + structType->name
                         + " does not contain a field called " + name,
                     nullptr
                 );
+            }
         }
     }
 
@@ -93,6 +101,7 @@ IRType* SemanticPass::visit(IRStructExpression* node)
             if (name == fieldName)
             {
                 if (value->getMD<IRType*>().value() != fieldType)
+                {
                     return m_logger.error(
                         node->getMD<SourceRef>().value_or(SourceRef()),
                         "Field " + name + " has type " + fieldType->toString()
@@ -100,16 +109,19 @@ IRType* SemanticPass::visit(IRStructExpression* node)
                             + value->getMD<IRType*>().value()->toString(),
                         nullptr
                     );
+                }
                 break;
             }
 
             if (i == node->fields.size() - 1)
+            {
                 return m_logger.error(
                     node->getMD<SourceRef>().value_or(SourceRef()),
                     "No initializer for field " + fieldName + ": "
                         + fieldType->toString(),
                     nullptr
                 );
+            }
         }
     }
 
@@ -146,10 +158,10 @@ IRType* SemanticPass::visit(IRUnaryExpression* node)
     else
     {
         auto args = std::vector({ value });
-        auto function = m_modCtx.findFunction(
-            unaryOperators.at(node->operation).name, args
-        );
+        auto function =
+            m_env->findFunction(unaryOperators.at(node->operation).name, args);
         if (!function)
+        {
             return m_logger.error(
                 node->getMD<SourceRef>().value_or(SourceRef()),
                 "No matching operator function "
@@ -157,8 +169,9 @@ IRType* SemanticPass::visit(IRUnaryExpression* node)
                     + value->toString(),
                 nullptr
             );
+        }
 
-        node->target = function;
+        node->setMD<IRFunction*>(function);
         node->setMD<IRType*>(function->result);
         return node->getMD<IRType*>().value();
     }
@@ -219,19 +232,23 @@ IRType* SemanticPass::visit(IRBinaryExpression* node)
             || (left->isIntegerType() && right->isIntegerType())))
     {
         if (!dynamic_cast<IRIdentifierExpression*>(node->left))
+        {
             return m_logger.error(
                 node->getMD<SourceRef>().value_or(SourceRef()),
                 "Left side of assignment has to be identifier",
                 nullptr
             );
+        }
 
         if ((left->isIntegerType() && right->isIntegerType())
             && (left->getBitSize() < right->getBitSize()))
+        {
             m_logger.warning(
                 node->getMD<SourceRef>().value_or(SourceRef()),
                 "Narrowing conversion from " + left->toString() + " to "
                     + right->toString()
             );
+        }
 
         node->setMD<IRType*>(left);
         return node->getMD<IRType*>().value();
@@ -239,10 +256,10 @@ IRType* SemanticPass::visit(IRBinaryExpression* node)
     else
     {
         auto args = std::vector({ left, right });
-        auto function = m_modCtx.findFunction(
-            binaryOperators.at(node->operation).name, args
-        );
+        auto function =
+            m_env->findFunction(binaryOperators.at(node->operation).name, args);
         if (!function)
+        {
             return m_logger.error(
                 node->getMD<SourceRef>().value_or(SourceRef()),
                 "No matching operator function "
@@ -250,15 +267,18 @@ IRType* SemanticPass::visit(IRBinaryExpression* node)
                     + left->toString() + ", " + right->toString(),
                 nullptr
             );
+        }
 
         if (binaryOperators.at(node->operation).category
                 == OperatorCategory::BinaryAssign
             && function->result != left)
+        {
             return m_logger.error(
                 node->getMD<SourceRef>().value_or(SourceRef()),
                 "Assignment operator overload function has to return a value that has the type of the left operand",
                 nullptr
             );
+        }
 
         node->target = function;
         node->setMD<IRType*>(function->result);
@@ -275,14 +295,15 @@ IRType* SemanticPass::visit(IRCallExpression* node)
     if (auto identifierExpression =
             dynamic_cast<IRIdentifierExpression*>(node->expression))
     {
-        auto function =
-            m_modCtx.findFunction(identifierExpression->value, args);
+        auto function = m_env->findFunction(identifierExpression->value, args);
         if (!function)
+        {
             return m_logger.error(
                 node->getMD<SourceRef>().value_or(SourceRef()),
                 "No matching function " + identifierExpression->value,
                 nullptr
             );
+        }
 
         node->target = function;
         node->setMD<IRType*>(function->result);
@@ -291,14 +312,16 @@ IRType* SemanticPass::visit(IRCallExpression* node)
     else
     {
         args.insert(args.begin(), dispatch(node->expression));
-        auto function = m_modCtx.findFunction("__call__", args);
+        auto function = m_env->findFunction("__call__", args);
         if (!function)
+        {
             return m_logger.error(
                 node->getMD<SourceRef>().value_or(SourceRef()),
                 "No matching operator function __call__ for type "
                     + args.front()->toString(),
                 nullptr
             );
+        }
 
         node->target = function;
         node->setMD<IRType*>(function->result);
@@ -328,14 +351,16 @@ IRType* SemanticPass::visit(IRIndexExpression* node)
     else
     {
         args.insert(args.begin(), value);
-        auto function = m_modCtx.findFunction("__index__", args);
+        auto function = m_env->findFunction("__index__", args);
         if (!function)
+        {
             return m_logger.error(
                 node->getMD<SourceRef>().value_or(SourceRef()),
                 "No matching operator function __index__ for type "
                     + args.front()->toString(),
                 nullptr
             );
+        }
 
         node->target = function;
         node->setMD<IRType*>(function->result);
@@ -347,11 +372,13 @@ IRType* SemanticPass::visit(IRFieldExpression* node)
 {
     auto value = dispatch(node->expression);
     if (!value->isStructType())
+    {
         return m_logger.error(
             node->getMD<SourceRef>().value_or(SourceRef()),
             "Left side of field expression has to be of struct type",
             nullptr
         );
+    }
 
     auto structType = dynamic_cast<IRStructType*>(value);
     for (int i = 0; i < structType->fields.size(); i++)
@@ -390,18 +417,22 @@ IRType* SemanticPass::visit(IRVariableStatement* node)
     for (auto& [name, value] : node->items)
     {
         if (m_env->getVariableType(name))
+        {
             return m_logger.error(
                 node->getMD<SourceRef>().value_or(SourceRef()),
                 "Variable is already defined",
                 nullptr
             );
+        }
 
         if (dispatch(value)->isVoidType())
+        {
             return m_logger.error(
                 node->getMD<SourceRef>().value_or(SourceRef()),
                 "Variable cannot have void type",
                 nullptr
             );
+        }
 
         m_env->addVariableType(name, value->getMD<IRType*>().value());
     }
@@ -429,11 +460,13 @@ IRType* SemanticPass::visit(IRWhileStatement* node)
 {
     auto condition = dispatch(node->condition);
     if (!condition->isBoolType())
+    {
         return m_logger.error(
             node->getMD<SourceRef>().value_or(SourceRef()),
             "While condition has to be of boolean type",
             nullptr
         );
+    }
 
     auto prevResult = m_result;
     dispatch(node->body);
@@ -446,11 +479,13 @@ IRType* SemanticPass::visit(IRIfStatement* node)
 {
     auto condition = dispatch(node->condition);
     if (!condition->isBoolType())
+    {
         return m_logger.error(
             node->getMD<SourceRef>().value_or(SourceRef()),
             "If condition has to be of boolean type",
             nullptr
         );
+    }
 
     auto prevResult = m_result;
 
@@ -470,23 +505,75 @@ IRType* SemanticPass::visit(IRIfStatement* node)
     return nullptr;
 }
 
-IRType* SemanticPass::visit(IRConstraintDeclaration* node)
-{
-    return nullptr;
-}
-
-IRType* SemanticPass::visit(IRStructDeclaration* node)
-{
-    return nullptr;
-}
-
-IRType* SemanticPass::visit(IRFunctionDeclaration* node)
+IRType* SemanticPass::visit(IRFunction* node)
 {
     if (!node->body)
         return nullptr;
 
-    m_env = m_envCtx.make(Environment(node->name, m_env));
-    setupEnvironment(node);
+    m_env = m_irCtx->make(Environment(node->name, m_env));
+
+    for (auto typeParam : node->typeParams)
+        m_env->addGeneric(typeParam);
+
+    for (auto& [name, args] : node->requirements)
+    {
+        auto constraint = m_env->getConstraint(name);
+        if (!constraint)
+        {
+            return m_logger.error(
+                node->getMD<SourceRef>().value_or(SourceRef()),
+                "No constraint named " + name,
+                nullptr
+            );
+        }
+
+        if (args.size() != constraint->typeParams.size())
+        {
+            return m_logger.error(
+                node->getMD<SourceRef>().value_or(SourceRef()),
+                "Number of args does not match number of type parameters for constraint "
+                    + constraint->name,
+                nullptr
+            );
+        }
+
+        std::unordered_map<IRType*, IRType*> typeParamToArgLookup;
+        for (size_t i = 0; i < args.size(); i++)
+        {
+            typeParamToArgLookup.try_emplace(
+                constraint->typeParams[i], args[i]
+            );
+        }
+
+        for (auto condition : constraint->conditions)
+        {
+            assert(condition && "Condition cannot be nullptr");
+            auto function = dynamic_cast<IRFunction*>(condition);
+            if (!function)
+            {
+                return m_logger.error(
+                    condition->getMD<SourceRef>().value_or(SourceRef()),
+                    "Constraint condition has to be a function declaration",
+                    nullptr
+                );
+            }
+
+            auto params = function->params | std::views::transform([&](auto p) {
+                              if (typeParamToArgLookup.contains(p.second))
+                                  p.second = typeParamToArgLookup.at(p.second);
+                              return p;
+                          });
+
+            m_env->addFunction(m_irCtx->make(IRFunction(
+                function->name,
+                function->typeParams,
+                std::vector<std::pair<std::string, std::vector<IRType*>>>(),
+                std::vector(params.begin(), params.end()),
+                function->result,
+                nullptr
+            )));
+        }
+    }
 
     for (auto& [paramName, paramType] : node->params)
         m_env->addVariableType(paramName, paramType);
@@ -499,74 +586,21 @@ IRType* SemanticPass::visit(IRFunctionDeclaration* node)
     m_env = m_env->getParent();
 
     if (!m_expectedResult->isVoidType() && !m_result)
+    {
         return m_logger.error(
             node->getMD<SourceRef>().value_or(SourceRef()),
             "Missing return statement in function " + node->name
                 + ", should return " + m_expectedResult->toString(),
             nullptr
         );
+    }
 
     return nullptr;
 }
 
-IRType* SemanticPass::visit(IRSourceFile* node)
+IRType* SemanticPass::visit(IRModule* node)
 {
-    for (auto& decl : node->declarations)
+    for (auto& decl : node->functions)
         dispatch(decl);
     return nullptr;
-}
-
-void SemanticPass::setupEnvironment(IRDeclaration* node)
-{
-    for (auto typeParam : node->typeParams)
-        m_env->addGeneric(typeParam);
-
-    for (auto& [name, args] : node->requirements)
-    {
-        auto constraint = m_env->getConstraint(name);
-        if (!constraint)
-            return m_logger.error(
-                node->getMD<SourceRef>().value_or(SourceRef()),
-                "No constraint named " + name
-            );
-
-        if (args.size() != constraint->typeParams.size())
-            return m_logger.error(
-                node->getMD<SourceRef>().value_or(SourceRef()),
-                "Number of args does not match number of type parameters for constraint "
-                    + constraint->name
-            );
-
-        std::unordered_map<IRType*, IRType*> typeParamToArgLookup;
-        for (size_t i = 0; i < args.size(); i++)
-            typeParamToArgLookup.try_emplace(
-                constraint->typeParams[i], args[i]
-            );
-
-        for (auto condition : constraint->conditions)
-        {
-            assert(condition && "Condition cannot be nullptr");
-            auto function = dynamic_cast<IRFunctionDeclaration*>(condition);
-            if (!function)
-                return m_logger.error(
-                    condition->getMD<SourceRef>().value_or(SourceRef()),
-                    "Constraint condition has to be a function declaration"
-                );
-
-            auto params = function->params | std::views::transform([&](auto p) {
-                              if (typeParamToArgLookup.contains(p.second))
-                                  p.second = typeParamToArgLookup.at(p.second);
-                              return p;
-                          });
-
-            m_env->addFunction(m_genericCtx.make(IRFunctionDeclaration(
-                function->name,
-                function->typeParams,
-                std::vector<std::pair<std::string, std::vector<IRType*>>>(),
-                function->result,
-                std::vector(params.begin(), params.end()),
-                nullptr
-            )));
-        }
-    }
 }

@@ -14,31 +14,27 @@ class SemanticPass : IRVisitor<IRType*>
 private:
     ErrorLogger& m_logger;
     CompilationContext& m_compCtx;
-    ModuleContext& m_modCtx;
 
-    GraphContext m_envCtx;
-    GraphContext m_genericCtx;
-
+    IRModule* m_module;
+    GraphContext* m_irCtx;
     Environment* m_env;
 
     IRType* m_result;
     IRType* m_expectedResult;
 
 public:
-    SemanticPass(
-        ErrorLogger& logger, CompilationContext& compCtx, ModuleContext& modCtx
-    )
+    SemanticPass(ErrorLogger& logger, CompilationContext& compCtx)
         : m_logger(logger),
           m_compCtx(compCtx),
-          m_modCtx(modCtx),
-          m_env(&modCtx),
+          m_module(nullptr),
+          m_env(nullptr),
           m_result(nullptr),
           m_expectedResult(nullptr)
     {
     }
 
 public:
-    void analyze(IRSourceFile* source);
+    void process(IRModule* mod);
 
 private:
     virtual IRType* visit(IRIntegerExpression* node) override;
@@ -60,11 +56,6 @@ private:
     virtual IRType* visit(IRWhileStatement* node) override;
     virtual IRType* visit(IRIfStatement* node) override;
 
-    virtual IRType* visit(IRConstraintDeclaration* node) override;
-    virtual IRType* visit(IRStructDeclaration* node) override;
-    virtual IRType* visit(IRFunctionDeclaration* node) override;
-    virtual IRType* visit(IRSourceFile* node) override;
-
-private:
-    void setupEnvironment(IRDeclaration* node);
+    virtual IRType* visit(IRFunction* node) override;
+    virtual IRType* visit(IRModule* node) override;
 };

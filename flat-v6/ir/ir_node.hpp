@@ -29,6 +29,7 @@ using IRTripleDispatchVisitor = triple_dispatch_visitor::TripleDispatchVisitor<
 
     struct IRConstraint,
     struct IRFunction,
+    struct IRModule,
 
     struct IRType,
     struct IRGenericType,
