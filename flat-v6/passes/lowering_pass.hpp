@@ -13,24 +13,24 @@ class OperatorLoweringPass : protected IRVisitor<IRNode*>
 private:
     ErrorLogger& m_logger;
     CompilationContext& m_compCtx;
-    ModuleContext& m_modCtx;
-    GraphContext& m_irCtx;
+
+    IRModule* m_module;
+    GraphContext* m_irCtx;
+    Environment* m_env;
 
 public:
-    OperatorLoweringPass(
-        ErrorLogger& logger,
-        CompilationContext& compCtx,
-        ModuleContext& modCtx,
-        GraphContext& irCtx
-    )
-        : m_logger(logger), m_compCtx(compCtx), m_modCtx(modCtx), m_irCtx(irCtx)
+    OperatorLoweringPass(ErrorLogger& logger, CompilationContext& compCtx)
+        : m_logger(logger),
+          m_compCtx(compCtx),
+          m_module(nullptr),
+          m_irCtx(nullptr)
     {
     }
 
 public:
-    IRSourceFile* process(IRSourceFile* source);
+    void* process(IRModule* mod);
 
-protected:
+private:
     virtual IRNode* visit(IRIntegerExpression* node) override;
     virtual IRNode* visit(IRBoolExpression* node) override;
     virtual IRNode* visit(IRCharExpression* node) override;
@@ -50,8 +50,6 @@ protected:
     virtual IRNode* visit(IRWhileStatement* node) override;
     virtual IRNode* visit(IRIfStatement* node) override;
 
-    virtual IRNode* visit(IRConstraintDeclaration* node) override;
-    virtual IRNode* visit(IRStructDeclaration* node) override;
-    virtual IRNode* visit(IRFunctionDeclaration* node) override;
-    virtual IRNode* visit(IRSourceFile* node) override;
+    virtual IRNode* visit(IRFunction* node) override;
+    virtual IRNode* visit(IRModule* node) override;
 };

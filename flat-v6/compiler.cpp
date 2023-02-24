@@ -124,7 +124,7 @@ void CompilationContext::compile(
         IRPass(logger, *this).process(sf);
 
     for (auto [moduleName, irModule] : modules)
-        SemanticPass(logger, *this).analyze(irModule);
+        SemanticPass(logger, *this).process(irModule);
 
     for (auto [moduleName, irModule] : modules)
         OperatorLoweringPass(logger, *this).process(irModule);
