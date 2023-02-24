@@ -9,41 +9,39 @@ void SemanticPass::process(IRModule* mod)
 
 IRType* SemanticPass::visit(IRIntegerExpression* node)
 {
-    node->setMD<IRType*>(m_compCtx.getIntegerType(node->width, node->isSigned));
-    return node->getMD<IRType*>().value();
+    node->setType(m_compCtx.getIntegerType(node->width, node->isSigned));
+    return node->getType();
 }
 
 IRType* SemanticPass::visit(IRBoolExpression* node)
 {
-    node->setMD<IRType*>(m_compCtx.getBool());
-    return node->getMD<IRType*>().value();
+    node->setType(m_compCtx.getBool());
+    return node->getType();
 }
 
 IRType* SemanticPass::visit(IRCharExpression* node)
 {
-    node->setMD<IRType*>(m_compCtx.getChar());
-    return node->getMD<IRType*>().value();
+    node->setType(m_compCtx.getChar());
+    return node->getType();
 }
 
 IRType* SemanticPass::visit(IRStringExpression* node)
 {
-    node->setMD<IRType*>(m_compCtx.getString());
-    return node->getMD<IRType*>().value();
+    node->setType(m_compCtx.getString());
+    return node->getType();
 }
 
 IRType* SemanticPass::visit(IRIdentifierExpression* node)
 {
-    node->setMD<IRType*>(m_env->findVariableType(node->value));
-    if (!node->getMD<IRType*>().value())
+    node->setType(m_env->findVariableType(node->value));
+    if (!node->getType())
     {
         return m_logger.error(
-            node->getMD<SourceRef>().value_or(SourceRef()),
-            "Undefined Identifier",
-            nullptr
+            node->getLocation(SourceRef()), "Undefined Identifier", nullptr
         );
     }
 
-    return node->getMD<IRType*>().value();
+    return node->getType();
 }
 
 IRType* SemanticPass::visit(IRStructExpression* node)
@@ -52,7 +50,7 @@ IRType* SemanticPass::visit(IRStructExpression* node)
     if (!structType)
     {
         return m_logger.error(
-            node->getMD<SourceRef>().value_or(SourceRef()),
+            node->getLocation(SourceRef()),
             "Undefined Struct Type " + node->structName,
             nullptr
         );
@@ -68,13 +66,12 @@ IRType* SemanticPass::visit(IRStructExpression* node)
             auto& [fieldName, fieldType] = structType->fields[i];
             if (fieldName == name)
             {
-                if (fieldType != value->getMD<IRType*>().value())
+                if (fieldType != value->getType())
                 {
                     return m_logger.error(
-                        node->getMD<SourceRef>().value_or(SourceRef()),
+                        node->getLocation(SourceRef()),
                         "Field " + name + " has type " + fieldType->toString()
-                            + ", value type is "
-                            + value->getMD<IRType*>().value()->toString(),
+                            + ", value type is " + value->getType()->toString(),
                         nullptr
                     );
                 }
@@ -84,7 +81,7 @@ IRType* SemanticPass::visit(IRStructExpression* node)
             if (i == structType->fields.size() - 1)
             {
                 return m_logger.error(
-                    node->getMD<SourceRef>().value_or(SourceRef()),
+                    node->getLocation(SourceRef()),
                     "Struct " + structType->name
                         + " does not contain a field called " + name,
                     nullptr
@@ -100,13 +97,12 @@ IRType* SemanticPass::visit(IRStructExpression* node)
             auto& [name, value] = node->fields[i];
             if (name == fieldName)
             {
-                if (value->getMD<IRType*>().value() != fieldType)
+                if (value->getType() != fieldType)
                 {
                     return m_logger.error(
-                        node->getMD<SourceRef>().value_or(SourceRef()),
+                        node->getLocation(SourceRef()),
                         "Field " + name + " has type " + fieldType->toString()
-                            + ", value type is "
-                            + value->getMD<IRType*>().value()->toString(),
+                            + ", value type is " + value->getType()->toString(),
                         nullptr
                     );
                 }
@@ -116,7 +112,7 @@ IRType* SemanticPass::visit(IRStructExpression* node)
             if (i == node->fields.size() - 1)
             {
                 return m_logger.error(
-                    node->getMD<SourceRef>().value_or(SourceRef()),
+                    node->getLocation(SourceRef()),
                     "No initializer for field " + fieldName + ": "
                         + fieldType->toString(),
                     nullptr
@@ -125,8 +121,8 @@ IRType* SemanticPass::visit(IRStructExpression* node)
         }
     }
 
-    node->setMD<IRType*>(structType);
-    return node->getMD<IRType*>().value();
+    node->setType(structType);
+    return node->getType();
 }
 
 IRType* SemanticPass::visit(IRUnaryExpression* node)
@@ -136,24 +132,24 @@ IRType* SemanticPass::visit(IRUnaryExpression* node)
             == OperatorCategory::UnaryArithmetic
         && value->isIntegerType())
     {
-        node->setMD<IRType*>(value);
-        return node->getMD<IRType*>().value();
+        node->setType(value);
+        return node->getType();
     }
     else if (
         unaryOperators.at(node->operation).category
             == OperatorCategory::UnaryBitwise
         && value->isIntegerType())
     {
-        node->setMD<IRType*>(value);
-        return node->getMD<IRType*>().value();
+        node->setType(value);
+        return node->getType();
     }
     else if (
         unaryOperators.at(node->operation).category
             == OperatorCategory::UnaryLogic
         && value->isBoolType())
     {
-        node->setMD<IRType*>(m_compCtx.getBool());
-        return node->getMD<IRType*>().value();
+        node->setType(m_compCtx.getBool());
+        return node->getType();
     }
     else
     {
@@ -163,7 +159,7 @@ IRType* SemanticPass::visit(IRUnaryExpression* node)
         if (!function)
         {
             return m_logger.error(
-                node->getMD<SourceRef>().value_or(SourceRef()),
+                node->getLocation(SourceRef()),
                 "No matching operator function "
                     + unaryOperators.at(node->operation).name + " for type "
                     + value->toString(),
@@ -171,9 +167,9 @@ IRType* SemanticPass::visit(IRUnaryExpression* node)
             );
         }
 
-        node->setMD<IRFunction*>(function);
-        node->setMD<IRType*>(function->result);
-        return node->getMD<IRType*>().value();
+        node->setTarget(function);
+        node->setType(function->result);
+        return node->getType();
     }
 }
 
@@ -186,10 +182,10 @@ IRType* SemanticPass::visit(IRBinaryExpression* node)
             == OperatorCategory::BinaryArithmetic
         && (left->isIntegerType() && right->isIntegerType()))
     {
-        node->setMD<IRType*>(
+        node->setType(
             ((left->getBitSize() >= right->getBitSize()) ? left : right)
         );
-        return node->getMD<IRType*>().value();
+        return node->getType();
     }
     else if (
         binaryOperators.at(node->operation).category
@@ -197,24 +193,24 @@ IRType* SemanticPass::visit(IRBinaryExpression* node)
         && (left->isIntegerType() && right->isIntegerType())
         && (left->getBitSize() == right->getBitSize()))
     {
-        node->setMD<IRType*>(left);
-        return node->getMD<IRType*>().value();
+        node->setType(left);
+        return node->getType();
     }
     else if (
         binaryOperators.at(node->operation).category
             == OperatorCategory::BinaryComparison
         && (left->isIntegerType() && right->isIntegerType()))
     {
-        node->setMD<IRType*>(m_compCtx.getBool());
-        return node->getMD<IRType*>().value();
+        node->setType(m_compCtx.getBool());
+        return node->getType();
     }
     else if (
         binaryOperators.at(node->operation).category
             == OperatorCategory::BinaryLogic
         && (left->isBoolType() && right->isBoolType()))
     {
-        node->setMD<IRType*>(m_compCtx.getBool());
-        return node->getMD<IRType*>().value();
+        node->setType(m_compCtx.getBool());
+        return node->getType();
     }
     else if (
         binaryOperators.at(node->operation).category
@@ -222,8 +218,8 @@ IRType* SemanticPass::visit(IRBinaryExpression* node)
         && ((left == right)
             || (left->isIntegerType() && right->isIntegerType())))
     {
-        node->setMD<IRType*>(m_compCtx.getBool());
-        return node->getMD<IRType*>().value();
+        node->setType(m_compCtx.getBool());
+        return node->getType();
     }
     else if (
         binaryOperators.at(node->operation).category
@@ -234,7 +230,7 @@ IRType* SemanticPass::visit(IRBinaryExpression* node)
         if (!dynamic_cast<IRIdentifierExpression*>(node->left))
         {
             return m_logger.error(
-                node->getMD<SourceRef>().value_or(SourceRef()),
+                node->getLocation(SourceRef()),
                 "Left side of assignment has to be identifier",
                 nullptr
             );
@@ -244,14 +240,14 @@ IRType* SemanticPass::visit(IRBinaryExpression* node)
             && (left->getBitSize() < right->getBitSize()))
         {
             m_logger.warning(
-                node->getMD<SourceRef>().value_or(SourceRef()),
+                node->getLocation(SourceRef()),
                 "Narrowing conversion from " + left->toString() + " to "
                     + right->toString()
             );
         }
 
-        node->setMD<IRType*>(left);
-        return node->getMD<IRType*>().value();
+        node->setType(left);
+        return node->getType();
     }
     else
     {
@@ -261,7 +257,7 @@ IRType* SemanticPass::visit(IRBinaryExpression* node)
         if (!function)
         {
             return m_logger.error(
-                node->getMD<SourceRef>().value_or(SourceRef()),
+                node->getLocation(SourceRef()),
                 "No matching operator function "
                     + binaryOperators.at(node->operation).name + " for types "
                     + left->toString() + ", " + right->toString(),
@@ -274,15 +270,15 @@ IRType* SemanticPass::visit(IRBinaryExpression* node)
             && function->result != left)
         {
             return m_logger.error(
-                node->getMD<SourceRef>().value_or(SourceRef()),
+                node->getLocation(SourceRef()),
                 "Assignment operator overload function has to return a value that has the type of the left operand",
                 nullptr
             );
         }
 
         node->target = function;
-        node->setMD<IRType*>(function->result);
-        return node->getMD<IRType*>().value();
+        node->setType(function->result);
+        return node->getType();
     }
 }
 
@@ -299,15 +295,15 @@ IRType* SemanticPass::visit(IRCallExpression* node)
         if (!function)
         {
             return m_logger.error(
-                node->getMD<SourceRef>().value_or(SourceRef()),
+                node->getLocation(SourceRef()),
                 "No matching function " + identifierExpression->value,
                 nullptr
             );
         }
 
         node->target = function;
-        node->setMD<IRType*>(function->result);
-        return node->getMD<IRType*>().value();
+        node->setType(function->result);
+        return node->getType();
     }
     else
     {
@@ -316,7 +312,7 @@ IRType* SemanticPass::visit(IRCallExpression* node)
         if (!function)
         {
             return m_logger.error(
-                node->getMD<SourceRef>().value_or(SourceRef()),
+                node->getLocation(SourceRef()),
                 "No matching operator function __call__ for type "
                     + args.front()->toString(),
                 nullptr
@@ -324,8 +320,8 @@ IRType* SemanticPass::visit(IRCallExpression* node)
         }
 
         node->target = function;
-        node->setMD<IRType*>(function->result);
-        return node->getMD<IRType*>().value();
+        node->setType(function->result);
+        return node->getType();
     }
 }
 
@@ -339,14 +335,14 @@ IRType* SemanticPass::visit(IRIndexExpression* node)
     if (value->isArrayType() && args.size() == 1
         && args.front()->isIntegerType())
     {
-        node->setMD<IRType*>(dynamic_cast<IRArrayType*>(value)->base);
-        return node->getMD<IRType*>().value();
+        node->setType(dynamic_cast<IRArrayType*>(value)->base);
+        return node->getType();
     }
     if (value->isStringType() && args.size() == 1
         && args.front()->isIntegerType())
     {
-        node->setMD<IRType*>(m_compCtx.getU8());
-        return node->getMD<IRType*>().value();
+        node->setType(m_compCtx.getU8());
+        return node->getType();
     }
     else
     {
@@ -355,7 +351,7 @@ IRType* SemanticPass::visit(IRIndexExpression* node)
         if (!function)
         {
             return m_logger.error(
-                node->getMD<SourceRef>().value_or(SourceRef()),
+                node->getLocation(SourceRef()),
                 "No matching operator function __index__ for type "
                     + args.front()->toString(),
                 nullptr
@@ -363,8 +359,8 @@ IRType* SemanticPass::visit(IRIndexExpression* node)
         }
 
         node->target = function;
-        node->setMD<IRType*>(function->result);
-        return node->getMD<IRType*>().value();
+        node->setType(function->result);
+        return node->getType();
     }
 }
 
@@ -374,7 +370,7 @@ IRType* SemanticPass::visit(IRFieldExpression* node)
     if (!value->isStructType())
     {
         return m_logger.error(
-            node->getMD<SourceRef>().value_or(SourceRef()),
+            node->getLocation(SourceRef()),
             "Left side of field expression has to be of struct type",
             nullptr
         );
@@ -385,13 +381,13 @@ IRType* SemanticPass::visit(IRFieldExpression* node)
     {
         if (structType->fields[i].first == node->fieldName)
         {
-            node->setMD<IRType*>(structType->fields[i].second);
-            return node->getMD<IRType*>().value();
+            node->setType(structType->fields[i].second);
+            return node->getType();
         }
     }
 
     return m_logger.error(
-        node->getMD<SourceRef>().value_or(SourceRef()),
+        node->getLocation(SourceRef()),
         "Struct " + structType->name + " does not have a field named "
             + node->fieldName,
         nullptr
@@ -419,7 +415,7 @@ IRType* SemanticPass::visit(IRVariableStatement* node)
         if (m_env->getVariableType(name))
         {
             return m_logger.error(
-                node->getMD<SourceRef>().value_or(SourceRef()),
+                node->getLocation(SourceRef()),
                 "Variable is already defined",
                 nullptr
             );
@@ -428,13 +424,13 @@ IRType* SemanticPass::visit(IRVariableStatement* node)
         if (dispatch(value)->isVoidType())
         {
             return m_logger.error(
-                node->getMD<SourceRef>().value_or(SourceRef()),
+                node->getLocation(SourceRef()),
                 "Variable cannot have void type",
                 nullptr
             );
         }
 
-        m_env->addVariableType(name, value->getMD<IRType*>().value());
+        m_env->addVariableType(name, value->getType());
     }
 
     return nullptr;
@@ -447,7 +443,7 @@ IRType* SemanticPass::visit(IRReturnStatement* node)
     {
         m_result = nullptr;
         return m_logger.error(
-            node->getMD<SourceRef>().value_or(SourceRef()),
+            node->getLocation(SourceRef()),
             "Return expression has to be of function result type",
             nullptr
         );
@@ -462,7 +458,7 @@ IRType* SemanticPass::visit(IRWhileStatement* node)
     if (!condition->isBoolType())
     {
         return m_logger.error(
-            node->getMD<SourceRef>().value_or(SourceRef()),
+            node->getLocation(SourceRef()),
             "While condition has to be of boolean type",
             nullptr
         );
@@ -481,7 +477,7 @@ IRType* SemanticPass::visit(IRIfStatement* node)
     if (!condition->isBoolType())
     {
         return m_logger.error(
-            node->getMD<SourceRef>().value_or(SourceRef()),
+            node->getLocation(SourceRef()),
             "If condition has to be of boolean type",
             nullptr
         );
@@ -521,7 +517,7 @@ IRType* SemanticPass::visit(IRFunction* node)
         if (!constraint)
         {
             return m_logger.error(
-                node->getMD<SourceRef>().value_or(SourceRef()),
+                node->getLocation(SourceRef()),
                 "No constraint named " + name,
                 nullptr
             );
@@ -530,7 +526,7 @@ IRType* SemanticPass::visit(IRFunction* node)
         if (args.size() != constraint->typeParams.size())
         {
             return m_logger.error(
-                node->getMD<SourceRef>().value_or(SourceRef()),
+                node->getLocation(SourceRef()),
                 "Number of args does not match number of type parameters for constraint "
                     + constraint->name,
                 nullptr
@@ -552,7 +548,7 @@ IRType* SemanticPass::visit(IRFunction* node)
             if (!function)
             {
                 return m_logger.error(
-                    condition->getMD<SourceRef>().value_or(SourceRef()),
+                    condition->getLocation(SourceRef()),
                     "Constraint condition has to be a function declaration",
                     nullptr
                 );
@@ -588,7 +584,7 @@ IRType* SemanticPass::visit(IRFunction* node)
     if (!m_expectedResult->isVoidType() && !m_result)
     {
         return m_logger.error(
-            node->getMD<SourceRef>().value_or(SourceRef()),
+            node->getLocation(SourceRef()),
             "Missing return statement in function " + node->name
                 + ", should return " + m_expectedResult->toString(),
             nullptr

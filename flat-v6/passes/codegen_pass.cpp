@@ -125,7 +125,7 @@ llvm::Value* LLVMCodegenPass::visit(IRIdentifierExpression* node)
         && "Undefined local Variable in identifier expression"
     );
     return m_builder.CreateLoad(
-        getLLVMType(node->getMD<IRType*>().value()),
+        getLLVMType(node->getType()),
         localValues.at(node->value),
         node->value + "_"
     );
@@ -133,7 +133,7 @@ llvm::Value* LLVMCodegenPass::visit(IRIdentifierExpression* node)
 
 llvm::Value* LLVMCodegenPass::visit(IRStructExpression* node)
 {
-    auto type = dynamic_cast<IRStructType*>(node->getMD<IRType*>().value());
+    auto type = dynamic_cast<IRStructType*>(node->getType());
     auto structPtr =
         m_builder.CreateAlloca(getLLVMType(type), nullptr, type->name + "_");
 
@@ -198,23 +198,19 @@ llvm::Value* LLVMCodegenPass::visit(IRBinaryExpression* node)
 
         m_builder.CreateStore(dispatch(node->right), localValues.at(name));
         return m_builder.CreateLoad(
-            getLLVMType(node->getMD<IRType*>().value()),
-            localValues.at(name),
-            name + "_"
+            getLLVMType(node->getType()), localValues.at(name), name + "_"
         );
     }
     else
     {
         auto left = dispatch(node->left);
         auto right =
-            ((node->left->getMD<IRType*>().value()->isSigned())
+            ((node->left->getType()->isSigned())
                  ? m_builder.CreateSExtOrTrunc(
-                     dispatch(node->right),
-                     getLLVMType(node->left->getMD<IRType*>().value())
+                     dispatch(node->right), getLLVMType(node->left->getType())
                  )
                  : m_builder.CreateZExtOrTrunc(
-                     dispatch(node->right),
-                     getLLVMType(node->left->getMD<IRType*>().value())
+                     dispatch(node->right), getLLVMType(node->left->getType())
                  ));
 
         if (node->operation == BinaryOperator::Add)
@@ -232,7 +228,7 @@ llvm::Value* LLVMCodegenPass::visit(IRBinaryExpression* node)
         else if (node->operation == BinaryOperator::Divide)
         {
             return (
-                node->left->getMD<IRType*>().value()->isSigned()
+                node->left->getType()->isSigned()
                     ? m_builder.CreateSDiv(left, right)
                     : m_builder.CreateUDiv(left, right)
             );
@@ -240,7 +236,7 @@ llvm::Value* LLVMCodegenPass::visit(IRBinaryExpression* node)
         else if (node->operation == BinaryOperator::Modulo)
         {
             return (
-                node->left->getMD<IRType*>().value()->isSigned()
+                node->left->getType()->isSigned()
                     ? m_builder.CreateSRem(left, right)
                     : m_builder.CreateURem(left, right)
             );
@@ -288,7 +284,7 @@ llvm::Value* LLVMCodegenPass::visit(IRBinaryExpression* node)
         else if (node->operation == BinaryOperator::LessThan)
         {
             return (
-                node->left->getMD<IRType*>().value()->isSigned()
+                node->left->getType()->isSigned()
                     ? m_builder.CreateCmp(
                         llvm::CmpInst::Predicate::ICMP_SLT, left, right
                     )
@@ -300,7 +296,7 @@ llvm::Value* LLVMCodegenPass::visit(IRBinaryExpression* node)
         else if (node->operation == BinaryOperator::GreaterThan)
         {
             return (
-                node->left->getMD<IRType*>().value()->isSigned()
+                node->left->getType()->isSigned()
                     ? m_builder.CreateCmp(
                         llvm::CmpInst::Predicate::ICMP_SGT, left, right
                     )
@@ -312,7 +308,7 @@ llvm::Value* LLVMCodegenPass::visit(IRBinaryExpression* node)
         else if (node->operation == BinaryOperator::LessOrEqual)
         {
             return (
-                node->left->getMD<IRType*>().value()->isSigned()
+                node->left->getType()->isSigned()
                     ? m_builder.CreateCmp(
                         llvm::CmpInst::Predicate::ICMP_SLE, left, right
                     )
@@ -324,7 +320,7 @@ llvm::Value* LLVMCodegenPass::visit(IRBinaryExpression* node)
         else if (node->operation == BinaryOperator::GreaterOrEqual)
         {
             return (
-                node->left->getMD<IRType*>().value()->isSigned()
+                node->left->getType()->isSigned()
                     ? m_builder.CreateCmp(
                         llvm::CmpInst::Predicate::ICMP_SGE, left, right
                     )
@@ -366,18 +362,18 @@ llvm::Value* LLVMCodegenPass::visit(IRIndexExpression* node)
         && "Index expression must have exactly one operand"
     );
     assert(
-        node->args.front()->getMD<IRType*>().value()->isIntegerType()
+        node->args.front()->getType()->isIntegerType()
         && "Index of index expression must be of integer type"
     );
     assert(
-        (node->expression->getMD<IRType*>().value()->isArrayType()
-         || node->expression->getMD<IRType*>().value()->isStringType())
+        (node->expression->getType()->isArrayType()
+         || node->expression->getType()->isStringType())
         && "Operand of index expression must be of string or array type"
     );
 
     auto fieldTypes = std::vector<llvm::Type*>(
         { llvm::Type::getInt64Ty(m_llvmCtx),
-          llvm::ArrayType::get(getLLVMType(node->getMD<IRType*>().value()), 0) }
+          llvm::ArrayType::get(getLLVMType(node->getType()), 0) }
     );
     auto arrayType = llvm::StructType::get(m_llvmCtx, fieldTypes);
 
@@ -389,15 +385,12 @@ llvm::Value* LLVMCodegenPass::visit(IRIndexExpression* node)
 
     auto ptr =
         m_builder.CreateGEP(arrayType, dispatch(node->expression), indexes);
-    return m_builder.CreateLoad(
-        getLLVMType(node->getMD<IRType*>().value()), ptr
-    );
+    return m_builder.CreateLoad(getLLVMType(node->getType()), ptr);
 }
 
 llvm::Value* LLVMCodegenPass::visit(IRFieldExpression* node)
 {
-    auto structType =
-        dynamic_cast<IRStructType*>(node->expression->getMD<IRType*>().value());
+    auto structType = dynamic_cast<IRStructType*>(node->expression->getType());
     for (int i = 0; i < structType->fields.size(); i++)
     {
         if (structType->fields[i].first == node->fieldName)
@@ -409,7 +402,7 @@ llvm::Value* LLVMCodegenPass::visit(IRFieldExpression* node)
             auto ptr =
                 m_builder.CreateStructGEP(getLLVMType(structType), value, i);
             return m_builder.CreateLoad(
-                getLLVMType(node->getMD<IRType*>().value()),
+                getLLVMType(node->getType()),
                 ptr,
                 structType->toString() + "." + node->fieldName + "_"
             );
@@ -447,7 +440,7 @@ llvm::Value* LLVMCodegenPass::visit(IRVariableStatement* node)
         localValues.try_emplace(
             name,
             m_builder.CreateAlloca(
-                getLLVMType(value->getMD<IRType*>().value()), nullptr, name
+                getLLVMType(value->getType(), nullptr, name
             )
         );
         m_builder.CreateStore(dispatch(value), localValues.at(name));

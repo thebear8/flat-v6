@@ -30,8 +30,8 @@ void StructExtractionPass::visit(ASTSourceFile* node)
         m_module
         && "Module has to exist, should be created by ModuleExtractionPass"
     );
-    m_irCtx = m_module->getMD<GraphContext*>().value();
-    m_env = m_module->getMD<Environment*>().value();
+    m_irCtx = m_module->getIrCtx();
+    m_env = m_module->getEnv();
 
     for (auto declaration : node->declarations)
         dispatch(declaration);

@@ -15,10 +15,8 @@ void ModuleExtractionPass::visit(ASTSourceFile* node)
     {
         auto mod =
             m_compCtx.addModule(m_irCtx.make(IRModule(name, {}, {}, {}, {})));
-        mod->setMD(m_irCtx.make(GraphContext()));
-        mod->setMD(mod->getMD<GraphContext*>().value()->make(
-            Environment(name, &m_compCtx)
-        ));
+        mod->setIrCtx(m_irCtx.make(GraphContext()));
+        mod->setEnv(mod->getIrCtx()->make(Environment(name, &m_compCtx)));
     }
     auto mod = m_compCtx.getModule(name);
 

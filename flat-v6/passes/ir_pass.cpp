@@ -43,7 +43,7 @@ IRNode* IRPass::visit(ASTIntegerExpression* node)
                         .OrThrow();
 
     return m_irCtx->make(IRIntegerExpression(isSigned, width, radix, value))
-        ->setMD(node->location);
+        ->setLocation(node->location);
 }
 
 IRNode* IRPass::visit(ASTBoolExpression* node)
@@ -53,7 +53,7 @@ IRNode* IRPass::visit(ASTBoolExpression* node)
                      .Case("false", false)
                      .OrThrow();
 
-    return m_irCtx->make(IRBoolExpression(value))->setMD(node->location);
+    return m_irCtx->make(IRBoolExpression(value))->setLocation(node->location);
 }
 
 IRNode* IRPass::visit(ASTCharExpression* node)
@@ -63,7 +63,7 @@ IRNode* IRPass::visit(ASTCharExpression* node)
         ->make(IRCharExpression(
             unescapeCodePoint(node->value, position, node->location)
         ))
-        ->setMD(node->location);
+        ->setLocation(node->location);
 }
 
 IRNode* IRPass::visit(ASTStringExpression* node)
@@ -72,13 +72,13 @@ IRNode* IRPass::visit(ASTStringExpression* node)
         ->make(
             IRStringExpression(unescapeStringUTF8(node->value, node->location))
         )
-        ->setMD(node->location);
+        ->setLocation(node->location);
 }
 
 IRNode* IRPass::visit(ASTIdentifierExpression* node)
 {
     return m_irCtx->make(IRIdentifierExpression(node->value))
-        ->setMD(node->location);
+        ->setLocation(node->location);
 }
 
 IRNode* IRPass::visit(ASTStructExpression* node)
@@ -88,7 +88,7 @@ IRNode* IRPass::visit(ASTStructExpression* node)
         fields.push_back({ name, (IRExpression*)dispatch(value) });
 
     return m_irCtx->make(IRStructExpression(node->structName, fields))
-        ->setMD(node->location);
+        ->setLocation(node->location);
 }
 
 IRNode* IRPass::visit(ASTUnaryExpression* node)
@@ -97,7 +97,7 @@ IRNode* IRPass::visit(ASTUnaryExpression* node)
         ->make(IRUnaryExpression(
             node->operation, (IRExpression*)dispatch(node->expression)
         ))
-        ->setMD(node->location);
+        ->setLocation(node->location);
 }
 
 IRNode* IRPass::visit(ASTBinaryExpression* node)
@@ -108,7 +108,7 @@ IRNode* IRPass::visit(ASTBinaryExpression* node)
             (IRExpression*)dispatch(node->left),
             (IRExpression*)dispatch(node->right)
         ))
-        ->setMD(node->location);
+        ->setLocation(node->location);
 }
 
 IRNode* IRPass::visit(ASTCallExpression* node)
@@ -120,7 +120,7 @@ IRNode* IRPass::visit(ASTCallExpression* node)
     return m_irCtx
         ->make(IRCallExpression((IRExpression*)dispatch(node->expression), args)
         )
-        ->setMD(node->location);
+        ->setLocation(node->location);
 }
 
 IRNode* IRPass::visit(ASTIndexExpression* node)
@@ -133,7 +133,7 @@ IRNode* IRPass::visit(ASTIndexExpression* node)
         ->make(
             IRIndexExpression((IRExpression*)dispatch(node->expression), args)
         )
-        ->setMD(node->location);
+        ->setLocation(node->location);
 }
 
 IRNode* IRPass::visit(ASTFieldExpression* node)
@@ -142,7 +142,7 @@ IRNode* IRPass::visit(ASTFieldExpression* node)
         ->make(IRFieldExpression(
             (IRExpression*)dispatch(node->expression), node->fieldName
         ))
-        ->setMD(node->location);
+        ->setLocation(node->location);
 }
 
 IRNode* IRPass::visit(ASTBlockStatement* node)
@@ -151,14 +151,15 @@ IRNode* IRPass::visit(ASTBlockStatement* node)
     for (auto statement : node->statements)
         statements.push_back((IRStatement*)dispatch(statement));
 
-    return m_irCtx->make(IRBlockStatement(statements))->setMD(node->location);
+    return m_irCtx->make(IRBlockStatement(statements))
+        ->setLocation(node->location);
 }
 
 IRNode* IRPass::visit(ASTExpressionStatement* node)
 {
     return m_irCtx
         ->make(IRExpressionStatement((IRExpression*)dispatch(node->expression)))
-        ->setMD(node->location);
+        ->setLocation(node->location);
 }
 
 IRNode* IRPass::visit(ASTVariableStatement* node)
@@ -167,14 +168,15 @@ IRNode* IRPass::visit(ASTVariableStatement* node)
     for (auto const& [name, value] : node->items)
         items.push_back({ name, (IRExpression*)dispatch(value) });
 
-    return m_irCtx->make(IRVariableStatement(items))->setMD(node->location);
+    return m_irCtx->make(IRVariableStatement(items))
+        ->setLocation(node->location);
 }
 
 IRNode* IRPass::visit(ASTReturnStatement* node)
 {
     return m_irCtx
         ->make(IRReturnStatement((IRExpression*)dispatch(node->expression)))
-        ->setMD(node->location);
+        ->setLocation(node->location);
 }
 
 IRNode* IRPass::visit(ASTWhileStatement* node)
@@ -184,7 +186,7 @@ IRNode* IRPass::visit(ASTWhileStatement* node)
             (IRExpression*)dispatch(node->condition),
             (IRStatement*)dispatch(node->body)
         ))
-        ->setMD(node->location);
+        ->setLocation(node->location);
 }
 
 IRNode* IRPass::visit(ASTIfStatement* node)
@@ -195,7 +197,7 @@ IRNode* IRPass::visit(ASTIfStatement* node)
             (IRStatement*)dispatch(node->ifBody),
             (IRStatement*)((node->elseBody) ? dispatch(node->elseBody) : nullptr)
         ))
-        ->setMD(node->location);
+        ->setLocation(node->location);
 }
 
 IRNode* IRPass::visit(ASTConstraintDeclaration* node)
@@ -220,7 +222,7 @@ IRNode* IRPass::visit(ASTConstraintDeclaration* node)
         std::vector(conditions.begin(), conditions.end())
     ));
 
-    constraint->setMD(node->location);
+    constraint->setLocation(node->location);
     m_env = m_env->getParent();
     if (!m_env->addConstraint(constraint))
     {
@@ -251,7 +253,7 @@ IRNode* IRPass::visit(ASTStructDeclaration* node)
     auto structType = m_env->getStruct(node->name);
     assert(structType && "Struct type for declaration not found.");
 
-    structType->setMD(node->location);
+    structType->setLocation(node->location);
     structType->typeParams = typeParams;
     structType->requirements = transformRequirements(node->requirements);
 
@@ -302,7 +304,7 @@ IRNode* IRPass::visit(ASTFunctionDeclaration* node)
         ));
     }
 
-    function->setMD(node->location);
+    function->setLocation(node->location);
     m_env = m_env->getParent();
     if (!m_env->addFunction(function))
     {
@@ -330,8 +332,8 @@ IRNode* IRPass::visit(ASTSourceFile* node)
         && "Module has to exist, should be created by ModuleExtractionPass"
     );
 
-    m_irCtx = m_module->getMD<GraphContext*>().value();
-    m_env = m_module->getMD<Environment*>().value();
+    m_irCtx = m_module->getIrCtx();
+    m_env = m_module->getEnv();
 
     for (auto declaration : node->declarations)
         dispatch(declaration);

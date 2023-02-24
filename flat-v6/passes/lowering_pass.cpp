@@ -39,7 +39,7 @@ IRNode* OperatorLoweringPass::visit(IRUnaryExpression* node)
 {
     node->expression = (IRExpression*)dispatch(node->expression);
 
-    auto value = node->expression->getMD<IRType*>().value();
+    auto value = node->expression->getType();
     if (unaryOperators.at(node->operation).category
             == OperatorCategory::UnaryArithmetic
         && value->isIntegerType())
@@ -66,11 +66,11 @@ IRNode* OperatorLoweringPass::visit(IRUnaryExpression* node)
         auto identifier = m_irCtx->make(
             IRIdentifierExpression(unaryOperators.at(node->operation).name)
         );
-        identifier->setMD(node->getMD<SourceRef>().value_or(SourceRef()));
+        identifier->setLocation(node->getLocation(SourceRef()));
         auto call = m_irCtx->make(IRCallExpression(identifier, args));
-        call->setMD(node->getMD<SourceRef>().value_or(SourceRef()));
-        call->setMD(node->getMD<IRType*>().value());
-        call->target = node->getMD<IRFunction*>().value();
+        call->setLocation(node->getLocation(SourceRef()));
+        call->setType(node->getType());
+        call->target = node->getTarget();
         return call;
     }
 }
@@ -80,8 +80,8 @@ IRNode* OperatorLoweringPass::visit(IRBinaryExpression* node)
     node->left = (IRExpression*)dispatch(node->left);
     node->right = (IRExpression*)dispatch(node->right);
 
-    auto left = node->left->getMD<IRType*>().value();
-    auto right = node->right->getMD<IRType*>().value();
+    auto left = node->left->getType();
+    auto right = node->right->getType();
 
     if (binaryOperators.at(node->operation).category
             == OperatorCategory::BinaryArithmetic
@@ -135,18 +135,18 @@ IRNode* OperatorLoweringPass::visit(IRBinaryExpression* node)
             auto identifier = m_irCtx->make(IRIdentifierExpression(
                 binaryOperators.at(BinaryOperator::Assign).name
             ));
-            identifier->setMD(node->getMD<SourceRef>().value_or(SourceRef()));
+            identifier->setLocation(node->getLocation(SourceRef()));
 
             auto assignCall = m_irCtx->make(IRCallExpression(identifier, args));
-            assignCall->setMD(node->getMD<SourceRef>().value_or(SourceRef()));
-            assignCall->setMD(node->getMD<IRType*>().value());
+            assignCall->setLocation(node->getLocation(SourceRef()));
+            assignCall->setType(node->getType());
             assignCall->target = node->target;
 
             auto assign = m_irCtx->make(IRBinaryExpression(
                 BinaryOperator::Assign, node->left, assignCall
             ));
-            assign->setMD(node->getMD<SourceRef>().value_or(SourceRef()));
-            assign->setMD(node->getMD<IRType*>().value());
+            assign->setLocation(node->getLocation(SourceRef()));
+            assign->setType(node->getType());
             return assign;
         }
         else
@@ -155,11 +155,11 @@ IRNode* OperatorLoweringPass::visit(IRBinaryExpression* node)
             auto identifier = m_irCtx->make(
                 IRIdentifierExpression(binaryOperators.at(node->operation).name)
             );
-            identifier->setMD(node->getMD<SourceRef>().value_or(SourceRef()));
+            identifier->setLocation(node->getLocation(SourceRef()));
 
             auto call = m_irCtx->make(IRCallExpression(identifier, args));
-            call->setMD(node->getMD<SourceRef>().value_or(SourceRef()));
-            call->setMD(node->getMD<IRType*>().value());
+            call->setLocation(node->getLocation(SourceRef()));
+            call->setType(node->getType());
             call->target = node->target;
             return call;
         }
@@ -179,11 +179,11 @@ IRNode* OperatorLoweringPass::visit(IRCallExpression* node)
     args.insert(args.begin(), node->expression);
 
     auto identifier = m_irCtx->make(IRIdentifierExpression("__call__"));
-    identifier->setMD(node->getMD<SourceRef>().value_or(SourceRef()));
+    identifier->setLocation(node->getLocation(SourceRef()));
 
     auto call = m_irCtx->make(IRCallExpression(identifier, args));
-    call->setMD(node->getMD<SourceRef>().value_or(SourceRef()));
-    call->setMD(node->getMD<IRType*>().value());
+    call->setLocation(node->getLocation(SourceRef()));
+    call->setType(node->getType());
     call->target = node->target;
     return call;
 }
@@ -194,21 +194,21 @@ IRNode* OperatorLoweringPass::visit(IRIndexExpression* node)
     for (auto& arg : node->args)
         arg = (IRExpression*)dispatch(arg);
 
-    auto value = node->expression->getMD<IRType*>().value();
+    auto value = node->expression->getType();
     if ((value->isArrayType() || value->isStringType())
         && node->args.size() == 1
-        && node->args.front()->getMD<IRType*>().value()->isIntegerType())
+        && node->args.front()->getType()->isIntegerType())
         return node;
 
     auto args = node->args;
     args.insert(args.begin(), node->expression);
 
     auto identifier = m_irCtx->make(IRIdentifierExpression("__index__"));
-    identifier->setMD(node->getMD<SourceRef>().value_or(SourceRef()));
+    identifier->setLocation(node->getLocation(SourceRef()));
 
     auto call = m_irCtx->make(IRCallExpression(identifier, args));
-    call->setMD(node->getMD<SourceRef>().value_or(SourceRef()));
-    call->setMD(node->getMD<IRType*>().value());
+    call->setLocation(node->getLocation(SourceRef()));
+    call->setType(node->getType());
     call->target = node->target;
     return call;
 }
