@@ -1,6 +1,6 @@
 #pragma once
 #include "../data/source_ref.hpp"
-#include "../util/md_container.hpp"
+#include "../util/metadata_prop.hpp"
 #include "../util/visitor.hpp"
 
 using IRTripleDispatchVisitor = triple_dispatch_visitor::TripleDispatchVisitor<
@@ -47,34 +47,14 @@ using IRVisitor = IRTripleDispatchVisitor::Visitor<TReturn>;
 
 class Environment;
 class GraphContext;
-using IRMetadataContainer = MetadataContainer<
-    SourceRef,
-    IRType*,
-    IRFunction*,
-    GraphContext*,
-    Environment*>;
 
-struct IRNode : IRTripleDispatchVisitor::NodeBase, private IRMetadataContainer
+struct IRNode : IRTripleDispatchVisitor::NodeBase
 {
     IMPLEMENT_ACCEPT()
 
-    template<typename TValue>
-    std::optional<TValue> const& getMD()
-    {
-        return IRMetadataContainer::setMD<TValue>();
-    }
-
-    template<typename TValue>
-    IRNode* setMD(TValue&& v)
-    {
-        IRMetadataContainer::setMD<TValue>(std::forward<TValue>(v));
-        return this;
-    }
-
-    template<typename TValue>
-    IRNode* setMD(TValue const& v)
-    {
-        IRMetadataContainer::setMD<TValue>(std::forward<TValue>(v));
-        return this;
-    }
+    METADATA_PROP(location, SourceRef, getLocation, setLocation)
+    METADATA_PROP(type, IRType*, getType, setType)
+    METADATA_PROP(target, IRFunction*, getTarget, setTarget)
+    METADATA_PROP(irCtx, GraphContext*, getIrCtx, setIrCtx)
+    METADATA_PROP(env, Environment*, getEnv, setEnv)
 };
