@@ -4,6 +4,9 @@
 
 #include "ir_node.hpp"
 
+class Environment;
+class GraphContext;
+
 struct IRModule : public IRNode
 {
     std::string name;
@@ -28,4 +31,7 @@ struct IRModule : public IRNode
     }
 
     IMPLEMENT_ACCEPT()
+
+    METADATA_PROP(env, Environment*, getEnv, setEnv)
+    METADATA_PROP(irCtx, GraphContext*, getIrCtx, setIrCtx)
 };

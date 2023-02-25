@@ -9,6 +9,8 @@
 struct IRExpression : public IRNode
 {
     IMPLEMENT_ACCEPT()
+
+    METADATA_PROP(type, IRType*, getType, setType)
 };
 
 struct IRIntegerExpression : public IRExpression
@@ -90,13 +92,14 @@ struct IRUnaryExpression : public IRExpression
     }
 
     IMPLEMENT_ACCEPT()
+
+    METADATA_PROP(target, IRFunction*, getTarget, setTarget)
 };
 
 struct IRBinaryExpression : public IRExpression
 {
     BinaryOperator operation;
     IRExpression *left, *right;
-    IRFunction* target;
 
     IRBinaryExpression(
         BinaryOperator operation, IRExpression* left, IRExpression* right
@@ -106,13 +109,14 @@ struct IRBinaryExpression : public IRExpression
     }
 
     IMPLEMENT_ACCEPT()
+
+    METADATA_PROP(target, IRFunction*, getTarget, setTarget)
 };
 
 struct IRCallExpression : public IRExpression
 {
     IRExpression* expression;
     std::vector<IRExpression*> args;
-    IRFunction* target;
 
     IRCallExpression(
         IRExpression* expression, std::vector<IRExpression*> const& args
@@ -122,13 +126,14 @@ struct IRCallExpression : public IRExpression
     }
 
     IMPLEMENT_ACCEPT()
+
+    METADATA_PROP(target, IRFunction*, getTarget, setTarget)
 };
 
 struct IRIndexExpression : public IRExpression
 {
     IRExpression* expression;
     std::vector<IRExpression*> args;
-    IRFunction* target;
 
     IRIndexExpression(
         IRExpression* expression, std::vector<IRExpression*> const& args
@@ -138,6 +143,8 @@ struct IRIndexExpression : public IRExpression
     }
 
     IMPLEMENT_ACCEPT()
+
+    METADATA_PROP(target, IRFunction*, getTarget, setTarget)
 };
 
 struct IRFieldExpression : public IRExpression

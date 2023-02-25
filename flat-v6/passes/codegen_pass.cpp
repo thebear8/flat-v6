@@ -339,7 +339,7 @@ llvm::Value* LLVMCodegenPass::visit(IRBinaryExpression* node)
 
 llvm::Value* LLVMCodegenPass::visit(IRCallExpression* node)
 {
-    auto target = node->target;
+    auto target = node->getTarget();
     assert(target && "Target of call expression is undefined");
 
     auto function = m_compCtx.getLLVMFunction(target);

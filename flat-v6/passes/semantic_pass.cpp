@@ -276,7 +276,7 @@ IRType* SemanticPass::visit(IRBinaryExpression* node)
             );
         }
 
-        node->target = function;
+        node->setTarget(function);
         node->setType(function->result);
         return node->getType();
     }
@@ -301,7 +301,7 @@ IRType* SemanticPass::visit(IRCallExpression* node)
             );
         }
 
-        node->target = function;
+        node->setTarget(function);
         node->setType(function->result);
         return node->getType();
     }
@@ -319,7 +319,7 @@ IRType* SemanticPass::visit(IRCallExpression* node)
             );
         }
 
-        node->target = function;
+        node->setTarget(function);
         node->setType(function->result);
         return node->getType();
     }
@@ -358,7 +358,7 @@ IRType* SemanticPass::visit(IRIndexExpression* node)
             );
         }
 
-        node->target = function;
+        node->setTarget(function);
         node->setType(function->result);
         return node->getType();
     }

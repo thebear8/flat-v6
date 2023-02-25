@@ -45,16 +45,9 @@ using IRTripleDispatchVisitor = triple_dispatch_visitor::TripleDispatchVisitor<
 template<typename TReturn>
 using IRVisitor = IRTripleDispatchVisitor::Visitor<TReturn>;
 
-class Environment;
-class GraphContext;
-
 struct IRNode : IRTripleDispatchVisitor::NodeBase
 {
     IMPLEMENT_ACCEPT()
 
     METADATA_PROP(location, SourceRef, getLocation, setLocation)
-    METADATA_PROP(type, IRType*, getType, setType)
-    METADATA_PROP(target, IRFunction*, getTarget, setTarget)
-    METADATA_PROP(irCtx, GraphContext*, getIrCtx, setIrCtx)
-    METADATA_PROP(env, Environment*, getEnv, setEnv)
 };
