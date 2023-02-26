@@ -88,7 +88,10 @@ IRNode* GenericLoweringPass::visit(IRModule* node)
 }
 
 IRType* GenericLoweringPass::inferTypeArg(
-    IRGenericType* typeParam, IRType* genericType, IRType* actualType
+    IRGenericType* typeParam,
+    IRType* genericType,
+    IRType* actualType,
+    SourceRef const& errorLocation
 )
 {
     if (genericType == typeParam)
@@ -99,8 +102,10 @@ IRType* GenericLoweringPass::inferTypeArg(
     {
         if (!actualType->isStructType())
         {
-            assert(
-                0 && "actualType has to be the same kind of type as genericType"
+            return m_logger.error(
+                errorLocation,
+                "actualType has to be the same kind of type as genericType",
+                nullptr
             );
         }
 
@@ -109,26 +114,45 @@ IRType* GenericLoweringPass::inferTypeArg(
 
         if (genericStructType->fields.size() != actualStructType->fields.size())
         {
-            assert(
-                0
-                && "genericStructType and actualStructType have to have the same number of fields"
+            return m_logger.error(
+                errorLocation,
+                "genericStructType and actualStructType have to have the same number of fields",
+                nullptr
             );
         }
 
         IRType* typeArg = nullptr;
-        for (size_t i = 0; i < genericStructType->fields.size(); i++)
+        for (auto const& [name, type] : genericStructType->fields)
         {
+            if (!actualStructType->fields.contains(name))
+            {
+                return m_logger.error(
+                    errorLocation,
+                    "actualStructType has to have the same fields as genericStructType",
+                    nullptr
+                );
+            }
+
             auto inferredTypeArg = inferTypeArg(
                 typeParam,
-                genericStructType->fields.at(i).second,
-                actualStructType->fields.at(i).second
+                type,
+                actualStructType->fields.at(name),
+                errorLocation
             );
 
             if (inferredTypeArg != nullptr && typeArg != nullptr
                 && inferredTypeArg != typeArg)
             {
-                assert(0 && "Inferred type args have to the same");
+                return m_logger.error(
+                    errorLocation,
+                    "Inferred type arg has to be consistent, was previously "
+                        + typeArg->toString() + ", is now "
+                        + inferredTypeArg->toString(),
+                    nullptr
+                );
             }
+
+            typeArg = inferredTypeArg;
         }
 
         return typeArg;
@@ -137,8 +161,10 @@ IRType* GenericLoweringPass::inferTypeArg(
     {
         if (!actualType->isPointerType())
         {
-            assert(
-                0 && "actualType has to be the same kind of type as genericType"
+            return m_logger.error(
+                errorLocation,
+                "actualType has to be the same kind of type as genericType",
+                nullptr
             );
         }
 
@@ -146,15 +172,20 @@ IRType* GenericLoweringPass::inferTypeArg(
         auto actualPointerType = (IRPointerType*)actualType;
 
         return inferTypeArg(
-            typeParam, genericPointerType->base, actualPointerType->base
+            typeParam,
+            genericPointerType->base,
+            actualPointerType->base,
+            errorLocation
         );
     }
     else if (genericType->isArrayType())
     {
         if (!actualType->isArrayType())
         {
-            assert(
-                0 && "actualType has to be the same kind of type as genericType"
+            return m_logger.error(
+                errorLocation,
+                "actualType has to be the same kind of type as genericType",
+                nullptr
             );
         }
 
@@ -162,7 +193,10 @@ IRType* GenericLoweringPass::inferTypeArg(
         auto actualArrayType = (IRArrayType*)actualType;
 
         return inferTypeArg(
-            typeParam, genericArrayType->base, actualArrayType->base
+            typeParam,
+            genericArrayType->base,
+            actualArrayType->base,
+            errorLocation
         );
     }
 

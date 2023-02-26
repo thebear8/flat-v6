@@ -52,7 +52,10 @@ private:
     virtual IRNode* visit(IRModule* node) override;
 
 private:
-    virtual IRType* inferTypeArg(
-        IRGenericType* typeParam, IRType* genericType, IRType* actualType
+    IRType* inferTypeArg(
+        IRGenericType* typeParam,
+        IRType* genericType,
+        IRType* actualType,
+        SourceRef const& errorLocation
     );
 };
