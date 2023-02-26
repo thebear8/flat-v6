@@ -4,60 +4,9 @@
 #include <llvm/Analysis/LoopAnalysisManager.h>
 #include <llvm/Passes/PassBuilder.h>
 
-void LLVMCodegenPass::process(IRSourceFile* source)
+void LLVMCodegenPass::process(IRModule* node)
 {
-    for (auto& [functionName, function] : m_modCtx.getFunctionList())
-    {
-        std::vector<IRType*> params;
-        for (auto& [name, type] : function->params)
-            params.push_back(type);
-
-        std::vector<llvm::Type*> llvmParams;
-        for (auto& param : params)
-            llvmParams.push_back(getLLVMType(param));
-
-        auto type = llvm::FunctionType::get(
-            getLLVMType(function->result), llvmParams, false
-        );
-        auto name =
-            ((function->body) ? getMangledFunctionName(function->name, params)
-                              : function->name);
-        auto llvmFunction = llvm::Function::Create(
-            type,
-            llvm::GlobalValue::LinkageTypes::ExternalLinkage,
-            name,
-            m_llvmMod
-        );
-        m_compCtx.addLLVMFunction(function, llvmFunction);
-
-        if (!function->body)
-        {
-            llvmFunction->setCallingConv(llvm::CallingConv::Win64);
-            llvmFunction->setDLLStorageClass(
-                llvm::GlobalValue::DLLStorageClassTypes::DLLImportStorageClass
-            );
-        }
-    }
-
-    dispatch(source);
-}
-
-void LLVMCodegenPass::optimize()
-{
-    llvm::LoopAnalysisManager lam;
-    llvm::FunctionAnalysisManager fam;
-    llvm::CGSCCAnalysisManager cgam;
-    llvm::ModuleAnalysisManager mam;
-
-    llvm::PassBuilder pb;
-    pb.registerModuleAnalyses(mam);
-    pb.registerCGSCCAnalyses(cgam);
-    pb.registerFunctionAnalyses(fam);
-    pb.registerLoopAnalyses(lam);
-    pb.crossRegisterProxies(lam, fam, cgam, mam);
-
-    auto mpm = pb.buildPerModuleDefaultPipeline(llvm::OptimizationLevel::O1);
-    mpm.run(m_llvmMod, mam);
+    dispatch(node);
 }
 
 llvm::Value* LLVMCodegenPass::visit(IRIntegerExpression* node)
@@ -110,7 +59,7 @@ llvm::Value* LLVMCodegenPass::visit(IRStringExpression* node)
     auto structValue = llvm::ConstantStruct::get(structType, fieldValues);
 
     return new llvm::GlobalVariable(
-        m_llvmMod,
+        m_llvmModule,
         structType,
         true,
         llvm::GlobalValue::LinkageTypes::InternalLinkage,
@@ -121,12 +70,12 @@ llvm::Value* LLVMCodegenPass::visit(IRStringExpression* node)
 llvm::Value* LLVMCodegenPass::visit(IRIdentifierExpression* node)
 {
     assert(
-        localValues.contains(node->value)
+        m_localValues.contains(node->value)
         && "Undefined local Variable in identifier expression"
     );
     return m_builder.CreateLoad(
         getLLVMType(node->getType()),
-        localValues.at(node->value),
+        m_localValues.at(node->value),
         node->value + "_"
     );
 }
@@ -192,13 +141,12 @@ llvm::Value* LLVMCodegenPass::visit(IRBinaryExpression* node)
 {
     if (dynamic_cast<IRIdentifierExpression*>(node->left))
     {
-        auto const& name =
-            dynamic_cast<IRIdentifierExpression*>(node->left)->value;
-        assert(localValues.contains(name) && "Undefined local variable");
+        auto const& name = ((IRIdentifierExpression*)node->left)->value;
+        assert(m_localValues.contains(name) && "Undefined local variable");
 
-        m_builder.CreateStore(dispatch(node->right), localValues.at(name));
+        m_builder.CreateStore(dispatch(node->right), m_localValues.at(name));
         return m_builder.CreateLoad(
-            getLLVMType(node->getType()), localValues.at(name), name + "_"
+            getLLVMType(node->getType()), m_localValues.at(name), name + "_"
         );
     }
     else
@@ -342,7 +290,7 @@ llvm::Value* LLVMCodegenPass::visit(IRCallExpression* node)
     auto target = node->getTarget();
     assert(target && "Target of call expression is undefined");
 
-    auto function = m_compCtx.getLLVMFunction(target);
+    auto function = target->getLLVMFunction();
     assert(
         function
         && "LLVM Function object for target of call expression is undefined"
@@ -415,12 +363,12 @@ llvm::Value* LLVMCodegenPass::visit(IRFieldExpression* node)
 
 llvm::Value* LLVMCodegenPass::visit(IRBlockStatement* node)
 {
-    auto prevLocalValues = localValues;
+    auto prevLocalValues = m_localValues;
 
     for (auto& statement : node->statements)
         dispatch(statement);
 
-    localValues = prevLocalValues;
+    m_localValues = prevLocalValues;
 
     return nullptr;
 }
@@ -435,15 +383,15 @@ llvm::Value* LLVMCodegenPass::visit(IRVariableStatement* node)
 {
     for (auto& [name, value] : node->items)
     {
-        assert(!localValues.contains(name) && "Local variable already defined");
-
-        localValues.try_emplace(
-            name,
-            m_builder.CreateAlloca(
-                getLLVMType(value->getType(), nullptr, name
-            )
+        assert(
+            !m_localValues.contains(name) && "Local variable already defined"
         );
-        m_builder.CreateStore(dispatch(value), localValues.at(name));
+
+        m_localValues.try_emplace(
+            name,
+            m_builder.CreateAlloca(getLLVMType(value->getType()), nullptr, name)
+        );
+        m_builder.CreateStore(dispatch(value), m_localValues.at(name));
     }
 
     return nullptr;
@@ -519,14 +467,9 @@ llvm::Value* LLVMCodegenPass::visit(IRIfStatement* node)
     return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRStructDeclaration* node)
+llvm::Value* LLVMCodegenPass::visit(IRFunction* node)
 {
-    return nullptr;
-}
-
-llvm::Value* LLVMCodegenPass::visit(IRFunctionDeclaration* node)
-{
-    auto function = m_compCtx.getLLVMFunction(node);
+    auto function = node->getLLVMFunction();
     assert(
         function && "No matching llvm function object for function declaration"
     );
@@ -540,22 +483,22 @@ llvm::Value* LLVMCodegenPass::visit(IRFunctionDeclaration* node)
     function->getBasicBlockList().push_back(entryBlock);
     m_builder.SetInsertPoint(entryBlock);
 
-    localValues.clear();
+    m_localValues.clear();
     for (int i = 0; i < node->params.size(); i++)
     {
         auto& [paramName, paramType] = node->params.at(i);
         assert(
-            !localValues.contains(paramName)
+            !m_localValues.contains(paramName)
             && "Local variable for parameter already defined"
         );
 
-        localValues.try_emplace(
+        m_localValues.try_emplace(
             paramName,
             m_builder.CreateAlloca(
                 getLLVMType(paramType), nullptr, paramName + "_"
             )
         );
-        m_builder.CreateStore(function->getArg(i), localValues.at(paramName));
+        m_builder.CreateStore(function->getArg(i), m_localValues.at(paramName));
     }
 
     m_builder.CreateBr(bodyBlock);
@@ -570,79 +513,112 @@ llvm::Value* LLVMCodegenPass::visit(IRFunctionDeclaration* node)
     return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRSourceFile* node)
+llvm::Value* LLVMCodegenPass::visit(IRModule* node)
 {
-    for (auto& decl : node->declarations)
-        dispatch(decl);
+    for (auto function : node->functions)
+    {
+        std::vector<IRType*> params;
+        for (auto& [name, type] : function->params)
+            params.push_back(type);
+
+        std::vector<llvm::Type*> llvmParams;
+        for (auto& param : params)
+            llvmParams.push_back(getLLVMType(param));
+
+        auto type = llvm::FunctionType::get(
+            getLLVMType(function->result), llvmParams, false
+        );
+        auto name =
+            ((function->body) ? getMangledFunctionName(function->name, params)
+                              : function->name);
+        auto llvmFunction = llvm::Function::Create(
+            type,
+            llvm::GlobalValue::LinkageTypes::ExternalLinkage,
+            name,
+            m_llvmModule
+        );
+        function->setLLVMFunction(llvmFunction);
+
+        if (!function->body)
+        {
+            llvmFunction->setCallingConv(llvm::CallingConv::Win64);
+            llvmFunction->setDLLStorageClass(
+                llvm::GlobalValue::DLLStorageClassTypes::DLLImportStorageClass
+            );
+        }
+    }
+
+    for (auto function : node->functions)
+        dispatch(function);
 
     return nullptr;
 }
 
 llvm::Type* LLVMCodegenPass::getLLVMType(IRType* type)
 {
-    if (llvmTypes.contains(type))
+    if (m_llvmTypes.contains(type))
     {
-        return llvmTypes.at(type);
+        return m_llvmTypes.at(type);
     }
     else if (type->isVoidType())
     {
-        llvmTypes.try_emplace(type, llvm::Type::getVoidTy(m_llvmCtx));
-        return llvmTypes.at(type);
+        m_llvmTypes.try_emplace(type, llvm::Type::getVoidTy(m_llvmCtx));
+        return m_llvmTypes.at(type);
     }
     else if (type->isBoolType())
     {
-        llvmTypes.try_emplace(type, llvm::Type::getInt1Ty(m_llvmCtx));
-        return llvmTypes.at(type);
+        m_llvmTypes.try_emplace(type, llvm::Type::getInt1Ty(m_llvmCtx));
+        return m_llvmTypes.at(type);
     }
     else if (type->isIntegerType())
     {
-        llvmTypes.try_emplace(
+        m_llvmTypes.try_emplace(
             type,
             llvm::Type::getIntNTy(m_llvmCtx, (unsigned int)type->getBitSize())
         );
-        return llvmTypes.at(type);
+        return m_llvmTypes.at(type);
     }
     else if (type->isCharType())
     {
-        llvmTypes.try_emplace(type, llvm::Type::getInt32Ty(m_llvmCtx));
-        return llvmTypes.at(type);
+        m_llvmTypes.try_emplace(type, llvm::Type::getInt32Ty(m_llvmCtx));
+        return m_llvmTypes.at(type);
     }
     else if (type->isStringType())
     {
-        llvmTypes.try_emplace(
+        m_llvmTypes.try_emplace(
             type, getLLVMType(m_compCtx.getArrayType(m_compCtx.getU8()))
         );
-        return llvmTypes.at(type);
+        return m_llvmTypes.at(type);
     }
     else if (type->isStructType())
     {
-        auto structType = dynamic_cast<IRStructType*>(type);
+        auto structType = (IRStructType*)type;
 
         std::vector<llvm::Type*> fields;
         for (auto& [fieldName, fieldType] : structType->fields)
             fields.push_back(getLLVMType(fieldType));
 
-        llvmTypes.try_emplace(type, llvm::StructType::get(m_llvmCtx, fields));
-        return llvmTypes.at(type);
+        m_llvmTypes.try_emplace(type, llvm::StructType::get(m_llvmCtx, fields));
+        return m_llvmTypes.at(type);
     }
     else if (type->isPointerType())
     {
-        auto base = dynamic_cast<IRPointerType*>(type)->base;
-        llvmTypes.try_emplace(type, getLLVMType(base)->getPointerTo());
-        return llvmTypes.at(type);
+        auto base = ((IRPointerType*)type)->base;
+        m_llvmTypes.try_emplace(type, getLLVMType(base)->getPointerTo());
+        return m_llvmTypes.at(type);
     }
     else if (type->isArrayType())
     {
-        auto base = dynamic_cast<IRArrayType*>(type)->base;
+        auto base = ((IRArrayType*)type)->base;
         auto fields = std::vector<llvm::Type*>(
             { llvm::Type::getInt64Ty(m_llvmCtx),
               llvm::ArrayType::get(getLLVMType(base), 0) }
         );
 
-        llvmTypes.try_emplace(
+        m_llvmTypes.try_emplace(
             type, llvm::StructType::get(m_llvmCtx, fields)->getPointerTo()
         );
-        return llvmTypes.at(type);
+        return m_llvmTypes.at(type);
     }
     else
     {
@@ -675,7 +651,7 @@ std::string LLVMCodegenPass::getMangledTypeName(IRType* type)
     }
     else if (type->isStructType())
     {
-        auto structType = dynamic_cast<IRStructType*>(type);
+        auto structType = (IRStructType*)type;
         auto output = "S_" + structType->name + "_";
 
         for (auto& [fieldName, fieldType] : structType->fields)
@@ -686,12 +662,12 @@ std::string LLVMCodegenPass::getMangledTypeName(IRType* type)
     }
     else if (type->isPointerType())
     {
-        auto ptrType = dynamic_cast<IRPointerType*>(type);
+        auto ptrType = (IRPointerType*)type;
         return "P_" + getMangledTypeName(ptrType->base) + "_";
     }
     else if (type->isArrayType())
     {
-        auto arrType = dynamic_cast<IRArrayType*>(type);
+        auto arrType = (IRArrayType*)type;
         return "A_" + getMangledTypeName(arrType->base) + "_";
     }
     else

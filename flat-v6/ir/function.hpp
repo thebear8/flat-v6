@@ -4,6 +4,11 @@
 
 #include "ir_node.hpp"
 
+namespace llvm
+{
+class Function;
+};
+
 struct IRFunction : public IRNode
 {
     std::string lib, name;
@@ -51,4 +56,8 @@ struct IRFunction : public IRNode
     }
 
     IMPLEMENT_ACCEPT()
+
+    METADATA_PROP(
+        llvmFunction, llvm::Function*, getLLVMFunction, setLLVMFunction
+    )
 };

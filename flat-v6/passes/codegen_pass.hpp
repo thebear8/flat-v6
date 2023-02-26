@@ -18,37 +18,32 @@ class LLVMCodegenPass : protected IRVisitor<llvm::Value*>
 private:
     ErrorLogger& m_logger;
     CompilationContext& m_compCtx;
-    ModuleContext& m_modCtx;
-
     llvm::LLVMContext& m_llvmCtx;
-    llvm::Module& m_llvmMod;
+    llvm::Module& m_llvmModule;
     llvm::IRBuilder<> m_builder;
 
-    std::unordered_map<IRType*, llvm::Type*> llvmTypes;
-    std::unordered_map<std::string, llvm::Value*> localValues;
+    std::unordered_map<IRType*, llvm::Type*> m_llvmTypes;
+    std::unordered_map<std::string, llvm::Value*> m_localValues;
 
 public:
     LLVMCodegenPass(
         ErrorLogger& logger,
         CompilationContext& compCtx,
-        ModuleContext& modCtx,
         llvm::LLVMContext& llvmCtx,
-        llvm::Module& mod
+        llvm::Module& llvmModule
     )
         : m_logger(logger),
           m_compCtx(compCtx),
-          m_modCtx(modCtx),
           m_llvmCtx(llvmCtx),
-          m_llvmMod(mod),
+          m_llvmModule(m_llvmModule),
           m_builder(llvmCtx)
     {
     }
 
 public:
-    void process(IRSourceFile* source);
-    void optimize();
+    void process(IRModule* node);
 
-protected:
+private:
     virtual llvm::Value* visit(IRIntegerExpression* node) override;
     virtual llvm::Value* visit(IRBoolExpression* node) override;
     virtual llvm::Value* visit(IRCharExpression* node) override;
@@ -68,9 +63,8 @@ protected:
     virtual llvm::Value* visit(IRWhileStatement* node) override;
     virtual llvm::Value* visit(IRIfStatement* node) override;
 
-    virtual llvm::Value* visit(IRStructDeclaration* node) override;
-    virtual llvm::Value* visit(IRFunctionDeclaration* node) override;
-    virtual llvm::Value* visit(IRSourceFile* node) override;
+    virtual llvm::Value* visit(IRFunction* node) override;
+    virtual llvm::Value* visit(IRModule* node) override;
 
 private:
     llvm::Type* getLLVMType(IRType* type);

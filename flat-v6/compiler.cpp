@@ -25,15 +25,9 @@
 #include "passes/struct_extraction_pass.hpp"
 #include "util/string_switch.hpp"
 
-CompilationContext::CompilationContext(
-    TargetDescriptor const& targetDesc, std::ostream& logStream
-)
+CompilationContext::CompilationContext(std::ostream& logStream)
     : Environment("<global>", nullptr),
-      targetDesc(targetDesc),
-      llvmCtx(),
-      llvmMod("flat", llvmCtx),
-      target(nullptr),
-      targetMachine(nullptr),
+      m_logger(logStream, m_sourceFiles),
       m_void(new IRVoidType()),
       m_bool(new IRBoolType()),
       m_i8(new IRIntegerType(true, 8)),
@@ -55,49 +49,16 @@ CompilationContext::CompilationContext(
     m_unsignedIntegerTypes.try_emplace(16, m_u16);
     m_unsignedIntegerTypes.try_emplace(32, m_u32);
     m_unsignedIntegerTypes.try_emplace(64, m_u64);
-
-    llvm::InitializeAllTargetInfos();
-    llvm::InitializeAllTargets();
-    llvm::InitializeAllTargetMCs();
-    llvm::InitializeAllAsmParsers();
-    llvm::InitializeAllAsmPrinters();
-
-    std::string error;
-    target = llvm::TargetRegistry::lookupTarget(targetDesc.targetTriple, error);
-    if (!target)
-        ErrorLogger(std::cout, {}).fatal(error);
-
-    auto targetOptions = llvm::TargetOptions();
-    auto relocModel = llvm::Optional<llvm::Reloc::Model>();
-    targetMachine = target->createTargetMachine(
-        targetDesc.targetTriple,
-        targetDesc.cpuDesc,
-        targetDesc.featureDesc,
-        targetOptions,
-        relocModel
-    );
-    if (!targetMachine)
-        ErrorLogger(std::cout, {}).fatal("Can't create TargetMachine");
-
-    llvmMod.setDataLayout(targetMachine->createDataLayout());
-    llvmMod.setTargetTriple(targetDesc.targetTriple);
 }
 
 CompilationContext::~CompilationContext()
 {
-    for (auto const& [name, mod] : modules)
+    for (auto const& [name, mod] : m_modules)
         delete mod;
 }
 
-void CompilationContext::compile(
-    std::string const& sourceDir, llvm::raw_pwrite_stream& output
-)
+void CompilationContext::readSourceFiles(std::string const& sourceDir)
 {
-    GraphContext astCtx, irCtx;
-    std::vector<ASTSourceFile*> astSourceFiles;
-    std::unordered_map<size_t, std::string> sources;
-    ErrorLogger logger(std::cout, sources);
-
     for (auto const& entry :
          std::filesystem::recursive_directory_iterator(sourceDir))
     {
@@ -107,30 +68,81 @@ void CompilationContext::compile(
         std::ifstream inputStream(entry.path());
         std::string input(std::istreambuf_iterator<char>(inputStream), {});
 
-        auto id = sources.size() + 1;
-        sources.try_emplace(id, input);
-
-        Parser parser(logger, astCtx, input, id);
-        astSourceFiles.push_back(parser.sourceFile());
+        auto id = m_sourceFiles.size() + 1;
+        m_sourceFiles.try_emplace(id, input);
     }
+}
 
-    for (auto sf : astSourceFiles)
-        ModuleExtractionPass(logger, *this, irCtx).process(sf);
+void CompilationContext::parseSourceFiles()
+{
+    for (auto& [id, source] : m_sourceFiles)
+    {
+        Parser parser(m_logger, m_astCtx, source, id);
+        m_parsedSourceFiles.push_back(parser.sourceFile());
+    }
+}
 
-    for (auto sf : astSourceFiles)
-        StructExtractionPass(logger, *this).process(sf);
+void CompilationContext::runPasses()
+{
+    ModuleExtractionPass mep(m_logger, *this, m_irCtx);
+    StructExtractionPass sep(m_logger, *this);
+    IRPass ip(m_logger, *this);
+    SemanticPass sp(m_logger, *this);
+    OperatorLoweringPass olp(m_logger, *this);
 
-    for (auto sf : astSourceFiles)
-        IRPass(logger, *this).process(sf);
+    for (auto sf : m_parsedSourceFiles)
+        mep.process(sf);
 
-    for (auto [moduleName, irModule] : modules)
-        SemanticPass(logger, *this).process(irModule);
+    for (auto sf : m_parsedSourceFiles)
+        sep.process(sf);
 
-    for (auto [moduleName, irModule] : modules)
-        OperatorLoweringPass(logger, *this).process(irModule);
+    for (auto sf : m_parsedSourceFiles)
+        ip.process(sf);
 
-    for (auto [moduleName, irModule] : modules)
-        LLVMCodegenPass(logger, *this, llvmCtx, llvmMod).process(irModule);
+    for (auto [moduleName, irModule] : m_modules)
+        sp.process(irModule);
+
+    for (auto [moduleName, irModule] : m_modules)
+        olp.process(irModule);
+}
+
+void CompilationContext::generateCode(
+    TargetDescriptor const& targetDesc, llvm::raw_pwrite_stream& output
+)
+{
+    llvm::InitializeAllTargetInfos();
+    llvm::InitializeAllTargets();
+    llvm::InitializeAllTargetMCs();
+    llvm::InitializeAllAsmParsers();
+    llvm::InitializeAllAsmPrinters();
+
+    std::string error;
+    auto target =
+        llvm::TargetRegistry::lookupTarget(targetDesc.targetTriple, error);
+    if (!target)
+        m_logger.fatal(error);
+
+    auto targetOptions = llvm::TargetOptions();
+    auto relocModel = llvm::Optional<llvm::Reloc::Model>();
+    auto targetMachine = target->createTargetMachine(
+        targetDesc.targetTriple,
+        targetDesc.cpuDesc,
+        targetDesc.featureDesc,
+        targetOptions,
+        relocModel
+    );
+    if (!targetMachine)
+        m_logger.fatal("Can't create TargetMachine");
+
+    llvm::LLVMContext llvmContext;
+    llvm::Module llvmModule("<flat>", llvmContext);
+
+    llvmModule.setDataLayout(targetMachine->createDataLayout());
+    llvmModule.setTargetTriple(targetDesc.targetTriple);
+
+    LLVMCodegenPass lcp(m_logger, *this, llvmContext, llvmModule);
+    for (auto [moduleName, irModule] : m_modules)
+        lcp.process(irModule);
 
     llvm::LoopAnalysisManager lam;
     llvm::FunctionAnalysisManager fam;
@@ -145,17 +157,17 @@ void CompilationContext::compile(
     pb.crossRegisterProxies(lam, fam, cgam, mam);
 
     auto mpm = pb.buildPerModuleDefaultPipeline(llvm::OptimizationLevel::O1);
-    mpm.run(llvmMod, mam);
-
-    llvmMod.print(llvm::outs(), nullptr);
+    mpm.run(llvmModule, mam);
 
     llvm::legacy::PassManager passManager;
     if (targetMachine->addPassesToEmitFile(
             passManager, output, nullptr, llvm::CodeGenFileType::CGFT_ObjectFile
         ))
-        logger.fatal("TargetMachine cannot emit object files");
+    {
+        m_logger.fatal("TargetMachine cannot emit object files");
+    }
 
-    passManager.run(llvmMod);
+    passManager.run(llvmModule);
     output.flush();
 }
 
@@ -168,35 +180,18 @@ IRType* CompilationContext::getType(std::string const& name)
 
 IRModule* CompilationContext::addModule(IRModule* mod)
 {
-    if (modules.contains(mod->name))
+    if (m_modules.contains(mod->name))
         return nullptr;
 
-    modules.try_emplace(mod->name);
-    return modules.at(mod->name);
+    m_modules.try_emplace(mod->name);
+    return m_modules.at(mod->name);
 }
 
 IRModule* CompilationContext::getModule(std::string const& name)
 {
-    if (!modules.contains(name))
+    if (!m_modules.contains(name))
         return nullptr;
-    return modules.at(name);
-}
-
-llvm::Function* CompilationContext::addLLVMFunction(
-    IRFunction* function, llvm::Function* llvmFunction
-)
-{
-    if (llvmFunctions.contains(function))
-        return nullptr;
-    llvmFunctions.try_emplace(function, llvmFunction);
-    return llvmFunctions.at(function);
-}
-
-llvm::Function* CompilationContext::getLLVMFunction(IRFunction* function)
-{
-    if (!llvmFunctions.contains(function))
-        return nullptr;
-    return llvmFunctions.at(function);
+    return m_modules.at(name);
 }
 
 IRType* CompilationContext::getBuiltinType(std::string const& name)

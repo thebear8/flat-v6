@@ -1,9 +1,5 @@
 #pragma once
 
-#include <llvm/IR/LLVMContext.h>
-#include <llvm/MC/TargetRegistry.h>
-#include <llvm/Target/TargetMachine.h>
-
 #include <iostream>
 
 #include "ast/ast.hpp"
@@ -35,15 +31,12 @@ class CompilationContext : public Environment
     friend class ModuleContext;
 
 private:
-    TargetDescriptor targetDesc;
-    llvm::LLVMContext llvmCtx;
-    llvm::Module llvmMod;
-    llvm::Target const* target;
-    llvm::TargetMachine* targetMachine;
+    ErrorLogger m_logger;
+    GraphContext m_astCtx, m_irCtx;
+    std::unordered_map<size_t, std::string> m_sourceFiles;
+    std::vector<ASTSourceFile*> m_parsedSourceFiles;
 
-    std::unordered_map<std::string, IRModule*> modules;
-    std::unordered_map<IRFunction*, llvm::Function*> llvmFunctions;
-
+    std::unordered_map<std::string, IRModule*> m_modules;
     std::unordered_map<size_t, IRIntegerType*> m_signedIntegerTypes;
     std::unordered_map<size_t, IRIntegerType*> m_unsignedIntegerTypes;
     std::unordered_map<IRType*, IRPointerType*> m_pointerTypes;
@@ -63,13 +56,16 @@ private:
     IRStringType* m_string;
 
 public:
-    CompilationContext(
-        TargetDescriptor const& targetDesc, std::ostream& logStream = std::cout
-    );
+    CompilationContext(std::ostream& logStream = std::cout);
     ~CompilationContext();
 
 public:
-    void compile(std::string const& sourceDir, llvm::raw_pwrite_stream& output);
+    void readSourceFiles(std::string const& sourceDir);
+    void parseSourceFiles();
+    void runPasses();
+    void generateCode(
+        TargetDescriptor const& targetDesc, llvm::raw_pwrite_stream& output
+    );
 
     IRType* getType(std::string const& name) override;
 
@@ -84,24 +80,6 @@ public:
     /// @param name The name of the module to find
     /// @return The found module or nullptr if the module was not found
     IRModule* getModule(std::string const& name);
-
-    /// @brief Add an llvm::Function for an IR function. This doesn't actually
-    /// belong in CompilationContext, but is here for now for lack of a better
-    /// place.
-    /// @param function The IR function to add an llvm::Function for
-    /// @param llvmFunction The llvm::Function to add
-    /// @return The added llvm::Function or nullptr if the function already
-    /// exists
-    llvm::Function* addLLVMFunction(
-        IRFunction* function, llvm::Function* llvmFunction
-    );
-
-    /// @brief Get an llvm::Function for an IR function. This doesn't actually
-    /// belong in CompilationContext, but is here for now for lack of a better
-    /// place.
-    /// @param function The IR function to get an llvm::Function for
-    /// @return The retrieved llvm::Function or nullptr on failure
-    llvm::Function* getLLVMFunction(IRFunction* function);
 
     /// @brief Lookup a builtin type
     /// @param name Type name
