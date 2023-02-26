@@ -4,6 +4,7 @@
 
 #include "ast_node.hpp"
 
+class IRModule;
 struct ASTSourceFile : public ASTNode
 {
     std::string modulePath;
@@ -24,4 +25,6 @@ struct ASTSourceFile : public ASTNode
     }
 
     IMPLEMENT_ACCEPT()
+
+    METADATA_PROP(irModule, IRModule*, getIRModule, setIRModule)
 };

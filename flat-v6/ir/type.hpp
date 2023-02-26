@@ -98,20 +98,14 @@ struct IRStructType : public IRType
 {
     std::string name;
     std::vector<IRGenericType*> typeParams;
-    std::vector<std::pair<std::string, std::vector<IRType*>>> requirements;
     std::unordered_map<std::string, IRType*> fields;
 
     IRStructType(
         std::string const& name,
         std::vector<IRGenericType*> const& typeParams,
-        std::vector<std::pair<std::string, std::vector<IRType*>>> const&
-            requirements,
         std::unordered_map<std::string, IRType*> const& fields
     )
-        : name(name),
-          typeParams(typeParams),
-          requirements(requirements),
-          fields(fields)
+        : name(name), typeParams(typeParams), fields(fields)
     {
     }
 

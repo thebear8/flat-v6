@@ -59,8 +59,14 @@ struct IRStringExpression : public IRExpression
 struct IRIdentifierExpression : public IRExpression
 {
     std::string value;
+    std::vector<IRType*> typeArgs;
 
-    IRIdentifierExpression(std::string const& value) : value(value) {}
+    IRIdentifierExpression(
+        std::string const& value, std::vector<IRType*> const& typeArgs
+    )
+        : value(value), typeArgs(typeArgs)
+    {
+    }
 
     IMPLEMENT_ACCEPT()
 };
@@ -68,13 +74,15 @@ struct IRIdentifierExpression : public IRExpression
 struct IRStructExpression : public IRExpression
 {
     std::string structName;
+    std::vector<IRType*> typeArgs;
     std::unordered_map<std::string, IRExpression*> fields;
 
     IRStructExpression(
         std::string const& structName,
+        std::vector<IRType*> const& typeArgs,
         std::unordered_map<std::string, IRExpression*> const& fields
     )
-        : structName(structName), fields(fields)
+        : structName(structName), typeArgs(typeArgs), fields(fields)
     {
     }
 

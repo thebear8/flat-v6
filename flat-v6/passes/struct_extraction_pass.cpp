@@ -9,7 +9,15 @@ void StructExtractionPass::process(ASTSourceFile* sourceFile)
 
 void StructExtractionPass::visit(ASTStructDeclaration* node)
 {
-    if (m_env->getStruct(node->name))
+    std::vector<IRGenericType*> typeParams;
+    for (auto typeParam : node->typeParams)
+        typeParams.push_back(m_irCtx->make(IRGenericType(typeParam)));
+
+    auto structType = m_irCtx->make(IRStructType(node->name, typeParams, {}));
+    structType->setLocation(node->location);
+    m_module->structs.push_back(structType);
+
+    if (!m_env->addStruct(structType))
     {
         return m_logger.error(
             node->location,
@@ -18,9 +26,7 @@ void StructExtractionPass::visit(ASTStructDeclaration* node)
         );
     }
 
-    auto structType = m_irCtx->make(IRStructType(node->name, {}, {}, {}));
-    m_module->structs.push_back(structType);
-    m_env->addStruct(structType);
+    node->setIRStructType(structType);
 }
 
 void StructExtractionPass::visit(ASTSourceFile* node)
@@ -29,11 +35,7 @@ void StructExtractionPass::visit(ASTSourceFile* node)
     for (auto const& segment : node->modulePath)
         name += ((name.empty()) ? "" : ".") + segment;
 
-    m_module = m_compCtx.getModule(name);
-    assert(
-        m_module
-        && "Module has to exist, should be created by ModuleExtractionPass"
-    );
+    m_module = node->getIRModule();
     m_irCtx = m_module->getIrCtx();
     m_env = m_module->getEnv();
 

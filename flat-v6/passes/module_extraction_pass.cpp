@@ -21,6 +21,7 @@ void ModuleExtractionPass::visit(ASTSourceFile* node)
         mod->setEnv(mod->getIrCtx()->make(Environment(name, &m_compCtx)));
     }
     auto mod = m_compCtx.getModule(name);
+    node->setIRModule(mod);
 
     std::set<std::string> imports;
     for (auto const& importPath : node->importPaths)

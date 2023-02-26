@@ -7,11 +7,7 @@
 
 struct ASTExpression : public ASTNode
 {
-    ASTType* type;
-
-    ASTExpression(SourceRef const& location) : ASTNode(location), type(nullptr)
-    {
-    }
+    ASTExpression(SourceRef const& location) : ASTNode(location) {}
 
     IMPLEMENT_ACCEPT()
 };
@@ -72,9 +68,14 @@ struct ASTStringExpression : public ASTExpression
 struct ASTIdentifierExpression : public ASTExpression
 {
     std::string value;
+    std::vector<ASTType*> typeArgs;
 
-    ASTIdentifierExpression(SourceRef const& location, std::string const& value)
-        : ASTExpression(location), value(value)
+    ASTIdentifierExpression(
+        SourceRef const& location,
+        std::string const& value,
+        std::vector<ASTType*> const& typeArgs
+    )
+        : ASTExpression(location), value(value), typeArgs(typeArgs)
     {
     }
 
@@ -84,14 +85,19 @@ struct ASTIdentifierExpression : public ASTExpression
 struct ASTStructExpression : public ASTExpression
 {
     std::string structName;
+    std::vector<ASTType*> typeArgs;
     std::vector<std::pair<std::string, ASTExpression*>> fields;
 
     ASTStructExpression(
         SourceRef const& location,
         std::string const& structName,
+        std::vector<ASTType*> typeArgs,
         std::vector<std::pair<std::string, ASTExpression*>> const& fields
     )
-        : ASTExpression(location), structName(structName), fields(fields)
+        : ASTExpression(location),
+          structName(structName),
+          typeArgs(typeArgs),
+          fields(fields)
     {
     }
 

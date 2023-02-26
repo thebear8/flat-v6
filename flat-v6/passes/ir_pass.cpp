@@ -78,12 +78,20 @@ IRNode* IRPass::visit(ASTStringExpression* node)
 
 IRNode* IRPass::visit(ASTIdentifierExpression* node)
 {
-    return m_irCtx->make(IRIdentifierExpression(node->value))
+    std::vector<IRType*> typeArgs;
+    for (auto typeArg : node->typeArgs)
+        typeArgs.push_back((IRType*)dispatch(typeArg));
+
+    return m_irCtx->make(IRIdentifierExpression(node->value, typeArgs))
         ->setLocation(node->location);
 }
 
 IRNode* IRPass::visit(ASTStructExpression* node)
 {
+    std::vector<IRType*> typeArgs;
+    for (auto typeArg : node->typeArgs)
+        typeArgs.push_back((IRType*)dispatch(typeArg));
+
     std::unordered_map<std::string, IRExpression*> fields;
     for (auto const& [name, value] : node->fields)
     {
@@ -100,7 +108,7 @@ IRNode* IRPass::visit(ASTStructExpression* node)
         fields.try_emplace(name, value);
     }
 
-    return m_irCtx->make(IRStructExpression(node->structName, fields))
+    return m_irCtx->make(IRStructExpression(node->structName, typeArgs, fields))
         ->setLocation(node->location);
 }
 
@@ -217,27 +225,27 @@ IRNode* IRPass::visit(ASTConstraintDeclaration* node)
 {
     m_env = m_irCtx->make(Environment(node->name, m_env));
 
-    auto typeParams = node->typeParams | std::views::transform([&](auto p) {
-                          return m_irCtx->make(IRGenericType(p));
-                      });
+    std::vector<IRGenericType*> typeParams;
+    for (auto typeParam : node->typeParams)
+        typeParams.push_back(m_irCtx->make(IRGenericType(typeParam)));
 
     for (auto p : typeParams)
         m_env->addGeneric(p);
 
-    auto conditions = node->conditions | std::views::transform([&](auto d) {
-                          return (IRFunction*)dispatch(d);
-                      });
+    std::vector<IRFunction*> conditions;
+    for (auto condition : node->conditions)
+        conditions.push_back((IRFunction*)dispatch(condition));
 
-    auto constraint = m_irCtx->make(IRConstraint(
+    auto irNode = m_irCtx->make(IRConstraint(
         node->name,
-        std::vector(typeParams.begin(), typeParams.end()),
+        typeParams,
         transformRequirements(node->requirements),
         std::vector(conditions.begin(), conditions.end())
     ));
 
-    constraint->setLocation(node->location);
+    irNode->setLocation(node->location);
     m_env = m_env->getParent();
-    if (!m_env->addConstraint(constraint))
+    if (!m_env->addConstraint(irNode))
     {
         return m_logger.error(
             node->location,
@@ -247,28 +255,18 @@ IRNode* IRPass::visit(ASTConstraintDeclaration* node)
         );
     }
 
-    m_module->constraints.push_back(constraint);
-    return constraint;
+    m_module->constraints.push_back(irNode);
+    return irNode;
 }
 
 IRNode* IRPass::visit(ASTStructDeclaration* node)
 {
     m_env = m_irCtx->make(Environment(node->name, m_env));
 
-    auto typeParamRange = node->typeParams | std::views::transform([&](auto p) {
-                              return m_irCtx->make(IRGenericType(p));
-                          });
-    auto typeParams = std::vector(typeParamRange.begin(), typeParamRange.end());
+    auto structType = node->getIRStructType();
 
-    for (auto p : typeParams)
-        m_env->addGeneric(p);
-
-    auto structType = m_env->getStruct(node->name);
-    assert(structType && "Struct type for declaration not found.");
-
-    structType->setLocation(node->location);
-    structType->typeParams = typeParams;
-    structType->requirements = transformRequirements(node->requirements);
+    for (auto typeParam : structType->typeParams)
+        m_env->addGeneric(typeParam);
 
     for (auto const& [name, type] : node->fields)
     {
@@ -293,10 +291,9 @@ IRNode* IRPass::visit(ASTFunctionDeclaration* node)
 {
     m_env = m_irCtx->make(Environment(node->name, m_env));
 
-    auto typeParamRange = node->typeParams | std::views::transform([&](auto p) {
-                              return m_irCtx->make(IRGenericType(p));
-                          });
-    auto typeParams = std::vector(typeParamRange.begin(), typeParamRange.end());
+    std::vector<IRGenericType*> typeParams;
+    for (auto typeParam : node->typeParams)
+        typeParams.push_back(m_irCtx->make(IRGenericType(typeParam)));
 
     for (auto p : typeParams)
         m_env->addGeneric(p);
@@ -351,12 +348,7 @@ IRNode* IRPass::visit(ASTSourceFile* node)
     for (auto const& segment : node->modulePath)
         name += ((name.empty()) ? "" : ".") + segment;
 
-    m_module = m_compCtx.getModule(name);
-    assert(
-        m_module
-        && "Module has to exist, should be created by ModuleExtractionPass"
-    );
-
+    m_module = node->getIRModule();
     m_irCtx = m_module->getIrCtx();
     m_env = m_module->getEnv();
 

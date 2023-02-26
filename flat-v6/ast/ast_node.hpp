@@ -1,5 +1,6 @@
 #pragma once
 #include "../data/source_ref.hpp"
+#include "../util/metadata_prop.hpp"
 #include "../util/visitor.hpp"
 
 using ASTTripleDispatchVisitor = triple_dispatch_visitor::TripleDispatchVisitor<
