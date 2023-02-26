@@ -34,6 +34,15 @@ IRType* SemanticPass::visit(IRStringExpression* node)
 
 IRType* SemanticPass::visit(IRIdentifierExpression* node)
 {
+    if (node->typeArgs.size() != 0)
+    {
+        return m_logger.error(
+            node->getLocation(SourceRef()),
+            "Variable Name cannot have type args",
+            nullptr
+        );
+    }
+
     node->setType(m_env->findVariableType(node->value));
     if (!node->getType())
     {
@@ -66,19 +75,8 @@ IRType* SemanticPass::visit(IRStructExpression* node)
         {
             return m_logger.error(
                 node->getLocation(SourceRef()),
-                "Struct " + structType->name
-                    + " does not contain a field called " + name,
-                nullptr
-            );
-        }
-
-        auto const& fieldType = structType->fields.at(name);
-        if (fieldType != value->getType())
-        {
-            return m_logger.error(
-                node->getLocation(SourceRef()),
-                "Field " + name + " has type " + fieldType->toString()
-                    + ", value type is " + value->getType()->toString(),
+                "Struct " + structType->name + " does not contain field "
+                    + name,
                 nullptr
             );
         }
@@ -97,7 +95,68 @@ IRType* SemanticPass::visit(IRStructExpression* node)
         }
     }
 
-    node->setType(structType);
+    if (node->typeArgs.size() > structType->typeParams.size())
+    {
+        return m_logger.error(
+            node->getLocation(SourceRef()),
+            "Struct expression has more type args than type parameters exist",
+            nullptr
+        );
+    }
+
+    std::unordered_map<IRGenericType*, IRType*> typeArgs;
+    for (size_t i = 0; i < node->typeArgs.size(); i++)
+    {
+        typeArgs.try_emplace(
+            structType->typeParams.at(i), node->typeArgs.at(i)
+        );
+    }
+
+    for (auto const& [name, value] : node->fields)
+    {
+        auto fieldType = structType->fields.at(name);
+        auto result =
+            inferTypeArgsAndValidate(fieldType, value->getType(), typeArgs);
+        if (result.has_value())
+        {
+            return m_logger.error(
+                node->getLocation(SourceRef()),
+                "Value type for field " + name + " ("
+                    + value->getType()->toString()
+                    + ") is incompatible with struct field type ("
+                    + fieldType->toString() + "): " + result.value(),
+                nullptr
+            );
+        }
+    }
+
+    std::vector<IRType*> typeArgList;
+    for (auto typeParam : structType->typeParams)
+    {
+        if (!typeArgs.contains(typeParam))
+        {
+            return m_logger.error(
+                node->getLocation(SourceRef()),
+                "Could not infer value for type parameter "
+                    + typeParam->toString(),
+                nullptr
+            );
+        }
+
+        typeArgList.push_back(typeArgs.at(typeParam));
+    }
+
+    if (structType->typeParams.size() != 0)
+    {
+        node->setType(
+            m_irCtx->make(IRInstantiatedStructType(structType, typeArgList))
+        );
+    }
+    else
+    {
+        node->setType(structType);
+    }
+
     return node->getType();
 }
 
@@ -572,4 +631,179 @@ IRType* SemanticPass::visit(IRModule* node)
     for (auto& decl : node->functions)
         dispatch(decl);
     return nullptr;
+}
+
+std::optional<std::string> SemanticPass::inferTypeArgsAndValidate(
+    IRType* genericType,
+    IRType* actualType,
+    std::unordered_map<IRGenericType*, IRType*>& typeArgs
+)
+{
+    if (actualType == genericType)
+    {
+        return std::nullopt;
+    }
+    else if (genericType->isGenericType())
+    {
+        if (!typeArgs.contains((IRGenericType*)genericType))
+            typeArgs.try_emplace((IRGenericType*)genericType, actualType);
+
+        if (typeArgs.at((IRGenericType*)genericType) != actualType)
+        {
+            return "Inconsistent value for type parameter "
+                + genericType->toString() + ": was "
+                + typeArgs.at((IRGenericType*)genericType)->toString()
+                + ", now " + actualType->toString();
+        }
+
+        return std::nullopt;
+    }
+    else if (genericType->isInstantiatedStructType())
+    {
+        if (!actualType->isInstantiatedStructType())
+        {
+            return "Type " + actualType->toString()
+                + " is not an instantiated struct type";
+        }
+
+        auto genericInstantiated = (IRInstantiatedStructType*)genericType;
+        auto actualInstantiated = (IRInstantiatedStructType*)actualType;
+
+        if (actualInstantiated->base != genericInstantiated->base)
+        {
+            return "Type " + actualInstantiated->toString()
+                + " is not an instantiation of "
+                + genericInstantiated->toString();
+        }
+
+        if (actualInstantiated->typeArgs.size()
+            != genericInstantiated->typeArgs.size())
+        {
+            return "Number of type args of " + actualInstantiated->toString()
+                + " does not match number of type args of "
+                + genericInstantiated->toString();
+        }
+
+        for (size_t i = 0; i < genericInstantiated->typeArgs.size(); i++)
+        {
+            auto result = inferTypeArgsAndValidate(
+                genericInstantiated->typeArgs.at(i),
+                actualInstantiated->typeArgs.at(i),
+                typeArgs
+            );
+
+            if (result.has_value())
+                return result;
+        }
+
+        return std::nullopt;
+    }
+    else if (genericType->isPointerType())
+    {
+        if (!actualType->isPointerType())
+        {
+            return "Type " + actualType->toString() + " is not a pointer type";
+        }
+
+        return inferTypeArgsAndValidate(
+            ((IRPointerType*)genericType)->base,
+            ((IRPointerType*)actualType)->base,
+            typeArgs
+        );
+    }
+    else if (genericType->isArrayType())
+    {
+        if (!actualType->isArrayType())
+        {
+            return "Type " + actualType->toString() + " is not an array type";
+        }
+
+        return inferTypeArgsAndValidate(
+            ((IRArrayType*)genericType)->base,
+            ((IRArrayType*)actualType)->base,
+            typeArgs
+        );
+    }
+    else
+    {
+        return "Types " + genericType->toString() + " and "
+            + actualType->toString() + " do not match";
+    }
+}
+
+bool SemanticPass::inferTypeArgsAndMatch(
+    IRType* genericType,
+    IRType* actualType,
+    std::unordered_map<IRGenericType*, IRType*>& typeArgs
+)
+{
+    if (actualType == genericType)
+    {
+        return true;
+    }
+    else if (genericType->isGenericType())
+    {
+        if (!typeArgs.contains((IRGenericType*)genericType))
+            typeArgs.try_emplace((IRGenericType*)genericType, actualType);
+
+        if (typeArgs.at((IRGenericType*)genericType) != actualType)
+            return false;
+
+        return true;
+    }
+    else if (genericType->isInstantiatedStructType())
+    {
+        if (!actualType->isInstantiatedStructType())
+            return false;
+
+        auto genericInstantiated = (IRInstantiatedStructType*)genericType;
+        auto actualInstantiated = (IRInstantiatedStructType*)actualType;
+
+        if (actualInstantiated->base != genericInstantiated->base)
+            return false;
+
+        if (actualInstantiated->typeArgs.size()
+            != genericInstantiated->typeArgs.size())
+            return false;
+
+        for (size_t i = 0; i < genericInstantiated->typeArgs.size(); i++)
+        {
+            auto result = inferTypeArgsAndMatch(
+                genericInstantiated->typeArgs.at(i),
+                actualInstantiated->typeArgs.at(i),
+                typeArgs
+            );
+
+            if (!result)
+                return false;
+        }
+
+        return true;
+    }
+    else if (genericType->isPointerType())
+    {
+        if (!actualType->isPointerType())
+            return false;
+
+        return inferTypeArgsAndMatch(
+            ((IRPointerType*)genericType)->base,
+            ((IRPointerType*)actualType)->base,
+            typeArgs
+        );
+    }
+    else if (genericType->isArrayType())
+    {
+        if (!actualType->isArrayType())
+            return false;
+
+        return inferTypeArgsAndMatch(
+            ((IRArrayType*)genericType)->base,
+            ((IRArrayType*)actualType)->base,
+            typeArgs
+        );
+    }
+    else
+    {
+        return false;
+    }
 }

@@ -20,6 +20,7 @@ struct IRType : public IRNode
     virtual bool isCharType() { return false; }
     virtual bool isStringType() { return false; }
     virtual bool isStructType() { return false; }
+    virtual bool isInstantiatedStructType() { return false; }
     virtual bool isPointerType() { return false; }
     virtual bool isArrayType() { return false; }
     virtual bool isSigned() { return false; }
@@ -113,6 +114,34 @@ struct IRStructType : public IRType
     virtual bool isStructType() override { return true; }
 
     IMPLEMENT_ACCEPT()
+
+    METADATA_PROP(
+        instantiatedFrom,
+        IRStructType*,
+        getInstantiatedFrom,
+        setInstantiatedFrom
+    )
+};
+
+struct IRInstantiatedStructType : public IRType
+{
+    IRStructType* base;
+    std::vector<IRType*> typeArgs;
+
+    IRInstantiatedStructType(IRStructType* base, std::vector<IRType*> typeArgs)
+        : base(base), typeArgs(typeArgs)
+    {
+    }
+
+    virtual std::string toString() override
+    {
+        std::string args = "";
+        for (auto arg : typeArgs)
+            args += (!args.empty() ? ", " : "") + arg->toString();
+        return base->toString() + "<" + args + ">";
+    }
+
+    virtual bool isInstantiatedStructType() override { return true; }
 };
 
 struct IRPointerType : public IRType

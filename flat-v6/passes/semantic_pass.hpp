@@ -58,4 +58,17 @@ private:
 
     virtual IRType* visit(IRFunction* node) override;
     virtual IRType* visit(IRModule* node) override;
+
+private:
+    std::optional<std::string> inferTypeArgsAndValidate(
+        IRType* genericType,
+        IRType* actualType,
+        std::unordered_map<IRGenericType*, IRType*>& typeArgs
+    );
+
+    bool inferTypeArgsAndMatch(
+        IRType* genericType,
+        IRType* actualType,
+        std::unordered_map<IRGenericType*, IRType*>& typeArgs
+    );
 };
