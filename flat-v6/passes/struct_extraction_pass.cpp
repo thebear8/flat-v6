@@ -1,5 +1,7 @@
 #include "struct_extraction_pass.hpp"
 
+#include <cassert>
+
 void StructExtractionPass::process(ASTSourceFile* sourceFile)
 {
     return dispatch(sourceFile);
@@ -8,11 +10,13 @@ void StructExtractionPass::process(ASTSourceFile* sourceFile)
 void StructExtractionPass::visit(ASTStructDeclaration* node)
 {
     if (m_env->getStruct(node->name))
+    {
         return m_logger.error(
             node->location,
             "Struct " + node->name + " is already defined in module "
                 + m_module->name
         );
+    }
 
     auto structType = m_irCtx->make(IRStructType(node->name, {}, {}, {}));
     m_module->structs.push_back(structType);

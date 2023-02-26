@@ -1,5 +1,7 @@
 #include "module_extraction_pass.hpp"
 
+#include <set>
+
 void ModuleExtractionPass::process(ASTSourceFile* node)
 {
     return dispatch(node);

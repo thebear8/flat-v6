@@ -68,11 +68,11 @@ struct IRIdentifierExpression : public IRExpression
 struct IRStructExpression : public IRExpression
 {
     std::string structName;
-    std::vector<std::pair<std::string, IRExpression*>> fields;
+    std::unordered_map<std::string, IRExpression*> fields;
 
     IRStructExpression(
         std::string const& structName,
-        std::vector<std::pair<std::string, IRExpression*>> const& fields
+        std::unordered_map<std::string, IRExpression*> const& fields
     )
         : structName(structName), fields(fields)
     {

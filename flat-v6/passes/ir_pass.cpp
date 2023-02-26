@@ -1,5 +1,6 @@
 #include "ir_pass.hpp"
 
+#include <cassert>
 #include <ranges>
 
 #include "../util/string_switch.hpp"
@@ -83,9 +84,21 @@ IRNode* IRPass::visit(ASTIdentifierExpression* node)
 
 IRNode* IRPass::visit(ASTStructExpression* node)
 {
-    std::vector<std::pair<std::string, IRExpression*>> fields;
+    std::unordered_map<std::string, IRExpression*> fields;
     for (auto const& [name, value] : node->fields)
-        fields.push_back({ name, (IRExpression*)dispatch(value) });
+    {
+        if (fields.contains(name))
+        {
+            return m_logger.error(
+                node->location,
+                "Multiple initializers for field " + name + " of struct "
+                    + node->structName,
+                nullptr
+            );
+        }
+
+        fields.try_emplace(name, value);
+    }
 
     return m_irCtx->make(IRStructExpression(node->structName, fields))
         ->setLocation(node->location);
@@ -258,7 +271,19 @@ IRNode* IRPass::visit(ASTStructDeclaration* node)
     structType->requirements = transformRequirements(node->requirements);
 
     for (auto const& [name, type] : node->fields)
-        structType->fields.push_back({ name, (IRType*)dispatch(type) });
+    {
+        if (structType->fields.contains(name))
+        {
+            return m_logger.error(
+                node->location,
+                "Field " + name + " of struct " + node->name
+                    + " has multiple definitions",
+                nullptr
+            );
+        }
+
+        structType->fields.try_emplace(name, (IRType*)dispatch(type));
+    }
 
     m_env = m_env->getParent();
     return structType;

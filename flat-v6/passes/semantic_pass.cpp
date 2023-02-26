@@ -1,5 +1,6 @@
 #include "semantic_pass.hpp"
 
+#include <cassert>
 #include <ranges>
 
 void SemanticPass::process(IRModule* mod)
@@ -56,68 +57,43 @@ IRType* SemanticPass::visit(IRStructExpression* node)
         );
     }
 
-    for (auto& [name, value] : node->fields)
+    for (auto const& [name, value] : node->fields)
         dispatch(value);
 
-    for (auto& [name, value] : node->fields)
+    for (auto const& [name, value] : node->fields)
     {
-        for (int i = 0; i < structType->fields.size(); i++)
+        if (!structType->fields.contains(name))
         {
-            auto& [fieldName, fieldType] = structType->fields[i];
-            if (fieldName == name)
-            {
-                if (fieldType != value->getType())
-                {
-                    return m_logger.error(
-                        node->getLocation(SourceRef()),
-                        "Field " + name + " has type " + fieldType->toString()
-                            + ", value type is " + value->getType()->toString(),
-                        nullptr
-                    );
-                }
-                break;
-            }
+            return m_logger.error(
+                node->getLocation(SourceRef()),
+                "Struct " + structType->name
+                    + " does not contain a field called " + name,
+                nullptr
+            );
+        }
 
-            if (i == structType->fields.size() - 1)
-            {
-                return m_logger.error(
-                    node->getLocation(SourceRef()),
-                    "Struct " + structType->name
-                        + " does not contain a field called " + name,
-                    nullptr
-                );
-            }
+        auto const& fieldType = structType->fields.at(name);
+        if (fieldType != value->getType())
+        {
+            return m_logger.error(
+                node->getLocation(SourceRef()),
+                "Field " + name + " has type " + fieldType->toString()
+                    + ", value type is " + value->getType()->toString(),
+                nullptr
+            );
         }
     }
 
-    for (auto& [fieldName, fieldType] : structType->fields)
+    for (auto const& [fieldName, fieldType] : structType->fields)
     {
-        for (int i = 0; i < node->fields.size(); i++)
+        if (!node->fields.contains(fieldName))
         {
-            auto& [name, value] = node->fields[i];
-            if (name == fieldName)
-            {
-                if (value->getType() != fieldType)
-                {
-                    return m_logger.error(
-                        node->getLocation(SourceRef()),
-                        "Field " + name + " has type " + fieldType->toString()
-                            + ", value type is " + value->getType()->toString(),
-                        nullptr
-                    );
-                }
-                break;
-            }
-
-            if (i == node->fields.size() - 1)
-            {
-                return m_logger.error(
-                    node->getLocation(SourceRef()),
-                    "No initializer for field " + fieldName + ": "
-                        + fieldType->toString(),
-                    nullptr
-                );
-            }
+            return m_logger.error(
+                node->getLocation(SourceRef()),
+                "No initializer for field " + fieldName + ": "
+                    + fieldType->toString(),
+                nullptr
+            );
         }
     }
 
@@ -376,22 +352,19 @@ IRType* SemanticPass::visit(IRFieldExpression* node)
         );
     }
 
-    auto structType = dynamic_cast<IRStructType*>(value);
-    for (int i = 0; i < structType->fields.size(); i++)
+    auto structType = (IRStructType*)value;
+    if (!structType->fields.contains(node->fieldName))
     {
-        if (structType->fields[i].first == node->fieldName)
-        {
-            node->setType(structType->fields[i].second);
-            return node->getType();
-        }
+        return m_logger.error(
+            node->getLocation(SourceRef()),
+            "Struct " + structType->name + " does not have a field named "
+                + node->fieldName,
+            nullptr
+        );
     }
 
-    return m_logger.error(
-        node->getLocation(SourceRef()),
-        "Struct " + structType->name + " does not have a field named "
-            + node->fieldName,
-        nullptr
-    );
+    node->setType(structType->fields.at(node->fieldName));
+    return node->getType();
 }
 
 IRType* SemanticPass::visit(IRBlockStatement* node)
