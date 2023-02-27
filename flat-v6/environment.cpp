@@ -241,11 +241,7 @@ llvm::Value* Environment::findVariableValue(std::string const& name)
     return nullptr;
 }
 
-bool Environment::inferTypeArgsAndMatch(
-    IRType* genericType,
-    IRType* actualType,
-    std::unordered_map<IRGenericType*, IRType*>& typeArgs
-)
+bool Environment::inferTypeArgsAndMatch(IRType* genericType, IRType* actualType)
 {
     if (actualType == genericType)
     {
@@ -253,35 +249,42 @@ bool Environment::inferTypeArgsAndMatch(
     }
     else if (genericType->isGenericType())
     {
-        if (!typeArgs.contains((IRGenericType*)genericType))
-            typeArgs.try_emplace((IRGenericType*)genericType, actualType);
+        if (!findTypeParamValue((IRGenericType*)genericType))
+            addTypeParamValue((IRGenericType*)genericType, actualType);
 
-        if (typeArgs.at((IRGenericType*)genericType) != actualType)
+        if (findTypeParamValue((IRGenericType*)genericType) != actualType)
+        {
             return false;
+        }
 
         return true;
     }
     else if (genericType->isStructInstantiation())
     {
         if (!actualType->isStructInstantiation())
+        {
             return false;
+        }
 
-        auto genericInstantiated = (IRInstantiatedStructType*)genericType;
-        auto actualInstantiated = (IRInstantiatedStructType*)actualType;
+        auto genericInstantiated = (IRStructInstantiation*)genericType;
+        auto actualInstantiated = (IRStructInstantiation*)actualType;
 
-        if (actualInstantiated->base != genericInstantiated->base)
+        if (actualInstantiated->structType != genericInstantiated->structType)
+        {
             return false;
+        }
 
         if (actualInstantiated->typeArgs.size()
             != genericInstantiated->typeArgs.size())
+        {
             return false;
+        }
 
         for (size_t i = 0; i < genericInstantiated->typeArgs.size(); i++)
         {
             auto result = inferTypeArgsAndMatch(
                 genericInstantiated->typeArgs.at(i),
-                actualInstantiated->typeArgs.at(i),
-                typeArgs
+                actualInstantiated->typeArgs.at(i)
             );
 
             if (!result)
@@ -293,23 +296,24 @@ bool Environment::inferTypeArgsAndMatch(
     else if (genericType->isPointerType())
     {
         if (!actualType->isPointerType())
+        {
             return false;
+        }
 
         return inferTypeArgsAndMatch(
             ((IRPointerType*)genericType)->base,
-            ((IRPointerType*)actualType)->base,
-            typeArgs
+            ((IRPointerType*)actualType)->base
         );
     }
     else if (genericType->isArrayType())
     {
         if (!actualType->isArrayType())
+        {
             return false;
+        }
 
         return inferTypeArgsAndMatch(
-            ((IRArrayType*)genericType)->base,
-            ((IRArrayType*)actualType)->base,
-            typeArgs
+            ((IRArrayType*)genericType)->base, ((IRArrayType*)actualType)->base
         );
     }
     else
@@ -319,9 +323,7 @@ bool Environment::inferTypeArgsAndMatch(
 }
 
 std::optional<std::string> Environment::inferTypeArgsAndValidate(
-    IRType* genericType,
-    IRType* actualType,
-    std::unordered_map<IRGenericType*, IRType*>& typeArgs
+    IRType* genericType, IRType* actualType
 )
 {
     if (actualType == genericType)
@@ -330,14 +332,14 @@ std::optional<std::string> Environment::inferTypeArgsAndValidate(
     }
     else if (genericType->isGenericType())
     {
-        if (!typeArgs.contains((IRGenericType*)genericType))
-            typeArgs.try_emplace((IRGenericType*)genericType, actualType);
+        if (!findTypeParamValue((IRGenericType*)genericType))
+            addTypeParamValue((IRGenericType*)genericType, actualType);
 
-        if (typeArgs.at((IRGenericType*)genericType) != actualType)
+        if (findTypeParamValue((IRGenericType*)genericType) != actualType)
         {
             return "Inconsistent value for type parameter "
                 + genericType->toString() + ": was "
-                + typeArgs.at((IRGenericType*)genericType)->toString()
+                + findTypeParamValue((IRGenericType*)genericType)->toString()
                 + ", now " + actualType->toString();
         }
 
@@ -351,10 +353,10 @@ std::optional<std::string> Environment::inferTypeArgsAndValidate(
                 + " is not an instantiated struct type";
         }
 
-        auto genericInstantiated = (IRInstantiatedStructType*)genericType;
-        auto actualInstantiated = (IRInstantiatedStructType*)actualType;
+        auto genericInstantiated = (IRStructInstantiation*)genericType;
+        auto actualInstantiated = (IRStructInstantiation*)actualType;
 
-        if (actualInstantiated->base != genericInstantiated->base)
+        if (actualInstantiated->structType != genericInstantiated->structType)
         {
             return "Type " + actualInstantiated->toString()
                 + " is not an instantiation of "
@@ -373,8 +375,7 @@ std::optional<std::string> Environment::inferTypeArgsAndValidate(
         {
             auto result = inferTypeArgsAndValidate(
                 genericInstantiated->typeArgs.at(i),
-                actualInstantiated->typeArgs.at(i),
-                typeArgs
+                actualInstantiated->typeArgs.at(i)
             );
 
             if (result.has_value())
@@ -392,8 +393,7 @@ std::optional<std::string> Environment::inferTypeArgsAndValidate(
 
         return inferTypeArgsAndValidate(
             ((IRPointerType*)genericType)->base,
-            ((IRPointerType*)actualType)->base,
-            typeArgs
+            ((IRPointerType*)actualType)->base
         );
     }
     else if (genericType->isArrayType())
@@ -404,9 +404,7 @@ std::optional<std::string> Environment::inferTypeArgsAndValidate(
         }
 
         return inferTypeArgsAndValidate(
-            ((IRArrayType*)genericType)->base,
-            ((IRArrayType*)actualType)->base,
-            typeArgs
+            ((IRArrayType*)genericType)->base, ((IRArrayType*)actualType)->base
         );
     }
     else

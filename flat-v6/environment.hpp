@@ -209,11 +209,7 @@ public:
     /// @param typeArgs
     /// @return true if @p actualType is compatible with @p genericType,
     /// otherwise false
-    bool inferTypeArgsAndMatch(
-        IRType* actualType,
-        IRType* genericType,
-        std::unordered_map<IRGenericType*, IRType*>& typeArgs
-    );
+    bool inferTypeArgsAndMatch(IRType* actualType, IRType* genericType);
 
     /// @brief Validate that @p actualType is either equal to @p genericType or
     /// an instantiation of @p genericType. If @p actualType is an instantiation
@@ -227,8 +223,6 @@ public:
     /// otherwise a string describing why @p actualType is not compatible with
     /// @p genericType
     std::optional<std::string> inferTypeArgsAndValidate(
-        IRType* genericType,
-        IRType* actualType,
-        std::unordered_map<IRGenericType*, IRType*>& typeArgs
+        IRType* genericType, IRType* actualType
     );
 };
