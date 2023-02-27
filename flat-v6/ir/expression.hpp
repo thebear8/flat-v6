@@ -6,6 +6,9 @@
 #include "../data/operator.hpp"
 #include "ir_node.hpp"
 
+struct IRFunction;
+struct IRFunctionInstantiation;
+
 struct IRExpression : public IRNode
 {
     IMPLEMENT_ACCEPT()
@@ -101,7 +104,10 @@ struct IRUnaryExpression : public IRExpression
 
     IMPLEMENT_ACCEPT()
 
-    METADATA_PROP(target, IRFunction*, getTarget, setTarget)
+    METADATA_PROP(target, IRFunctionInstantiation*, getTarget, setTarget)
+    METADATA_PROP(
+        loweredTarget, IRFunction*, getLoweredTarget, setLoweredTarget
+    )
 };
 
 struct IRBinaryExpression : public IRExpression
@@ -118,7 +124,10 @@ struct IRBinaryExpression : public IRExpression
 
     IMPLEMENT_ACCEPT()
 
-    METADATA_PROP(target, IRFunction*, getTarget, setTarget)
+    METADATA_PROP(target, IRFunctionInstantiation*, getTarget, setTarget)
+    METADATA_PROP(
+        loweredTarget, IRFunction*, getLoweredTarget, setLoweredTarget
+    )
 };
 
 struct IRCallExpression : public IRExpression
@@ -135,7 +144,10 @@ struct IRCallExpression : public IRExpression
 
     IMPLEMENT_ACCEPT()
 
-    METADATA_PROP(target, IRFunction*, getTarget, setTarget)
+    METADATA_PROP(target, IRFunctionInstantiation*, getTarget, setTarget)
+    METADATA_PROP(
+        loweredTarget, IRFunction*, getLoweredTarget, setLoweredTarget
+    )
 };
 
 struct IRIndexExpression : public IRExpression
@@ -152,7 +164,10 @@ struct IRIndexExpression : public IRExpression
 
     IMPLEMENT_ACCEPT()
 
-    METADATA_PROP(target, IRFunction*, getTarget, setTarget)
+    METADATA_PROP(target, IRFunctionInstantiation*, getTarget, setTarget)
+    METADATA_PROP(
+        loweredTarget, IRFunction*, getLoweredTarget, setLoweredTarget
+    )
 };
 
 struct IRFieldExpression : public IRExpression

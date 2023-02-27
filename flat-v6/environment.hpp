@@ -142,4 +142,36 @@ public:
     /// @return The found variable's type or nullptr if the variable was not
     /// found
     virtual IRType* findVariableType(std::string const& name);
+
+    /// @brief Determine if @p actualType is either equal to @p genericType or
+    /// an instantiation of @p genericType. If @p actualType is an instantiation
+    /// of @p genericType also determine values for type parameters of
+    /// @p genericType
+    /// @param actualType
+    /// @param genericType
+    /// @param typeArgs
+    /// @return true if @p actualType is compatible with @p genericType,
+    /// otherwise false
+    bool inferTypeArgsAndMatch(
+        IRType* actualType,
+        IRType* genericType,
+        std::unordered_map<IRGenericType*, IRType*>& typeArgs
+    );
+
+    /// @brief Validate that @p actualType is either equal to @p genericType or
+    /// an instantiation of @p genericType. If @p actualType is an instantiation
+    /// of @p genericType also determine values for type parameters of. If the
+    /// validation fails, return a description of why it failed
+    /// @p genericType
+    /// @param actualType
+    /// @param genericType
+    /// @param typeArgs
+    /// @return std::nullopt if @p actualType is compatible with @p genericType,
+    /// otherwise a string describing why @p actualType is not compatible with
+    /// @p genericType
+    std::optional<std::string> inferTypeArgsAndValidate(
+        IRType* genericType,
+        IRType* actualType,
+        std::unordered_map<IRGenericType*, IRType*>& typeArgs
+    );
 };

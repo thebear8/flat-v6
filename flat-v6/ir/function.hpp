@@ -9,6 +9,8 @@ namespace llvm
 class Function;
 };
 
+struct IRType;
+
 struct IRFunction : public IRNode
 {
     std::string lib, name;
@@ -60,4 +62,17 @@ struct IRFunction : public IRNode
     METADATA_PROP(
         llvmFunction, llvm::Function*, getLLVMFunction, setLLVMFunction
     )
+};
+
+struct IRFunctionInstantiation
+{
+    IRFunction* function;
+    std::vector<IRType*> typeArgs;
+
+    IRFunctionInstantiation(
+        IRFunction* function, std::vector<IRType*> const& typeArgs
+    )
+        : function(function), typeArgs(typeArgs)
+    {
+    }
 };
