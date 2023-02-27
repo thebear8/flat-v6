@@ -67,8 +67,6 @@ public:
         TargetDescriptor const& targetDesc, llvm::raw_pwrite_stream& output
     );
 
-    IRType* getType(std::string const& name) override;
-
 public:
     /// @brief Add a module to this compilation context
     /// @param mod The module to add
@@ -80,17 +78,6 @@ public:
     /// @param name The name of the module to find
     /// @return The found module or nullptr if the module was not found
     IRModule* getModule(std::string const& name);
-
-    /// @brief Lookup a builtin type
-    /// @param name Type name
-    /// @return Type representing the specified type or nullptr on failure
-    IRType* getBuiltinType(std::string const& name);
-
-    /// @brief Get or create an IntegerType
-    /// @param width Width in bits
-    /// @param isSigned True => Signed Integer, False => Unsigned Integer
-    /// @return Retrieved or created IntegerType
-    IRIntegerType* getIntegerType(size_t width, bool isSigned);
 
     /// @brief Get or create a PointerType
     /// @param base Type to point to

@@ -3,48 +3,81 @@
 #include <algorithm>
 #include <ranges>
 
-IRType* Environment::getType(std::string const& typeName)
+IRType* Environment::addBuiltinType(
+    std::string const& name, IRType* builtinType
+)
 {
-    if (auto s = getStruct(typeName))
-        return s;
-    else if (auto g = getGeneric(typeName))
-        return g;
-
-    return nullptr;
-}
-
-IRType* Environment::findType(std::string const& typeName)
-{
-    if (auto t = getType(typeName))
-        return t;
-    else if (m_parent)
-        return m_parent->findType(typeName);
-
-    return nullptr;
-}
-
-IRGenericType* Environment::addGeneric(IRGenericType* genericType)
-{
-    if (m_generics.contains(genericType->name))
+    if (m_builtinTypes.contains(name))
         return nullptr;
 
-    m_generics.try_emplace(genericType->name, genericType);
-    return m_generics.at(genericType->name);
+    m_builtinTypes.try_emplace(name, builtinType);
+    return m_builtinTypes.at(name);
 }
 
-IRGenericType* Environment::getGeneric(std::string const& genericName)
+IRType* Environment::getBuiltinType(std::string const& name)
 {
-    if (m_generics.contains(genericName))
-        return m_generics.at(genericName);
+    if (!m_builtinTypes.contains(name))
+        return nullptr;
+    return m_builtinTypes.at(name);
+}
+
+IRType* Environment::findBuiltinType(std::string const& name)
+{
+    if (auto b = getBuiltinType(name))
+        return b;
+    else if (m_parent)
+        return m_parent->findBuiltinType(name);
     return nullptr;
 }
 
-IRGenericType* Environment::findGeneric(std::string const& genericName)
+IRGenericType* Environment::addTypeParam(IRGenericType* typeParam)
 {
-    if (auto t = getGeneric(genericName))
+    if (m_typeParams.contains(typeParam->name))
+        return nullptr;
+
+    m_typeParams.try_emplace(typeParam->name, typeParam);
+    return m_typeParams.at(typeParam->name);
+}
+
+IRGenericType* Environment::getTypeParam(std::string const& name)
+{
+    if (m_typeParams.contains(name))
+        return m_typeParams.at(name);
+    return nullptr;
+}
+
+IRGenericType* Environment::findTypeParam(std::string const& name)
+{
+    if (auto t = getTypeParam(name))
         return t;
     if (m_parent)
-        return m_parent->findGeneric(genericName);
+        return m_parent->findTypeParam(name);
+
+    return nullptr;
+}
+
+IRType* Environment::addTypeParamValue(IRGenericType* typeParam, IRType* value)
+{
+    if (m_typeParamValues.contains(typeParam))
+        return nullptr;
+
+    m_typeParamValues.try_emplace(typeParam, value);
+    return m_typeParamValues.at(typeParam);
+}
+
+IRType* Environment::getTypeParamValue(IRGenericType* typeParam)
+{
+    if (!m_typeParamValues.contains(typeParam))
+        return nullptr;
+    return m_typeParamValues.at(typeParam);
+}
+
+IRType* Environment::findTypeParamValue(IRGenericType* typeParam)
+{
+    if (auto v = getTypeParamValue(typeParam))
+        return v;
+    else if (m_parent)
+        return m_parent->findTypeParamValue(typeParam);
 
     return nullptr;
 }
@@ -178,7 +211,32 @@ IRType* Environment::findVariableType(std::string const& variableName)
     if (auto t = getVariableType(variableName))
         return t;
     else if (m_parent)
-        return m_parent->getVariableType(variableName);
+        return m_parent->findVariableType(variableName);
+
+    return nullptr;
+}
+
+llvm::Value* Environment::setVariableValue(
+    std::string const& name, llvm::Value* value
+)
+{
+    m_llvmVariableValues[name] = value;
+    return m_llvmVariableValues.at(name);
+}
+
+llvm::Value* Environment::getVariableValue(std::string const& name)
+{
+    if (!m_llvmVariableValues.contains(name))
+        return nullptr;
+    return m_llvmVariableValues.at(name);
+}
+
+llvm::Value* Environment::findVariableValue(std::string const& name)
+{
+    if (auto v = getVariableValue(name))
+        return v;
+    else if (m_parent)
+        return m_parent->findVariableValue(name);
 
     return nullptr;
 }

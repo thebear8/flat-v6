@@ -49,6 +49,19 @@ CompilationContext::CompilationContext(std::ostream& logStream)
     m_unsignedIntegerTypes.try_emplace(16, m_u16);
     m_unsignedIntegerTypes.try_emplace(32, m_u32);
     m_unsignedIntegerTypes.try_emplace(64, m_u64);
+
+    addBuiltinType("void", getVoid());
+    addBuiltinType("bool", getBool());
+    addBuiltinType("i8", getI8());
+    addBuiltinType("i16", getI16());
+    addBuiltinType("i32", getI32());
+    addBuiltinType("i64", getI64());
+    addBuiltinType("u8", getU8());
+    addBuiltinType("u16", getU16());
+    addBuiltinType("u32", getU32());
+    addBuiltinType("u64", getU64());
+    addBuiltinType("char", getChar());
+    addBuiltinType("string", getString());
 }
 
 CompilationContext::~CompilationContext()
@@ -171,13 +184,6 @@ void CompilationContext::generateCode(
     output.flush();
 }
 
-IRType* CompilationContext::getType(std::string const& name)
-{
-    if (auto b = getBuiltinType(name))
-        return b;
-    return Environment::getType(name);
-}
-
 IRModule* CompilationContext::addModule(IRModule* mod)
 {
     if (m_modules.contains(mod->name))
@@ -192,44 +198,6 @@ IRModule* CompilationContext::getModule(std::string const& name)
     if (!m_modules.contains(name))
         return nullptr;
     return m_modules.at(name);
-}
-
-IRType* CompilationContext::getBuiltinType(std::string const& name)
-{
-    return StringSwitch<IRType*>(name)
-        .Case("void", getVoid())
-        .Case("bool", getBool())
-        .Case("i8", getI8())
-        .Case("i16", getI16())
-        .Case("i32", getI32())
-        .Case("i64", getI64())
-        .Case("u8", getU8())
-        .Case("u16", getU16())
-        .Case("u32", getU32())
-        .Case("u64", getU64())
-        .Case("char", getChar())
-        .Case("string", getString())
-        .Default(nullptr);
-}
-
-IRIntegerType* CompilationContext::getIntegerType(size_t width, bool isSigned)
-{
-    if (isSigned)
-    {
-        if (!m_signedIntegerTypes.contains(width))
-            m_signedIntegerTypes.try_emplace(
-                width, new IRIntegerType(true, width)
-            );
-        return m_signedIntegerTypes.at(width);
-    }
-    else
-    {
-        if (!m_unsignedIntegerTypes.contains(width))
-            m_unsignedIntegerTypes.try_emplace(
-                width, new IRIntegerType(false, width)
-            );
-        return m_unsignedIntegerTypes.at(width);
-    }
 }
 
 IRPointerType* CompilationContext::getPointerType(IRType* base)
