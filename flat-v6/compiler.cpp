@@ -41,15 +41,6 @@ CompilationContext::CompilationContext(std::ostream& logStream)
       m_char(new IRCharType()),
       m_string(new IRStringType())
 {
-    m_signedIntegerTypes.try_emplace(8, m_i8);
-    m_signedIntegerTypes.try_emplace(16, m_i16);
-    m_signedIntegerTypes.try_emplace(32, m_i32);
-    m_signedIntegerTypes.try_emplace(64, m_i64);
-    m_unsignedIntegerTypes.try_emplace(8, m_u8);
-    m_unsignedIntegerTypes.try_emplace(16, m_u16);
-    m_unsignedIntegerTypes.try_emplace(32, m_u32);
-    m_unsignedIntegerTypes.try_emplace(64, m_u64);
-
     addBuiltinType("void", getVoid());
     addBuiltinType("bool", getBool());
     addBuiltinType("i8", getI8());
@@ -66,8 +57,24 @@ CompilationContext::CompilationContext(std::ostream& logStream)
 
 CompilationContext::~CompilationContext()
 {
-    for (auto const& [name, mod] : m_modules)
-        delete mod;
+    for (auto const& [type, pointerType] : m_pointerTypes)
+        delete pointerType;
+
+    for (auto const& [type, arrayType] : m_arrayTypes)
+        delete arrayType;
+
+    delete m_void;
+    delete m_bool;
+    delete m_i8;
+    delete m_i16;
+    delete m_i32;
+    delete m_i64;
+    delete m_u8;
+    delete m_u16;
+    delete m_u32;
+    delete m_u64;
+    delete m_char;
+    delete m_string;
 }
 
 void CompilationContext::readSourceFiles(std::string const& sourceDir)

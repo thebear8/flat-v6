@@ -37,8 +37,6 @@ private:
     std::vector<ASTSourceFile*> m_parsedSourceFiles;
 
     std::unordered_map<std::string, IRModule*> m_modules;
-    std::unordered_map<size_t, IRIntegerType*> m_signedIntegerTypes;
-    std::unordered_map<size_t, IRIntegerType*> m_unsignedIntegerTypes;
     std::unordered_map<IRType*, IRPointerType*> m_pointerTypes;
     std::unordered_map<IRType*, IRArrayType*> m_arrayTypes;
 

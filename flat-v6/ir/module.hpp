@@ -1,11 +1,21 @@
 #pragma once
+#include <map>
+#include <set>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "ir_node.hpp"
 
 class Environment;
 class GraphContext;
+
+class IRType;
+class IRConstraint;
+class IRStructType;
+class IRStructInstantiation;
+class IRFunction;
+class IRFunctionInstantiation;
 
 struct IRModule : public IRNode
 {
@@ -34,4 +44,26 @@ struct IRModule : public IRNode
 
     METADATA_PROP(env, Environment*, getEnv, setEnv)
     METADATA_PROP(irCtx, GraphContext*, getIrCtx, setIrCtx)
+
+    using StructInstantiationMap = std::unordered_map<
+        IRStructType*,
+        std::map<std::vector<IRType*>, IRStructInstantiation*>>;
+
+    METADATA_PROP(
+        structInstantiations,
+        StructInstantiationMap,
+        getStructInstantiations,
+        setStructInstantiations
+    )
+
+    using FunctionInstantiationMap = std::unordered_map<
+        IRFunction*,
+        std::map<std::vector<IRType*>, IRFunctionInstantiation*>>;
+
+    METADATA_PROP(
+        functionInstantiations,
+        FunctionInstantiationMap,
+        getFunctionInstantiations,
+        setFunctionInstantiations
+    )
 };

@@ -360,12 +360,65 @@ IRNode* IRPass::visit(ASTSourceFile* node)
 
 IRNode* IRPass::visit(ASTNamedType* node)
 {
-    if (auto type = m_env->findType(node->name))
-        return type;
+    if (auto builtinType = m_env->findBuiltinType(node->name))
+    {
+        return builtinType;
+    }
+    else if (auto typeParam = m_env->findTypeParam(node->name))
+    {
+        return typeParam;
+    }
+    if (auto structType = m_env->findStruct(node->name);
+        structType || node->typeArgs.size() != 0)
+    {
+        if (!structType)
+        {
+            return m_logger.error(
+                node->location, "No struct named " + node->name, nullptr
+            );
+        }
 
-    return m_logger.error(
-        node->location, "No matching type named " + node->name, nullptr
-    );
+        if (structType->typeParams.size() != node->typeArgs.size())
+        {
+            return m_logger.error(
+                node->location,
+                "Number of type arguments for struct " + node->name
+                    + " does not match number of type parameters",
+                nullptr
+            );
+        }
+
+        std::vector<IRType*> typeArgs;
+        for (auto typeArg : node->typeArgs)
+            typeArgs.push_back((IRType*)dispatch(typeArg));
+
+        auto& structInstantiations = m_module->getStructInstantiations();
+
+        if (!structInstantiations.contains(structType))
+        {
+            structInstantiations.try_emplace(
+                structType,
+                std::map<std::vector<IRType*>, IRStructInstantiation*>()
+            );
+        }
+
+        if (!structInstantiations.at(structType).contains(typeArgs))
+        {
+            auto instantiation =
+                m_irCtx->make(IRStructInstantiation(structType, typeArgs));
+
+            structInstantiations.at(structType)
+                .try_emplace(typeArgs, instantiation);
+        }
+
+        return structInstantiations.at(structType).at(typeArgs);
+    }
+    else
+    {
+        return m_logger.error(
+            node->location, "No type named " + node->name, nullptr
+        );
+    }
 }
 
 IRNode* IRPass::visit(ASTPointerType* node)
