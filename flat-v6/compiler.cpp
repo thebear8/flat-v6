@@ -53,10 +53,25 @@ CompilationContext::CompilationContext(std::ostream& logStream)
     addBuiltinType("u64", getU64());
     addBuiltinType("char", getChar());
     addBuiltinType("string", getString());
+
+    m_signedIntegerTypes.try_emplace(8, m_i8);
+    m_signedIntegerTypes.try_emplace(16, m_i16);
+    m_signedIntegerTypes.try_emplace(32, m_i32);
+    m_signedIntegerTypes.try_emplace(64, m_i64);
+    m_unsignedIntegerTypes.try_emplace(8, m_u8);
+    m_unsignedIntegerTypes.try_emplace(16, m_u16);
+    m_unsignedIntegerTypes.try_emplace(32, m_u32);
+    m_unsignedIntegerTypes.try_emplace(64, m_u64);
 }
 
 CompilationContext::~CompilationContext()
 {
+    for (auto [width, integerType] : m_signedIntegerTypes)
+        delete integerType;
+
+    for (auto [width, integerType] : m_unsignedIntegerTypes)
+        delete integerType;
+
     for (auto const& [type, pointerType] : m_pointerTypes)
         delete pointerType;
 
@@ -205,6 +220,26 @@ IRModule* CompilationContext::getModule(std::string const& name)
     if (!m_modules.contains(name))
         return nullptr;
     return m_modules.at(name);
+}
+
+IRIntegerType* CompilationContext::getIntegerType(size_t width, bool isSigned)
+{
+    if (isSigned)
+    {
+        if (!m_signedIntegerTypes.contains(width))
+            m_signedIntegerTypes.try_emplace(
+                width, new IRIntegerType(true, width)
+            );
+        return m_signedIntegerTypes.at(width);
+    }
+    else
+    {
+        if (!m_unsignedIntegerTypes.contains(width))
+            m_unsignedIntegerTypes.try_emplace(
+                width, new IRIntegerType(false, width)
+            );
+        return m_unsignedIntegerTypes.at(width);
+    }
 }
 
 IRPointerType* CompilationContext::getPointerType(IRType* base)

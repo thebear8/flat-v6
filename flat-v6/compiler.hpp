@@ -37,6 +37,9 @@ private:
     std::vector<ASTSourceFile*> m_parsedSourceFiles;
 
     std::unordered_map<std::string, IRModule*> m_modules;
+
+    std::unordered_map<size_t, IRIntegerType*> m_signedIntegerTypes;
+    std::unordered_map<size_t, IRIntegerType*> m_unsignedIntegerTypes;
     std::unordered_map<IRType*, IRPointerType*> m_pointerTypes;
     std::unordered_map<IRType*, IRArrayType*> m_arrayTypes;
 
@@ -76,6 +79,12 @@ public:
     /// @param name The name of the module to find
     /// @return The found module or nullptr if the module was not found
     IRModule* getModule(std::string const& name);
+
+    /// @brief Get an IntegerType
+    /// @param width Width in bits
+    /// @param isSigned True => Signed Integer, False => Unsigned Integer
+    /// @return Retrieved or created IntegerType
+    IRIntegerType* getIntegerType(size_t width, bool isSigned);
 
     /// @brief Get or create a PointerType
     /// @param base Type to point to
