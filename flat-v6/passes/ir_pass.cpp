@@ -230,7 +230,7 @@ IRNode* IRPass::visit(ASTConstraintDeclaration* node)
         typeParams.push_back(m_irCtx->make(IRGenericType(typeParam)));
 
     for (auto p : typeParams)
-        m_env->addGeneric(p);
+        m_env->addTypeParam(p);
 
     std::vector<IRFunction*> conditions;
     for (auto condition : node->conditions)
@@ -266,7 +266,7 @@ IRNode* IRPass::visit(ASTStructDeclaration* node)
     auto structType = node->getIRStructType();
 
     for (auto typeParam : structType->typeParams)
-        m_env->addGeneric(typeParam);
+        m_env->addTypeParam(typeParam);
 
     for (auto const& [name, type] : node->fields)
     {
@@ -296,7 +296,7 @@ IRNode* IRPass::visit(ASTFunctionDeclaration* node)
         typeParams.push_back(m_irCtx->make(IRGenericType(typeParam)));
 
     for (auto p : typeParams)
-        m_env->addGeneric(p);
+        m_env->addTypeParam(p);
 
     std::vector<std::pair<std::string, IRType*>> params;
     for (auto const& [name, type] : node->parameters)

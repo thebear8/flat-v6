@@ -532,7 +532,7 @@ IRType* SemanticPass::visit(IRFunction* node)
     m_env = m_irCtx->make(Environment(node->name, m_env));
 
     for (auto typeParam : node->typeParams)
-        m_env->addGeneric(typeParam);
+        m_env->addTypeParam(typeParam);
 
     for (auto& [name, args] : node->requirements)
     {
