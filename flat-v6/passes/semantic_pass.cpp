@@ -115,8 +115,9 @@ IRType* SemanticPass::visit(IRStructExpression* node)
     for (auto const& [name, value] : node->fields)
     {
         auto fieldType = structType->fields.at(name);
-        auto result =
-            inferTypeArgsAndValidate(fieldType, value->getType(), typeArgs);
+        auto result = m_env->inferTypeArgsAndValidate(
+            fieldType, value->getType(), typeArgs
+        );
         if (result.has_value())
         {
             return m_logger.error(
@@ -146,8 +147,7 @@ IRType* SemanticPass::visit(IRStructExpression* node)
         typeArgList.push_back(typeArgs.at(typeParam));
     }
 
-    node->setType(m_irCtx->make(IRStructInstantiation(structType, typeArgList))
-    );
+    node->setType(getStructInstantiation(structType, typeArgList));
     return node->getType();
 }
 
@@ -180,21 +180,31 @@ IRType* SemanticPass::visit(IRUnaryExpression* node)
     else
     {
         auto args = std::vector({ value });
-        auto function =
-            m_env->findFunction(unaryOperators.at(node->operation).name, args);
+        auto typeArgs = std::unordered_map<IRGenericType*, IRType*>();
+
+        std::string error;
+        std::unordered_map<IRGenericType*, IRType*> typeArgs;
+        auto function = findCallTargetAndInstantiate(
+            unaryOperators.at(node->operation).name, args, typeArgs, error
+        );
+
         if (!function)
         {
             return m_logger.error(
                 node->getLocation(SourceRef()),
-                "No matching operator function "
-                    + unaryOperators.at(node->operation).name + " for type "
-                    + value->toString(),
+                "No matching operator function: " + error,
                 nullptr
             );
         }
 
+        auto result =
+            (function->function->result->isGenericType()
+             && typeArgs.contains((IRGenericType*)function->function->result))
+            ? typeArgs.at((IRGenericType*)function->function->result)
+            : function->function->result;
+
         node->setTarget(function);
-        node->setType(function->result);
+        node->setType(result);
         return node->getType();
     }
 }
@@ -278,32 +288,31 @@ IRType* SemanticPass::visit(IRBinaryExpression* node)
     else
     {
         auto args = std::vector({ left, right });
-        auto function =
-            m_env->findFunction(binaryOperators.at(node->operation).name, args);
+        auto typeArgs = std::unordered_map<IRGenericType*, IRType*>();
+
+        std::string error;
+        std::unordered_map<IRGenericType*, IRType*> typeArgs;
+        auto function = findCallTargetAndInstantiate(
+            binaryOperators.at(node->operation).name, args, typeArgs, error
+        );
+
         if (!function)
         {
             return m_logger.error(
                 node->getLocation(SourceRef()),
-                "No matching operator function "
-                    + binaryOperators.at(node->operation).name + " for types "
-                    + left->toString() + ", " + right->toString(),
+                "No matching operator function: " + error,
                 nullptr
             );
         }
 
-        if (binaryOperators.at(node->operation).category
-                == OperatorCategory::BinaryAssign
-            && function->result != left)
-        {
-            return m_logger.error(
-                node->getLocation(SourceRef()),
-                "Assignment operator overload function has to return a value that has the type of the left operand",
-                nullptr
-            );
-        }
+        auto result =
+            (function->function->result->isGenericType()
+             && typeArgs.contains((IRGenericType*)function->function->result))
+            ? typeArgs.at((IRGenericType*)function->function->result)
+            : function->function->result;
 
         node->setTarget(function);
-        node->setType(function->result);
+        node->setType(result);
         return node->getType();
     }
 }
@@ -317,36 +326,58 @@ IRType* SemanticPass::visit(IRCallExpression* node)
     if (auto identifierExpression =
             dynamic_cast<IRIdentifierExpression*>(node->expression))
     {
-        auto function = m_env->findFunction(identifierExpression->value, args);
+        auto typeArgs = std::unordered_map<IRGenericType*, IRType*>();
+
+        std::string error;
+        std::unordered_map<IRGenericType*, IRType*> typeArgs;
+        auto function = findCallTargetAndInstantiate(
+            identifierExpression->value, args, typeArgs, error
+        );
+
         if (!function)
         {
             return m_logger.error(
-                node->getLocation(SourceRef()),
-                "No matching function " + identifierExpression->value,
-                nullptr
+                node->getLocation(SourceRef()), error, nullptr
             );
         }
 
+        auto result =
+            (function->function->result->isGenericType()
+             && typeArgs.contains((IRGenericType*)function->function->result))
+            ? typeArgs.at((IRGenericType*)function->function->result)
+            : function->function->result;
+
         node->setTarget(function);
-        node->setType(function->result);
+        node->setType(result);
         return node->getType();
     }
     else
     {
         args.insert(args.begin(), dispatch(node->expression));
-        auto function = m_env->findFunction("__call__", args);
+        auto typeArgs = std::unordered_map<IRGenericType*, IRType*>();
+
+        std::string error;
+        std::unordered_map<IRGenericType*, IRType*> typeArgs;
+        auto function =
+            findCallTargetAndInstantiate("__call__", args, typeArgs, error);
+
         if (!function)
         {
             return m_logger.error(
                 node->getLocation(SourceRef()),
-                "No matching operator function __call__ for type "
-                    + args.front()->toString(),
+                "No matching operator function: " + error,
                 nullptr
             );
         }
 
+        auto result =
+            (function->function->result->isGenericType()
+             && typeArgs.contains((IRGenericType*)function->function->result))
+            ? typeArgs.at((IRGenericType*)function->function->result)
+            : function->function->result;
+
         node->setTarget(function);
-        node->setType(function->result);
+        node->setType(result);
         return node->getType();
     }
 }
@@ -373,19 +404,30 @@ IRType* SemanticPass::visit(IRIndexExpression* node)
     else
     {
         args.insert(args.begin(), value);
-        auto function = m_env->findFunction("__index__", args);
+        auto typeArgs = std::unordered_map<IRGenericType*, IRType*>();
+
+        std::string error;
+        std::unordered_map<IRGenericType*, IRType*> typeArgs;
+        auto function =
+            findCallTargetAndInstantiate("__index__", args, typeArgs, error);
+
         if (!function)
         {
             return m_logger.error(
                 node->getLocation(SourceRef()),
-                "No matching operator function __index__ for type "
-                    + args.front()->toString(),
+                "No matching operator function: " + error,
                 nullptr
             );
         }
 
+        auto result =
+            (function->function->result->isGenericType()
+             && typeArgs.contains((IRGenericType*)function->function->result))
+            ? typeArgs.at((IRGenericType*)function->function->result)
+            : function->function->result;
+
         node->setTarget(function);
-        node->setType(function->result);
+        node->setType(result);
         return node->getType();
     }
 }
@@ -622,4 +664,105 @@ IRType* SemanticPass::visit(IRModule* node)
     for (auto& decl : node->functions)
         dispatch(decl);
     return nullptr;
+}
+
+IRFunctionInstantiation* SemanticPass::findCallTargetAndInstantiate(
+    std::string const& name,
+    std::vector<IRType*> args,
+    std::unordered_map<IRGenericType*, IRType*>& typeArgs,
+    std::string& error
+)
+{
+    auto function = m_env->findCallTargetAndInferTypeArgs(name, args, typeArgs);
+    if (!function)
+    {
+        std::string stringArgs;
+        for (auto arg : args)
+            stringArgs += (stringArgs.empty() ? "" : ", ") + arg->toString();
+
+        error =
+            "No matching function for call to " + name + "(" + stringArgs + ")";
+
+        return nullptr;
+    }
+
+    std::vector<IRType*> typeArgList;
+    for (auto tp : function->typeParams)
+    {
+        if (!typeArgs.contains(tp))
+        {
+            std::string stringArgs;
+            for (auto arg : args)
+                stringArgs +=
+                    (stringArgs.empty() ? "" : ", ") + arg->toString();
+
+            error = "Could not infer type argument " + tp->toString()
+                + " for call to function " + name + "(" + stringArgs + ")";
+
+            return nullptr;
+        }
+
+        typeArgList.push_back(typeArgs.at(tp));
+    }
+
+    return getFunctionInstantiation(function, typeArgList);
+}
+
+IRStructInstantiation* SemanticPass::getStructInstantiation(
+    IRStructType* structType, std::vector<IRType*> const& typeArgs
+)
+{
+    assert(
+        typeArgs.size() == structType->typeParams.size()
+        && "Number of type args has to be equal to number of type params"
+    );
+
+    auto& structInstantiations = m_module->getStructInstantiations();
+    if (!structInstantiations.contains(structType))
+    {
+        structInstantiations.try_emplace(
+            structType, std::map<std::vector<IRType*>, IRStructInstantiation*>()
+        );
+    }
+
+    if (!structInstantiations.at(structType).contains(typeArgs))
+    {
+        auto instantiation =
+            m_irCtx->make(IRStructInstantiation(structType, typeArgs));
+
+        structInstantiations.at(structType)
+            .try_emplace(typeArgs, instantiation);
+    }
+
+    return structInstantiations.at(structType).at(typeArgs);
+}
+
+IRFunctionInstantiation* SemanticPass::getFunctionInstantiation(
+    IRFunction* function, std::vector<IRType*> const& typeArgs
+)
+{
+    assert(
+        typeArgs.size() == function->typeParams.size()
+        && "Number of type args has to be equal to number of type params"
+    );
+
+    auto& functionInstantiations = m_module->getFunctionInstantiations();
+    if (!functionInstantiations.contains(function))
+    {
+        functionInstantiations.try_emplace(
+            function, std::map<std::vector<IRType*>, IRFunctionInstantiation*>()
+        );
+    }
+
+    if (!functionInstantiations.at(function).contains(typeArgs))
+    {
+        auto instantiation =
+            m_irCtx->make(IRFunctionInstantiation(function, typeArgs));
+
+        functionInstantiations.at(function).try_emplace(
+            typeArgs, instantiation
+        );
+    }
+
+    return functionInstantiations.at(function).at(typeArgs);
 }

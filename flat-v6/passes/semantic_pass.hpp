@@ -60,15 +60,17 @@ private:
     virtual IRType* visit(IRModule* node) override;
 
 private:
-    std::optional<std::string> inferTypeArgsAndValidate(
-        IRType* genericType,
-        IRType* actualType,
-        std::unordered_map<IRGenericType*, IRType*>& typeArgs
+    IRStructInstantiation* getStructInstantiation(
+        IRStructType* structType, std::vector<IRType*> const& typeArgs
+    );
+    IRFunctionInstantiation* getFunctionInstantiation(
+        IRFunction*, std::vector<IRType*> const& typeArgs
     );
 
-    bool inferTypeArgsAndMatch(
-        IRType* genericType,
-        IRType* actualType,
-        std::unordered_map<IRGenericType*, IRType*>& typeArgs
+    IRFunctionInstantiation* findCallTargetAndInstantiate(
+        std::string const& name,
+        std::vector<IRType*> args,
+        std::unordered_map<IRGenericType*, IRType*>& typeArgs,
+        std::string& error
     );
 };
