@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <ranges>
 
+#include "util/zip_view.hpp"
+
 IRType* Environment::addBuiltinType(
     std::string const& name, IRType* builtinType
 )
@@ -188,6 +190,33 @@ IRFunction* Environment::findFunction(
     return nullptr;
 }
 
+IRFunction* Environment::findCallTargetAndInferTypeArgs(
+    std::string const& name,
+    std::vector<IRType*> const& args,
+    std::unordered_map<IRGenericType*, IRType*>& typeArgs
+)
+{
+    for (auto [i, end] = m_functions.equal_range(name); i != end; ++i)
+    {
+        auto candidate = i->second;
+        auto candidateParams = candidate->params | std::views::values;
+
+        if (args.size() != candidateParams.size())
+            continue;
+
+        typeArgs.clear();
+
+        auto incompatibleParams =
+            zip_view(args, candidateParams)
+            | std::views::filter([&](auto const& p) {
+                  return !inferTypeArgsAndMatch(p.first, p.second, typeArgs);
+              });
+
+        if (incompatibleParams.empty())
+            return candidate;
+    }
+}
+
 IRType* Environment::addVariableType(
     std::string const& variableName, IRType* variableType
 )
@@ -241,7 +270,11 @@ llvm::Value* Environment::findVariableValue(std::string const& name)
     return nullptr;
 }
 
-bool Environment::inferTypeArgsAndMatch(IRType* genericType, IRType* actualType)
+bool Environment::inferTypeArgsAndMatch(
+    IRType* genericType,
+    IRType* actualType,
+    std::unordered_map<IRGenericType*, IRType*>& typeArgs
+)
 {
     if (actualType == genericType)
     {
@@ -249,42 +282,35 @@ bool Environment::inferTypeArgsAndMatch(IRType* genericType, IRType* actualType)
     }
     else if (genericType->isGenericType())
     {
-        if (!findTypeParamValue((IRGenericType*)genericType))
-            addTypeParamValue((IRGenericType*)genericType, actualType);
+        if (!typeArgs.contains((IRGenericType*)genericType))
+            typeArgs.try_emplace((IRGenericType*)genericType, actualType);
 
-        if (findTypeParamValue((IRGenericType*)genericType) != actualType)
-        {
+        if (typeArgs.at((IRGenericType*)genericType) != actualType)
             return false;
-        }
 
         return true;
     }
     else if (genericType->isStructInstantiation())
     {
         if (!actualType->isStructInstantiation())
-        {
             return false;
-        }
 
         auto genericInstantiated = (IRStructInstantiation*)genericType;
         auto actualInstantiated = (IRStructInstantiation*)actualType;
 
         if (actualInstantiated->structType != genericInstantiated->structType)
-        {
             return false;
-        }
 
         if (actualInstantiated->typeArgs.size()
             != genericInstantiated->typeArgs.size())
-        {
             return false;
-        }
 
         for (size_t i = 0; i < genericInstantiated->typeArgs.size(); i++)
         {
             auto result = inferTypeArgsAndMatch(
                 genericInstantiated->typeArgs.at(i),
-                actualInstantiated->typeArgs.at(i)
+                actualInstantiated->typeArgs.at(i),
+                typeArgs
             );
 
             if (!result)
@@ -296,24 +322,23 @@ bool Environment::inferTypeArgsAndMatch(IRType* genericType, IRType* actualType)
     else if (genericType->isPointerType())
     {
         if (!actualType->isPointerType())
-        {
             return false;
-        }
 
         return inferTypeArgsAndMatch(
             ((IRPointerType*)genericType)->base,
-            ((IRPointerType*)actualType)->base
+            ((IRPointerType*)actualType)->base,
+            typeArgs
         );
     }
     else if (genericType->isArrayType())
     {
         if (!actualType->isArrayType())
-        {
             return false;
-        }
 
         return inferTypeArgsAndMatch(
-            ((IRArrayType*)genericType)->base, ((IRArrayType*)actualType)->base
+            ((IRArrayType*)genericType)->base,
+            ((IRArrayType*)actualType)->base,
+            typeArgs
         );
     }
     else
@@ -323,7 +348,9 @@ bool Environment::inferTypeArgsAndMatch(IRType* genericType, IRType* actualType)
 }
 
 std::optional<std::string> Environment::inferTypeArgsAndValidate(
-    IRType* genericType, IRType* actualType
+    IRType* genericType,
+    IRType* actualType,
+    std::unordered_map<IRGenericType*, IRType*>& typeArgs
 )
 {
     if (actualType == genericType)
@@ -332,14 +359,14 @@ std::optional<std::string> Environment::inferTypeArgsAndValidate(
     }
     else if (genericType->isGenericType())
     {
-        if (!findTypeParamValue((IRGenericType*)genericType))
-            addTypeParamValue((IRGenericType*)genericType, actualType);
+        if (!typeArgs.contains((IRGenericType*)genericType))
+            typeArgs.try_emplace((IRGenericType*)genericType, actualType);
 
-        if (findTypeParamValue((IRGenericType*)genericType) != actualType)
+        if (typeArgs.at((IRGenericType*)genericType) != actualType)
         {
             return "Inconsistent value for type parameter "
                 + genericType->toString() + ": was "
-                + findTypeParamValue((IRGenericType*)genericType)->toString()
+                + typeArgs.at((IRGenericType*)genericType)->toString()
                 + ", now " + actualType->toString();
         }
 
@@ -375,7 +402,8 @@ std::optional<std::string> Environment::inferTypeArgsAndValidate(
         {
             auto result = inferTypeArgsAndValidate(
                 genericInstantiated->typeArgs.at(i),
-                actualInstantiated->typeArgs.at(i)
+                actualInstantiated->typeArgs.at(i),
+                typeArgs
             );
 
             if (result.has_value())
@@ -393,7 +421,8 @@ std::optional<std::string> Environment::inferTypeArgsAndValidate(
 
         return inferTypeArgsAndValidate(
             ((IRPointerType*)genericType)->base,
-            ((IRPointerType*)actualType)->base
+            ((IRPointerType*)actualType)->base,
+            typeArgs
         );
     }
     else if (genericType->isArrayType())
@@ -404,7 +433,9 @@ std::optional<std::string> Environment::inferTypeArgsAndValidate(
         }
 
         return inferTypeArgsAndValidate(
-            ((IRArrayType*)genericType)->base, ((IRArrayType*)actualType)->base
+            ((IRArrayType*)genericType)->base,
+            ((IRArrayType*)actualType)->base,
+            typeArgs
         );
     }
     else

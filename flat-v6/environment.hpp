@@ -159,6 +159,18 @@ public:
         std::string const& name, std::vector<IRType*> const& params
     );
 
+    /// @brief Search for a call target by name and argument types
+    /// @param name Name of the function
+    /// @param params Parameters
+    /// @param typeArgs Reference to std::map to which to add the inferred type
+    /// parameter values
+    /// @return The found function or nullptr if the function was not found
+    IRFunction* findCallTargetAndInferTypeArgs(
+        std::string const& name,
+        std::vector<IRType*> const& args,
+        std::unordered_map<IRGenericType*, IRType*>& typeArgs
+    );
+
     /// @brief Add a type for a variable of given name to the current
     /// environment
     /// @param name Name of the variable
@@ -199,17 +211,20 @@ public:
     llvm::Value* findVariableValue(std::string const& name);
 
 public:
-    /// @brief Determine if @p actualType is either equal to @p genericType
-    /// or an instantiation of @p genericType. If @p actualType is an
-    /// instantiation of @p genericType also determine values for type
-    /// parameters of
+    /// @brief Determine if @p actualType is either equal to @p genericType or
+    /// an instantiation of @p genericType. If @p actualType is an instantiation
+    /// of @p genericType also determine values for type parameters of
     /// @p genericType
     /// @param actualType
     /// @param genericType
     /// @param typeArgs
     /// @return true if @p actualType is compatible with @p genericType,
     /// otherwise false
-    bool inferTypeArgsAndMatch(IRType* actualType, IRType* genericType);
+    bool inferTypeArgsAndMatch(
+        IRType* actualType,
+        IRType* genericType,
+        std::unordered_map<IRGenericType*, IRType*>& typeArgs
+    );
 
     /// @brief Validate that @p actualType is either equal to @p genericType or
     /// an instantiation of @p genericType. If @p actualType is an instantiation
@@ -223,6 +238,8 @@ public:
     /// otherwise a string describing why @p actualType is not compatible with
     /// @p genericType
     std::optional<std::string> inferTypeArgsAndValidate(
-        IRType* genericType, IRType* actualType
+        IRType* genericType,
+        IRType* actualType,
+        std::unordered_map<IRGenericType*, IRType*>& typeArgs
     );
 };
