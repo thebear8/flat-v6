@@ -42,7 +42,7 @@ struct ASTConstraintDeclaration : public ASTDeclaration
     IMPLEMENT_ACCEPT()
 };
 
-class IRStructType;
+class IRStructTemplate;
 struct ASTStructDeclaration : public ASTDeclaration
 {
     std::string name;
@@ -60,7 +60,7 @@ struct ASTStructDeclaration : public ASTDeclaration
 
     IMPLEMENT_ACCEPT()
 
-    METADATA_PROP(irStructType, IRStructType*, getIRStructType, setIRStructType)
+    METADATA_PROP(irStruct, IRStructTemplate*, getIRStruct, setIRStruct)
 };
 
 struct ASTFunctionDeclaration : public ASTDeclaration

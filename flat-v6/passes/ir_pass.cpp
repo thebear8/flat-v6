@@ -263,7 +263,7 @@ IRNode* IRPass::visit(ASTStructDeclaration* node)
 {
     m_env = m_irCtx->make(Environment(node->name, m_env));
 
-    auto structType = node->getIRStructType();
+    auto structType = node->getIRStruct();
 
     for (auto typeParam : structType->typeParams)
         m_env->addTypeParam(typeParam);
@@ -302,28 +302,30 @@ IRNode* IRPass::visit(ASTFunctionDeclaration* node)
     for (auto const& [name, type] : node->parameters)
         params.push_back({ name, (IRType*)dispatch(type) });
 
-    IRFunction* function = nullptr;
+    IRFunctionTemplate* function = nullptr;
     if (node->body)
     {
-        function = m_irCtx->make(IRFunction(
+        function = m_irCtx->make(IRFunctionTemplate(
             node->name,
             typeParams,
-            transformRequirements(node->requirements),
             params,
             (IRType*)dispatch(node->result),
+            transformRequirements(node->requirements),
             (IRStatement*)dispatch(node->body)
         ));
     }
     else
     {
-        function = m_irCtx->make(IRFunction(
-            node->lib,
+        function = m_irCtx->make(IRFunctionTemplate(
             node->name,
             typeParams,
-            transformRequirements(node->requirements),
             params,
-            (IRType*)dispatch(node->result)
+            (IRType*)dispatch(node->result),
+            transformRequirements(node->requirements),
+            nullptr
         ));
+
+        function->setLibraryNameForImport(node->lib);
     }
 
     function->setLocation(node->location);
@@ -393,25 +395,21 @@ IRNode* IRPass::visit(ASTNamedType* node)
             typeArgs.push_back((IRType*)dispatch(typeArg));
 
         auto& structInstantiations = m_module->getStructInstantiations();
-
-        if (!structInstantiations.contains(structType))
+        for (auto [it, end] = structInstantiations.equal_range(structType);
+             it != end;
+             ++it)
         {
-            structInstantiations.try_emplace(
-                structType,
-                std::map<std::vector<IRType*>, IRStructInstantiation*>()
-            );
+            auto [structTemplate, structInstantiation] = *it;
+            if (std::ranges::equal(typeArgs, structInstantiation->typeArgs))
+                return structInstantiation;
         }
 
-        if (!structInstantiations.at(structType).contains(typeArgs))
-        {
-            auto instantiation =
-                m_irCtx->make(IRStructInstantiation(structType, typeArgs));
+        // TODO
+        auto instantiation =
+            m_irCtx->make(IRStructInstantiation(structType, typeArgs));
 
-            structInstantiations.at(structType)
-                .try_emplace(typeArgs, instantiation);
-        }
-
-        return structInstantiations.at(structType).at(typeArgs);
+        structInstantiations.emplace(structType, instantiation);
+        return instantiation;
     }
     else
     {

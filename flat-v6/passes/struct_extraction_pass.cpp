@@ -13,7 +13,8 @@ void StructExtractionPass::visit(ASTStructDeclaration* node)
     for (auto typeParam : node->typeParams)
         typeParams.push_back(m_irCtx->make(IRGenericType(typeParam)));
 
-    auto structType = m_irCtx->make(IRStructType(node->name, typeParams, {}));
+    auto structType =
+        m_irCtx->make(IRStructTemplate(node->name, typeParams, {}));
     structType->setLocation(node->location);
     m_module->structs.push_back(structType);
 
@@ -26,7 +27,7 @@ void StructExtractionPass::visit(ASTStructDeclaration* node)
         );
     }
 
-    node->setIRStructType(structType);
+    node->setIRStruct(structType);
 }
 
 void StructExtractionPass::visit(ASTSourceFile* node)

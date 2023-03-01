@@ -19,8 +19,8 @@ protected:
     std::unordered_map<std::string, IRType*> m_builtinTypes;
 
     std::unordered_map<std::string, IRConstraint*> m_constraints;
-    std::unordered_map<std::string, IRStructType*> m_structs;
-    std::unordered_multimap<std::string, IRFunction*> m_functions;
+    std::unordered_map<std::string, IRStructTemplate*> m_structs;
+    std::unordered_multimap<std::string, IRFunctionTemplate*> m_functions;
 
     std::unordered_map<std::string, IRGenericType*> m_typeParams;
     std::unordered_map<IRGenericType*, IRType*> m_typeParamValues;
@@ -123,31 +123,31 @@ public:
     /// @param structType Struct type to add
     /// @return The added struct type or nullptr if a struct type with the same
     /// name already exists
-    IRStructType* addStruct(IRStructType* structType);
+    IRStructTemplate* addStruct(IRStructTemplate* structType);
 
     /// @brief Search for a struct type by name in this environment only
     /// @param name Name of the struct type
     /// @return The found struct type or nullptr if the struct type was not
     /// found
-    IRStructType* getStruct(std::string const& name);
+    IRStructTemplate* getStruct(std::string const& name);
 
     /// @brief Search for a struct type in the environment chain
     /// @param name Name of the struct type
     /// @return The found struct type or nullptr if the struct type was not
     /// found
-    IRStructType* findStruct(std::string const& name);
+    IRStructTemplate* findStruct(std::string const& name);
 
     /// @brief Add a function with specified name and params to this environment
     /// @param function Function to add
     /// @return The added function or nullptr if a function with the same name
     /// and parameters already exists
-    IRFunction* addFunction(IRFunction* function);
+    IRFunctionTemplate* addFunction(IRFunctionTemplate* function);
 
     /// @brief Search for a function by name and params in this environment
     /// @param name Name of the function
     /// @param params Parameters of the function
     /// @return The found function or nullptr if the function was not found
-    IRFunction* getFunction(
+    IRFunctionTemplate* getFunction(
         std::string const& name, std::vector<IRType*> const& params
     );
 
@@ -155,7 +155,7 @@ public:
     /// @param name Name of the function
     /// @param params Parameters of the function
     /// @return The found function or nullptr if the function was not found
-    IRFunction* findFunction(
+    IRFunctionTemplate* findFunction(
         std::string const& name, std::vector<IRType*> const& params
     );
 
@@ -165,7 +165,7 @@ public:
     /// @param typeArgs Reference to std::map to which to add the inferred type
     /// parameter values
     /// @return The found function or nullptr if the function was not found
-    IRFunction* findCallTargetAndInferTypeArgs(
+    IRFunctionTemplate* findCallTargetAndInferTypeArgs(
         std::string const& name,
         std::vector<IRType*> const& args,
         std::unordered_map<IRGenericType*, IRType*>& typeArgs

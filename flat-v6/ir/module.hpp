@@ -46,7 +46,7 @@ struct IRModule : public IRNode
     METADATA_PROP(irCtx, GraphContext*, getIrCtx, setIrCtx)
 
     using StructInstantiationMap =
-        std::unordered_multimap<IRStructType*, IRStructInstantiation*>;
+        std::unordered_multimap<IRStructTemplate*, IRStructInstantiation*>;
 
     METADATA_PROP(
         structInstantiations,
@@ -56,7 +56,7 @@ struct IRModule : public IRNode
     )
 
     using FunctionInstantiationMap =
-        std::unordered_multimap<IRFunction*, IRFunctionInstantiation*>;
+        std::unordered_multimap<IRFunctionTemplate*, IRFunctionInstantiation*>;
 
     METADATA_PROP(
         functionInstantiations,

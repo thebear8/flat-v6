@@ -96,27 +96,6 @@ struct IRStringType : public IRType
     virtual bool isStringType() override { return true; }
 };
 
-struct IRStructType : public IRType
-{
-    std::string name;
-    std::vector<IRGenericType*> typeParams;
-    std::unordered_map<std::string, IRType*> fields;
-
-    IRStructType(
-        std::string const& name,
-        std::vector<IRGenericType*> const& typeParams,
-        std::unordered_map<std::string, IRType*> const& fields
-    )
-        : name(name), typeParams(typeParams), fields(fields)
-    {
-    }
-
-    virtual std::string toString() override { return name; };
-    virtual bool isStructType() override { return true; }
-
-    IMPLEMENT_ACCEPT()
-};
-
 struct IRPointerType : public IRType
 {
     IRType* base;
@@ -210,4 +189,11 @@ struct IRStructInstantiation : public IRStruct
     virtual bool isStructInstantiation() override { return true; }
 
     IMPLEMENT_ACCEPT()
+
+    METADATA_PROP(
+        instantiatedFrom,
+        IRStructTemplate*,
+        getInstantiatedFrom,
+        setInstantiatedFrom
+    )
 };

@@ -110,7 +110,7 @@ IRConstraint* Environment::findConstraint(std::string const& constraintName)
     return nullptr;
 }
 
-IRStructType* Environment::addStruct(IRStructType* structType)
+IRStructTemplate* Environment::addStruct(IRStructTemplate* structType)
 {
     if (m_structs.contains(structType->name))
         return nullptr;
@@ -119,14 +119,14 @@ IRStructType* Environment::addStruct(IRStructType* structType)
     return m_structs.at(structType->name);
 }
 
-IRStructType* Environment::getStruct(std::string const& structName)
+IRStructTemplate* Environment::getStruct(std::string const& structName)
 {
     if (m_structs.contains(structName))
         return m_structs.at(structName);
     return nullptr;
 }
 
-IRStructType* Environment::findStruct(std::string const& structName)
+IRStructTemplate* Environment::findStruct(std::string const& structName)
 {
     if (auto structType = getStruct(structName))
         return structType;
@@ -136,7 +136,7 @@ IRStructType* Environment::findStruct(std::string const& structName)
     return nullptr;
 }
 
-IRFunction* Environment::addFunction(IRFunction* function)
+IRFunctionTemplate* Environment::addFunction(IRFunctionTemplate* function)
 {
     for (auto [i, end] = m_functions.equal_range(function->name); i != end; ++i)
     {
@@ -157,7 +157,7 @@ IRFunction* Environment::addFunction(IRFunction* function)
     return function;
 }
 
-IRFunction* Environment::getFunction(
+IRFunctionTemplate* Environment::getFunction(
     std::string const& functionName, std::vector<IRType*> const& params
 )
 {
@@ -178,7 +178,7 @@ IRFunction* Environment::getFunction(
     return nullptr;
 }
 
-IRFunction* Environment::findFunction(
+IRFunctionTemplate* Environment::findFunction(
     std::string const& functionName, std::vector<IRType*> const& params
 )
 {
@@ -190,7 +190,7 @@ IRFunction* Environment::findFunction(
     return nullptr;
 }
 
-IRFunction* Environment::findCallTargetAndInferTypeArgs(
+IRFunctionTemplate* Environment::findCallTargetAndInferTypeArgs(
     std::string const& name,
     std::vector<IRType*> const& args,
     std::unordered_map<IRGenericType*, IRType*>& typeArgs
@@ -298,7 +298,8 @@ bool Environment::inferTypeArgsAndMatch(
         auto genericInstantiated = (IRStructInstantiation*)genericType;
         auto actualInstantiated = (IRStructInstantiation*)actualType;
 
-        if (actualInstantiated->structType != genericInstantiated->structType)
+        if (actualInstantiated->getInstantiatedFrom()
+            != genericInstantiated->getInstantiatedFrom())
             return false;
 
         if (actualInstantiated->typeArgs.size()
@@ -383,7 +384,8 @@ std::optional<std::string> Environment::inferTypeArgsAndValidate(
         auto genericInstantiated = (IRStructInstantiation*)genericType;
         auto actualInstantiated = (IRStructInstantiation*)actualType;
 
-        if (actualInstantiated->structType != genericInstantiated->structType)
+        if (actualInstantiated->getInstantiatedFrom()
+            != genericInstantiated->getInstantiatedFrom())
         {
             return "Type " + actualInstantiated->toString()
                 + " is not an instantiation of "
