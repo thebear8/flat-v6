@@ -20,6 +20,7 @@ struct IRType : public IRNode
     virtual bool isCharType() { return false; }
     virtual bool isStringType() { return false; }
     virtual bool isStructType() { return false; }
+    virtual bool isStructTemplate() { return false; }
     virtual bool isStructInstantiation() { return false; }
     virtual bool isPointerType() { return false; }
     virtual bool isArrayType() { return false; }
@@ -140,15 +141,61 @@ struct IRArrayType : public IRType
     IMPLEMENT_ACCEPT()
 };
 
-struct IRStructInstantiation : public IRType
+struct IRStruct : public IRType
 {
-    IRStructType* structType;
+    std::string name;
+    std::unordered_map<std::string, IRType*> fields;
+
+    IRStruct(
+        std::string const& name,
+        std::unordered_map<std::string, IRType*> const& fields
+    )
+        : name(name), fields(fields)
+    {
+    }
+
+    virtual std::string toString() override { return name; };
+    virtual bool isStructType() override { return true; }
+
+    IMPLEMENT_ACCEPT()
+};
+
+struct IRStructTemplate : public IRStruct
+{
+    std::vector<IRGenericType*> typeParams;
+
+    IRStructTemplate(
+        std::string name,
+        std::vector<IRGenericType*> const& typeParams,
+        std::unordered_map<std::string, IRType*> const& fields
+    )
+        : IRStruct(name, fields), typeParams(typeParams)
+    {
+    }
+
+    virtual std::string toString() override
+    {
+        std::string args = "";
+        for (auto arg : typeParams)
+            args += (!args.empty() ? ", " : "") + arg->toString();
+        return IRStruct::toString() + "<" + args + ">";
+    }
+
+    virtual bool isStructTemplate() override { return true; }
+
+    IMPLEMENT_ACCEPT()
+};
+
+struct IRStructInstantiation : public IRStruct
+{
     std::vector<IRType*> typeArgs;
 
     IRStructInstantiation(
-        IRStructType* structType, std::vector<IRType*> const& typeArgs
+        std::string name,
+        std::vector<IRType*> const& typeArgs,
+        std::unordered_map<std::string, IRType*> const& fields
     )
-        : structType(structType), typeArgs(typeArgs)
+        : IRStruct(name, fields), typeArgs(typeArgs)
     {
     }
 
@@ -157,8 +204,10 @@ struct IRStructInstantiation : public IRType
         std::string args = "";
         for (auto arg : typeArgs)
             args += (!args.empty() ? ", " : "") + arg->toString();
-        return structType->toString() + "<" + args + ">";
+        return IRStruct::toString() + "<" + args + ">";
     }
 
     virtual bool isStructInstantiation() override { return true; }
+
+    IMPLEMENT_ACCEPT()
 };

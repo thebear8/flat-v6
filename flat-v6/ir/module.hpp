@@ -22,15 +22,15 @@ struct IRModule : public IRNode
     std::string name;
     std::set<std::string> imports;
     std::vector<IRConstraint*> constraints;
-    std::vector<IRFunction*> functions;
-    std::vector<IRStructType*> structs;
+    std::vector<IRFunctionTemplate*> functions;
+    std::vector<IRStructTemplate*> structs;
 
     IRModule(
         std::string const& name,
         std::set<std::string> const& imports,
         std::vector<IRConstraint*> const& constraints,
-        std::vector<IRFunction*> const& functions,
-        std::vector<IRStructType*> const& structs
+        std::vector<IRFunctionTemplate*> const& functions,
+        std::vector<IRStructTemplate*> const& structs
     )
         : name(name),
           imports(imports),
@@ -45,9 +45,8 @@ struct IRModule : public IRNode
     METADATA_PROP(env, Environment*, getEnv, setEnv)
     METADATA_PROP(irCtx, GraphContext*, getIrCtx, setIrCtx)
 
-    using StructInstantiationMap = std::unordered_map<
-        IRStructType*,
-        std::map<std::vector<IRType*>, IRStructInstantiation*>>;
+    using StructInstantiationMap =
+        std::unordered_multimap<IRStructType*, IRStructInstantiation*>;
 
     METADATA_PROP(
         structInstantiations,
@@ -56,9 +55,8 @@ struct IRModule : public IRNode
         setStructInstantiations
     )
 
-    using FunctionInstantiationMap = std::unordered_map<
-        IRFunction*,
-        std::map<std::vector<IRType*>, IRFunctionInstantiation*>>;
+    using FunctionInstantiationMap =
+        std::unordered_multimap<IRFunction*, IRFunctionInstantiation*>;
 
     METADATA_PROP(
         functionInstantiations,

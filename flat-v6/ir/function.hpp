@@ -10,69 +10,83 @@ class Function;
 };
 
 struct IRType;
-
 struct IRFunction : public IRNode
 {
-    std::string lib, name;
-    std::vector<IRGenericType*> typeParams;
-    std::vector<std::pair<std::string, std::vector<IRType*>>> requirements;
+    std::string name;
     std::vector<std::pair<std::string, IRType*>> params;
     IRType* result;
     IRStatement* body;
 
     IRFunction(
         std::string const& name,
-        std::vector<IRGenericType*> const& typeParams,
-        std::vector<std::pair<std::string, std::vector<IRType*>>> const&
-            requirements,
         std::vector<std::pair<std::string, IRType*>> const& params,
         IRType* result,
         IRStatement* body
     )
-        : name(name),
-          typeParams(typeParams),
-          requirements(requirements),
-          params(params),
-          result(result),
-          body(body)
-    {
-    }
-
-    IRFunction(
-        std::string const& lib,
-        std::string const& name,
-        std::vector<IRGenericType*> const& typeParams,
-        std::vector<std::pair<std::string, std::vector<IRType*>>> const&
-            requirements,
-        std::vector<std::pair<std::string, IRType*>> const& params,
-        IRType* result
-    )
-        : lib(lib),
-          name(name),
-          typeParams(typeParams),
-          requirements(requirements),
-          result(result),
-          params(params),
-          body(nullptr)
+        : name(name), params(params), result(result), body(body)
     {
     }
 
     IMPLEMENT_ACCEPT()
 
     METADATA_PROP(
+        libraryNameForImport,
+        std::string,
+        getLibraryNameForImport,
+        setLibraryNameForImport
+    )
+
+    METADATA_PROP(
         llvmFunction, llvm::Function*, getLLVMFunction, setLLVMFunction
     )
 };
 
-struct IRFunctionInstantiation
+struct IRFunctionTemplate : IRFunction
 {
-    IRFunction* function;
+    std::vector<IRGenericType*> typeParams;
+    std::vector<std::pair<std::string, std::vector<IRType*>>> requirements;
+
+    IRFunctionTemplate(
+        std::string const& name,
+        std::vector<IRGenericType*> const& typeParams,
+        std::vector<std::pair<std::string, IRType*>> const& params,
+        IRType* result,
+        std::vector<std::pair<std::string, std::vector<IRType*>>> const&
+            requirements,
+        IRStatement* body
+    )
+        : IRFunction(name, params, result, body),
+          typeParams(typeParams),
+          requirements(requirements)
+    {
+    }
+
+    IMPLEMENT_ACCEPT()
+};
+
+struct IRFunctionInstantiation : IRFunction
+{
     std::vector<IRType*> typeArgs;
 
     IRFunctionInstantiation(
-        IRFunction* function, std::vector<IRType*> const& typeArgs
+        std::string const& name,
+        std::vector<IRType*> const& typeArgs,
+        std::vector<std::pair<std::string, IRType*>> const& params,
+        IRType* result,
+        std::vector<std::pair<std::string, std::vector<IRType*>>> const&
+            requirements,
+        IRStatement* body
     )
-        : function(function), typeArgs(typeArgs)
+        : IRFunction(name, params, result, body), typeArgs(typeArgs)
     {
     }
+
+    IMPLEMENT_ACCEPT()
+
+    METADATA_PROP(
+        instantiatedFrom,
+        IRFunctionTemplate*,
+        getInstantiatedFrom,
+        setInstantiatedFrom
+    )
 };

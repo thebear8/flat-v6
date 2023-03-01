@@ -7,7 +7,6 @@
 #include "ir_node.hpp"
 
 struct IRFunction;
-struct IRFunctionInstantiation;
 
 struct IRExpression : public IRNode
 {
@@ -104,9 +103,12 @@ struct IRUnaryExpression : public IRExpression
 
     IMPLEMENT_ACCEPT()
 
-    METADATA_PROP(target, IRFunctionInstantiation*, getTarget, setTarget)
+    METADATA_PROP(target, IRFunction*, getTarget, setTarget)
     METADATA_PROP(
-        loweredTarget, IRFunction*, getLoweredTarget, setLoweredTarget
+        targetTypeArgs,
+        std::vector<IRType*>,
+        getTargetTypeArgs,
+        setTargetTypeArgs
     )
 };
 
@@ -126,7 +128,10 @@ struct IRBinaryExpression : public IRExpression
 
     METADATA_PROP(target, IRFunctionInstantiation*, getTarget, setTarget)
     METADATA_PROP(
-        loweredTarget, IRFunction*, getLoweredTarget, setLoweredTarget
+        targetTypeArgs,
+        std::vector<IRType*>,
+        getTargetTypeArgs,
+        setTargetTypeArgs
     )
 };
 
@@ -146,7 +151,10 @@ struct IRCallExpression : public IRExpression
 
     METADATA_PROP(target, IRFunctionInstantiation*, getTarget, setTarget)
     METADATA_PROP(
-        loweredTarget, IRFunction*, getLoweredTarget, setLoweredTarget
+        targetTypeArgs,
+        std::vector<IRType*>,
+        getTargetTypeArgs,
+        setTargetTypeArgs
     )
 };
 
@@ -166,7 +174,10 @@ struct IRIndexExpression : public IRExpression
 
     METADATA_PROP(target, IRFunctionInstantiation*, getTarget, setTarget)
     METADATA_PROP(
-        loweredTarget, IRFunction*, getLoweredTarget, setLoweredTarget
+        targetTypeArgs,
+        std::vector<IRType*>,
+        getTargetTypeArgs,
+        setTargetTypeArgs
     )
 };
 
