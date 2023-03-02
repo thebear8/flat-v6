@@ -67,6 +67,7 @@ struct IRFunctionTemplate : IRFunction
 struct IRFunctionInstantiation : IRFunction
 {
     std::vector<IRType*> typeArgs;
+    std::vector<std::pair<std::string, std::vector<IRType*>>> requirements;
 
     IRFunctionInstantiation(
         std::string const& name,
@@ -77,7 +78,9 @@ struct IRFunctionInstantiation : IRFunction
             requirements,
         IRStatement* body
     )
-        : IRFunction(name, params, result, body), typeArgs(typeArgs)
+        : IRFunction(name, params, result, body),
+          typeArgs(typeArgs),
+          requirements(requirements)
     {
     }
 

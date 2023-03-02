@@ -8,12 +8,14 @@
 #include "../data/operator.hpp"
 #include "../ir/ir.hpp"
 #include "../util/error_logger.hpp"
+#include "support/instantiator.hpp"
 
 class SemanticPass : IRVisitor<IRType*>
 {
 private:
     ErrorLogger& m_logger;
     CompilationContext& m_compCtx;
+    Instantiator m_instantiator;
 
     IRModule* m_module;
     GraphContext* m_irCtx;
@@ -56,21 +58,10 @@ private:
     virtual IRType* visit(IRWhileStatement* node) override;
     virtual IRType* visit(IRIfStatement* node) override;
 
-    virtual IRType* visit(IRFunction* node) override;
+    virtual IRType* visit(IRFunctionTemplate* node) override;
     virtual IRType* visit(IRModule* node) override;
 
 private:
-    IRStructInstantiation* getStructInstantiation(
-        IRStructType* structType, std::vector<IRType*> const& typeArgs
-    );
-    IRFunctionInstantiation* getFunctionInstantiation(
-        IRFunction*, std::vector<IRType*> const& typeArgs
-    );
-
-    IRFunctionInstantiation* findCallTargetAndInstantiate(
-        std::string const& name,
-        std::vector<IRType*> args,
-        std::unordered_map<IRGenericType*, IRType*>& typeArgs,
-        std::string& error
-    );
+    std::tuple<IRFunctionTemplate*, IRType*, std::vector<IRType*>, std::string>
+    findCallTarget(std::string const& name, std::vector<IRType*> args);
 };

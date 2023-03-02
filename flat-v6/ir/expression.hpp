@@ -126,7 +126,7 @@ struct IRBinaryExpression : public IRExpression
 
     IMPLEMENT_ACCEPT()
 
-    METADATA_PROP(target, IRFunctionInstantiation*, getTarget, setTarget)
+    METADATA_PROP(target, IRFunction*, getTarget, setTarget)
     METADATA_PROP(
         targetTypeArgs,
         std::vector<IRType*>,
@@ -149,7 +149,7 @@ struct IRCallExpression : public IRExpression
 
     IMPLEMENT_ACCEPT()
 
-    METADATA_PROP(target, IRFunctionInstantiation*, getTarget, setTarget)
+    METADATA_PROP(target, IRFunction*, getTarget, setTarget)
     METADATA_PROP(
         targetTypeArgs,
         std::vector<IRType*>,
@@ -172,7 +172,7 @@ struct IRIndexExpression : public IRExpression
 
     IMPLEMENT_ACCEPT()
 
-    METADATA_PROP(target, IRFunctionInstantiation*, getTarget, setTarget)
+    METADATA_PROP(target, IRFunction*, getTarget, setTarget)
     METADATA_PROP(
         targetTypeArgs,
         std::vector<IRType*>,

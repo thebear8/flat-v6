@@ -3,6 +3,8 @@
 #include <cassert>
 #include <ranges>
 
+#include "../util/zip_view.hpp"
+
 void SemanticPass::process(IRModule* mod)
 {
     dispatch(mod);
@@ -56,8 +58,8 @@ IRType* SemanticPass::visit(IRIdentifierExpression* node)
 
 IRType* SemanticPass::visit(IRStructExpression* node)
 {
-    auto structType = m_env->findStruct(node->structName);
-    if (!structType)
+    auto structTemplate = m_env->findStruct(node->structName);
+    if (!structTemplate)
     {
         return m_logger.error(
             node->getLocation(SourceRef()),
@@ -71,18 +73,18 @@ IRType* SemanticPass::visit(IRStructExpression* node)
 
     for (auto const& [name, value] : node->fields)
     {
-        if (!structType->fields.contains(name))
+        if (!structTemplate->fields.contains(name))
         {
             return m_logger.error(
                 node->getLocation(SourceRef()),
-                "Struct " + structType->name + " does not contain field "
+                "Struct " + structTemplate->name + " does not contain field "
                     + name,
                 nullptr
             );
         }
     }
 
-    for (auto const& [fieldName, fieldType] : structType->fields)
+    for (auto const& [fieldName, fieldType] : structTemplate->fields)
     {
         if (!node->fields.contains(fieldName))
         {
@@ -95,7 +97,7 @@ IRType* SemanticPass::visit(IRStructExpression* node)
         }
     }
 
-    if (node->typeArgs.size() > structType->typeParams.size())
+    if (node->typeArgs.size() > structTemplate->typeParams.size())
     {
         return m_logger.error(
             node->getLocation(SourceRef()),
@@ -104,35 +106,33 @@ IRType* SemanticPass::visit(IRStructExpression* node)
         );
     }
 
-    std::unordered_map<IRGenericType*, IRType*> typeArgs;
-    for (size_t i = 0; i < node->typeArgs.size(); i++)
-    {
-        typeArgs.try_emplace(
-            structType->typeParams.at(i), node->typeArgs.at(i)
-        );
-    }
+    auto zippedTypeArgs = zip_view(
+        std::views::all(structTemplate->typeParams),
+        std::views::all(node->typeArgs)
+    );
+    std::unordered_map typeArgs(zippedTypeArgs.begin(), zippedTypeArgs.end());
 
     for (auto const& [name, value] : node->fields)
     {
-        auto fieldType = structType->fields.at(name);
-        auto result = m_env->inferTypeArgsAndValidate(
+        auto fieldType = structTemplate->fields.at(name);
+        auto error = m_env->inferTypeArgsAndValidate(
             fieldType, value->getType(), typeArgs
         );
-        if (result.has_value())
+        if (error.has_value())
         {
             return m_logger.error(
                 node->getLocation(SourceRef()),
                 "Value type for field " + name + " ("
                     + value->getType()->toString()
                     + ") is incompatible with struct field type ("
-                    + fieldType->toString() + "): " + result.value(),
+                    + fieldType->toString() + "): " + error.value(),
                 nullptr
             );
         }
     }
 
     std::vector<IRType*> typeArgList;
-    for (auto typeParam : structType->typeParams)
+    for (auto typeParam : structTemplate->typeParams)
     {
         if (!typeArgs.contains(typeParam))
         {
@@ -147,7 +147,19 @@ IRType* SemanticPass::visit(IRStructExpression* node)
         typeArgList.push_back(typeArgs.at(typeParam));
     }
 
-    node->setType(getStructInstantiation(structType, typeArgList));
+    auto instantiation =
+        m_module->getEnv()->getStructInstantiation(structTemplate, typeArgList);
+    if (!instantiation)
+    {
+        instantiation = m_module->getEnv()->addStructInstantiation(
+            structTemplate,
+            m_instantiator.makeStructInstantiation(
+                m_module, structTemplate, typeArgList
+            )
+        );
+    }
+
+    node->setType(instantiation);
     return node->getType();
 }
 
@@ -180,13 +192,8 @@ IRType* SemanticPass::visit(IRUnaryExpression* node)
     else
     {
         auto args = std::vector({ value });
-        auto typeArgs = std::unordered_map<IRGenericType*, IRType*>();
-
-        std::string error;
-        std::unordered_map<IRGenericType*, IRType*> typeArgs;
-        auto function = findCallTargetAndInstantiate(
-            unaryOperators.at(node->operation).name, args, typeArgs, error
-        );
+        auto [function, result, typeArgs, error] =
+            findCallTarget(unaryOperators.at(node->operation).name, args);
 
         if (!function)
         {
@@ -197,13 +204,8 @@ IRType* SemanticPass::visit(IRUnaryExpression* node)
             );
         }
 
-        auto result =
-            (function->function->result->isGenericType()
-             && typeArgs.contains((IRGenericType*)function->function->result))
-            ? typeArgs.at((IRGenericType*)function->function->result)
-            : function->function->result;
-
         node->setTarget(function);
+        node->setTargetTypeArgs(typeArgs);
         node->setType(result);
         return node->getType();
     }
@@ -288,13 +290,8 @@ IRType* SemanticPass::visit(IRBinaryExpression* node)
     else
     {
         auto args = std::vector({ left, right });
-        auto typeArgs = std::unordered_map<IRGenericType*, IRType*>();
-
-        std::string error;
-        std::unordered_map<IRGenericType*, IRType*> typeArgs;
-        auto function = findCallTargetAndInstantiate(
-            binaryOperators.at(node->operation).name, args, typeArgs, error
-        );
+        auto [function, result, typeArgs, error] =
+            findCallTarget(binaryOperators.at(node->operation).name, args);
 
         if (!function)
         {
@@ -305,13 +302,8 @@ IRType* SemanticPass::visit(IRBinaryExpression* node)
             );
         }
 
-        auto result =
-            (function->function->result->isGenericType()
-             && typeArgs.contains((IRGenericType*)function->function->result))
-            ? typeArgs.at((IRGenericType*)function->function->result)
-            : function->function->result;
-
         node->setTarget(function);
+        node->setTargetTypeArgs(typeArgs);
         node->setType(result);
         return node->getType();
     }
@@ -326,40 +318,8 @@ IRType* SemanticPass::visit(IRCallExpression* node)
     if (auto identifierExpression =
             dynamic_cast<IRIdentifierExpression*>(node->expression))
     {
-        auto typeArgs = std::unordered_map<IRGenericType*, IRType*>();
-
-        std::string error;
-        std::unordered_map<IRGenericType*, IRType*> typeArgs;
-        auto function = findCallTargetAndInstantiate(
-            identifierExpression->value, args, typeArgs, error
-        );
-
-        if (!function)
-        {
-            return m_logger.error(
-                node->getLocation(SourceRef()), error, nullptr
-            );
-        }
-
-        auto result =
-            (function->function->result->isGenericType()
-             && typeArgs.contains((IRGenericType*)function->function->result))
-            ? typeArgs.at((IRGenericType*)function->function->result)
-            : function->function->result;
-
-        node->setTarget(function);
-        node->setType(result);
-        return node->getType();
-    }
-    else
-    {
-        args.insert(args.begin(), dispatch(node->expression));
-        auto typeArgs = std::unordered_map<IRGenericType*, IRType*>();
-
-        std::string error;
-        std::unordered_map<IRGenericType*, IRType*> typeArgs;
-        auto function =
-            findCallTargetAndInstantiate("__call__", args, typeArgs, error);
+        auto [function, result, typeArgs, error] =
+            findCallTarget(identifierExpression->value, args);
 
         if (!function)
         {
@@ -370,13 +330,28 @@ IRType* SemanticPass::visit(IRCallExpression* node)
             );
         }
 
-        auto result =
-            (function->function->result->isGenericType()
-             && typeArgs.contains((IRGenericType*)function->function->result))
-            ? typeArgs.at((IRGenericType*)function->function->result)
-            : function->function->result;
+        node->setTarget(function);
+        node->setTargetTypeArgs(typeArgs);
+        node->setType(result);
+        return node->getType();
+    }
+    else
+    {
+        args.insert(args.begin(), dispatch(node->expression));
+        auto [function, result, typeArgs, error] =
+            findCallTarget("__call__", args);
+
+        if (!function)
+        {
+            return m_logger.error(
+                node->getLocation(SourceRef()),
+                "No matching operator function: " + error,
+                nullptr
+            );
+        }
 
         node->setTarget(function);
+        node->setTargetTypeArgs(typeArgs);
         node->setType(result);
         return node->getType();
     }
@@ -404,12 +379,8 @@ IRType* SemanticPass::visit(IRIndexExpression* node)
     else
     {
         args.insert(args.begin(), value);
-        auto typeArgs = std::unordered_map<IRGenericType*, IRType*>();
-
-        std::string error;
-        std::unordered_map<IRGenericType*, IRType*> typeArgs;
-        auto function =
-            findCallTargetAndInstantiate("__index__", args, typeArgs, error);
+        auto [function, result, typeArgs, error] =
+            findCallTarget("__index__", args);
 
         if (!function)
         {
@@ -420,13 +391,8 @@ IRType* SemanticPass::visit(IRIndexExpression* node)
             );
         }
 
-        auto result =
-            (function->function->result->isGenericType()
-             && typeArgs.contains((IRGenericType*)function->function->result))
-            ? typeArgs.at((IRGenericType*)function->function->result)
-            : function->function->result;
-
         node->setTarget(function);
+        node->setTargetTypeArgs(typeArgs);
         node->setType(result);
         return node->getType();
     }
@@ -444,7 +410,7 @@ IRType* SemanticPass::visit(IRFieldExpression* node)
         );
     }
 
-    auto structType = (IRStructType*)value;
+    auto structType = (IRStruct*)value;
     if (!structType->fields.contains(node->fieldName))
     {
         return m_logger.error(
@@ -666,13 +632,10 @@ IRType* SemanticPass::visit(IRModule* node)
     return nullptr;
 }
 
-IRFunctionInstantiation* SemanticPass::findCallTargetAndInstantiate(
-    std::string const& name,
-    std::vector<IRType*> args,
-    std::unordered_map<IRGenericType*, IRType*>& typeArgs,
-    std::string& error
-)
+std::tuple<IRFunctionTemplate*, IRType*, std::vector<IRType*>, std::string>
+SemanticPass::findCallTarget(std::string const& name, std::vector<IRType*> args)
 {
+    std::unordered_map<IRGenericType*, IRType*> typeArgs;
     auto function = m_env->findCallTargetAndInferTypeArgs(name, args, typeArgs);
     if (!function)
     {
@@ -680,13 +643,14 @@ IRFunctionInstantiation* SemanticPass::findCallTargetAndInstantiate(
         for (auto arg : args)
             stringArgs += (stringArgs.empty() ? "" : ", ") + arg->toString();
 
-        error =
-            "No matching function for call to " + name + "(" + stringArgs + ")";
-
-        return nullptr;
+        return std::make_tuple(
+            nullptr,
+            nullptr,
+            std::vector<IRType*>(),
+            "No matching function for call to " + name + "(" + stringArgs + ")"
+        );
     }
 
-    std::vector<IRType*> typeArgList;
     for (auto tp : function->typeParams)
     {
         if (!typeArgs.contains(tp))
@@ -696,73 +660,30 @@ IRFunctionInstantiation* SemanticPass::findCallTargetAndInstantiate(
                 stringArgs +=
                     (stringArgs.empty() ? "" : ", ") + arg->toString();
 
-            error = "Could not infer type argument " + tp->toString()
-                + " for call to function " + name + "(" + stringArgs + ")";
-
-            return nullptr;
+            return std::make_tuple(
+                nullptr,
+                nullptr,
+                std::vector<IRType*>(),
+                "Could not infer type argument " + tp->toString()
+                    + " for call to function " + name + "(" + stringArgs + ")"
+            );
         }
-
-        typeArgList.push_back(typeArgs.at(tp));
     }
 
-    return getFunctionInstantiation(function, typeArgList);
-}
+    auto result = (function->result->isGenericType()
+                   && typeArgs.contains((IRGenericType*)function->result))
+        ? typeArgs.at((IRGenericType*)function->result)
+        : function->result;
 
-IRStructInstantiation* SemanticPass::getStructInstantiation(
-    IRStructType* structType, std::vector<IRType*> const& typeArgs
-)
-{
-    assert(
-        typeArgs.size() == structType->typeParams.size()
-        && "Number of type args has to be equal to number of type params"
+    auto typeArgList =
+        function->typeParams | std::views::transform([&](auto p) {
+            typeArgs.at(p);
+        });
+
+    return std::make_tuple(
+        function,
+        result,
+        std::vector(typeArgList.begin(), typeArgList.end()),
+        ""
     );
-
-    auto& structInstantiations = m_module->getStructInstantiations();
-    if (!structInstantiations.contains(structType))
-    {
-        structInstantiations.try_emplace(
-            structType, std::map<std::vector<IRType*>, IRStructInstantiation*>()
-        );
-    }
-
-    if (!structInstantiations.at(structType).contains(typeArgs))
-    {
-        auto instantiation =
-            m_irCtx->make(IRStructInstantiation(structType, typeArgs));
-
-        structInstantiations.at(structType)
-            .try_emplace(typeArgs, instantiation);
-    }
-
-    return structInstantiations.at(structType).at(typeArgs);
-}
-
-IRFunctionInstantiation* SemanticPass::getFunctionInstantiation(
-    IRFunction* function, std::vector<IRType*> const& typeArgs
-)
-{
-    assert(
-        typeArgs.size() == function->typeParams.size()
-        && "Number of type args has to be equal to number of type params"
-    );
-
-    auto& functionInstantiations = m_module->getFunctionInstantiations();
-    if (!functionInstantiations.contains(function))
-    {
-        functionInstantiations.try_emplace(
-            function, std::map<std::vector<IRType*>, IRFunctionInstantiation*>()
-        );
-    }
-
-    if (!functionInstantiations.at(function).contains(typeArgs))
-    {
-        auto instantiation =
-            m_irCtx->make(IRFunctionInstantiation(function, typeArgs));
-
-        functionInstantiations.at(function).try_emplace(
-            typeArgs, instantiation
-        );
-    }
-
-    return functionInstantiations.at(function).at(typeArgs);
 }
