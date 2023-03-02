@@ -17,7 +17,7 @@ class IRStructInstantiation;
 class IRFunction;
 class IRFunctionInstantiation;
 
-struct IRModule : public IRNode
+struct IRModule : IRNode
 {
     std::string name;
     std::set<std::string> imports;
@@ -44,24 +44,4 @@ struct IRModule : public IRNode
 
     METADATA_PROP(env, Environment*, getEnv, setEnv)
     METADATA_PROP(irCtx, GraphContext*, getIrCtx, setIrCtx)
-
-    using StructInstantiationMap =
-        std::unordered_multimap<IRStructTemplate*, IRStructInstantiation*>;
-
-    METADATA_PROP(
-        structInstantiations,
-        StructInstantiationMap,
-        getStructInstantiations,
-        setStructInstantiations
-    )
-
-    using FunctionInstantiationMap =
-        std::unordered_multimap<IRFunctionTemplate*, IRFunctionInstantiation*>;
-
-    METADATA_PROP(
-        functionInstantiations,
-        FunctionInstantiationMap,
-        getFunctionInstantiations,
-        setFunctionInstantiations
-    )
 };

@@ -1,12 +1,18 @@
 #include <string>
 #include <unordered_map>
 
-#include "ir/ir.hpp"
-
 namespace llvm
 {
 class Value;
 }
+
+class IRType;
+class IRGenericType;
+class IRConstraint;
+class IRStructTemplate;
+class IRStructInstantiation;
+class IRFunctionTemplate;
+class IRFunctionInstantiation;
 
 /// @brief Manages contained data of an environment, e.g. functions, structs,
 /// local variables, type parameters etc.
@@ -19,8 +25,14 @@ protected:
     std::unordered_map<std::string, IRType*> m_builtinTypes;
 
     std::unordered_map<std::string, IRConstraint*> m_constraints;
+
     std::unordered_map<std::string, IRStructTemplate*> m_structs;
+    std::unordered_multimap<IRStructTemplate*, IRStructInstantiation*>
+        m_structInstantiations;
+
     std::unordered_multimap<std::string, IRFunctionTemplate*> m_functions;
+    std::unordered_multimap<IRFunctionTemplate*, IRFunctionInstantiation*>
+        m_functionInstantiations;
 
     std::unordered_map<std::string, IRGenericType*> m_typeParams;
     std::unordered_map<IRGenericType*, IRType*> m_typeParamValues;
@@ -137,6 +149,36 @@ public:
     /// found
     IRStructTemplate* findStruct(std::string const& name);
 
+    /// @brief Add an instantiation of a struct to this environment
+    /// @param structTemplate The instantiated template
+    /// @param structInstantiation The instantiation of the template
+    /// @return The added struct instantiaton or nullptr if a struct
+    /// instantiation with the same type args already exists
+    IRStructInstantiation* addStructInstantiation(
+        IRStructTemplate* structTemplate,
+        IRStructInstantiation* structInstantiation
+    );
+
+    /// @brief Search for a struct instantiation by type args in this
+    /// environment only
+    /// @param structTemplate The struct template to find an instantiation of
+    /// @param typeArgs The type args of the instantiation
+    /// @return The found struct instantiation or nullptr if no instantiation
+    /// was found
+    IRStructInstantiation* getStructInstantiation(
+        IRStructTemplate* structTemplate, std::vector<IRType*> const& typeArgs
+    );
+
+    /// @brief Search for a struct instantiation by type args in the environment
+    /// chain
+    /// @param structTemplate The struct template to find an instantiation of
+    /// @param typeArgs The type args of the instantiation
+    /// @return The found struct instantiation or nullptr if no instantiation
+    /// was found
+    IRStructInstantiation* findStructInstantiation(
+        IRStructTemplate* structTemplate, std::vector<IRType*> const& typeArgs
+    );
+
     /// @brief Add a function with specified name and params to this environment
     /// @param function Function to add
     /// @return The added function or nullptr if a function with the same name
@@ -157,6 +199,38 @@ public:
     /// @return The found function or nullptr if the function was not found
     IRFunctionTemplate* findFunction(
         std::string const& name, std::vector<IRType*> const& params
+    );
+
+    /// @brief Add a function instantiation with specified type args to this
+    /// environment
+    /// @param functionTemplate
+    /// @param functionInstantiation
+    /// @return
+    IRFunctionInstantiation* addFunctionInstantiation(
+        IRFunctionTemplate* functionTemplate,
+        IRFunctionInstantiation* functionInstantiation
+    );
+
+    /// @brief Search for a function instantiation by type args in this
+    /// environment
+    /// @param functionTemplate The function to get an instantiation of
+    /// @param typeArgs The type args of the instantiation
+    /// @return The found function instantiation or nullptr if the function
+    /// instantiation was not found
+    IRFunctionInstantiation* getFunctionInstantiation(
+        IRFunctionTemplate* functionTemplate,
+        std::vector<IRType*> const& typeArgs
+    );
+
+    /// @brief Search for a function instantiation by type args in the
+    /// environment chain
+    /// @param functionTemplate The function to get an instantiation of
+    /// @param typeArgs The type args of the instantiation
+    /// @return The found function instantiation or nullptr if the function
+    /// instantiation was not found
+    IRFunctionInstantiation* findFunctionInstantiation(
+        IRFunctionTemplate* functionTemplate,
+        std::vector<IRType*> const& typeArgs
     );
 
     /// @brief Search for a call target by name and argument types

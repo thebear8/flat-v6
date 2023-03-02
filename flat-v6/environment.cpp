@@ -1,8 +1,10 @@
 #include "environment.hpp"
 
 #include <algorithm>
+#include <optional>
 #include <ranges>
 
+#include "ir/ir.hpp"
 #include "util/zip_view.hpp"
 
 IRType* Environment::addBuiltinType(
@@ -136,6 +138,44 @@ IRStructTemplate* Environment::findStruct(std::string const& structName)
     return nullptr;
 }
 
+IRStructInstantiation* Environment::addStructInstantiation(
+    IRStructTemplate* structTemplate, IRStructInstantiation* structInstantiation
+)
+{
+    if (getStructInstantiation(structTemplate, structInstantiation->typeArgs))
+        return nullptr;
+
+    m_structInstantiations.emplace(structTemplate, structInstantiation);
+    return structInstantiation;
+}
+
+IRStructInstantiation* Environment::getStructInstantiation(
+    IRStructTemplate* structTemplate, std::vector<IRType*> const& typeArgs
+)
+{
+    for (auto [it, end] = m_structInstantiations.equal_range(structTemplate);
+         it != end;
+         ++it)
+    {
+        if (std::ranges::equal(it->second->typeArgs, typeArgs))
+            return it->second;
+    }
+
+    return nullptr;
+}
+
+IRStructInstantiation* Environment::findStructInstantiation(
+    IRStructTemplate* structTemplate, std::vector<IRType*> const& typeArgs
+)
+{
+    if (auto i = getStructInstantiation(structTemplate, typeArgs))
+        return i;
+    else if (m_parent)
+        return m_parent->findStructInstantiation(structTemplate, typeArgs);
+
+    return nullptr;
+}
+
 IRFunctionTemplate* Environment::addFunction(IRFunctionTemplate* function)
 {
     for (auto [i, end] = m_functions.equal_range(function->name); i != end; ++i)
@@ -190,6 +230,47 @@ IRFunctionTemplate* Environment::findFunction(
     return nullptr;
 }
 
+IRFunctionInstantiation* Environment::addFunctionInstantiation(
+    IRFunctionTemplate* functionTemplate,
+    IRFunctionInstantiation* functionInstantiation
+)
+{
+    auto const& typeArgs = functionInstantiation->typeArgs;
+    if (getFunctionInstantiation(functionTemplate, typeArgs))
+        return nullptr;
+
+    m_functionInstantiations.emplace(functionTemplate, functionInstantiation);
+    return functionInstantiation;
+}
+
+IRFunctionInstantiation* Environment::getFunctionInstantiation(
+    IRFunctionTemplate* functionTemplate, std::vector<IRType*> const& typeArgs
+)
+{
+    for (auto [it, end] =
+             m_functionInstantiations.equal_range(functionTemplate);
+         it != end;
+         ++it)
+    {
+        if (std::ranges::equal(it->second->typeArgs, typeArgs))
+            return it->second;
+    }
+
+    return nullptr;
+}
+
+IRFunctionInstantiation* Environment::findFunctionInstantiation(
+    IRFunctionTemplate* functionTemplate, std::vector<IRType*> const& typeArgs
+)
+{
+    if (auto i = getFunctionInstantiation(functionTemplate, typeArgs))
+        return i;
+    else if (m_parent)
+        return m_parent->findFunctionInstantiation(functionTemplate, typeArgs);
+
+    return nullptr;
+}
+
 IRFunctionTemplate* Environment::findCallTargetAndInferTypeArgs(
     std::string const& name,
     std::vector<IRType*> const& args,
@@ -207,7 +288,7 @@ IRFunctionTemplate* Environment::findCallTargetAndInferTypeArgs(
         typeArgs.clear();
 
         auto incompatibleParams =
-            zip_view(args, candidateParams)
+            zip_view(std::views::all(args), std::views::all(candidateParams))
             | std::views::filter([&](auto const& p) {
                   return !inferTypeArgsAndMatch(p.first, p.second, typeArgs);
               });

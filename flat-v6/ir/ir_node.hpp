@@ -29,6 +29,8 @@ using IRTripleDispatchVisitor = triple_dispatch_visitor::TripleDispatchVisitor<
 
     struct IRConstraint,
     struct IRFunction,
+    struct IRFunctionTemplate,
+    struct IRFunctionInstantiation,
     struct IRModule,
 
     struct IRType,
@@ -38,9 +40,11 @@ using IRTripleDispatchVisitor = triple_dispatch_visitor::TripleDispatchVisitor<
     struct IRIntegerType,
     struct IRCharType,
     struct IRStringType,
-    struct IRStructType,
     struct IRPointerType,
-    struct IRArrayType>;
+    struct IRArrayType,
+    struct IRStruct,
+    struct IRStructTemplate,
+    struct IRStructInstantiation>;
 
 template<typename TReturn>
 using IRVisitor = IRTripleDispatchVisitor::Visitor<TReturn>;

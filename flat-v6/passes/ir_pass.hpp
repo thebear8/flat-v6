@@ -3,6 +3,7 @@
 #include "../compiler.hpp"
 #include "../data/source_ref.hpp"
 #include "../ir/ir.hpp"
+#include "support/instantiator.hpp"
 
 /// @brief Transforms AST Nodes into IR Nodes
 class IRPass : public ASTVisitor<IRNode*>
@@ -10,6 +11,7 @@ class IRPass : public ASTVisitor<IRNode*>
 private:
     ErrorLogger& m_logger;
     CompilationContext& m_compCtx;
+    Instantiator m_instantiator;
 
     IRModule* m_module;
     GraphContext* m_irCtx;

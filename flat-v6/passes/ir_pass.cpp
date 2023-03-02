@@ -370,17 +370,17 @@ IRNode* IRPass::visit(ASTNamedType* node)
     {
         return typeParam;
     }
-    if (auto structType = m_env->findStruct(node->name);
-        structType || node->typeArgs.size() != 0)
+    if (auto structTemplate = m_env->findStruct(node->name);
+        structTemplate || node->typeArgs.size() != 0)
     {
-        if (!structType)
+        if (!structTemplate)
         {
             return m_logger.error(
                 node->location, "No struct named " + node->name, nullptr
             );
         }
 
-        if (structType->typeParams.size() != node->typeArgs.size())
+        if (structTemplate->typeParams.size() != node->typeArgs.size())
         {
             return m_logger.error(
                 node->location,
@@ -394,22 +394,23 @@ IRNode* IRPass::visit(ASTNamedType* node)
         for (auto typeArg : node->typeArgs)
             typeArgs.push_back((IRType*)dispatch(typeArg));
 
-        auto& structInstantiations = m_module->getStructInstantiations();
-        for (auto [it, end] = structInstantiations.equal_range(structType);
-             it != end;
-             ++it)
+        auto instantiation = m_module->getEnv()->getStructInstantiation(
+            structTemplate, typeArgs
+        );
+
+        if (instantiation)
         {
-            auto [structTemplate, structInstantiation] = *it;
-            if (std::ranges::equal(typeArgs, structInstantiation->typeArgs))
-                return structInstantiation;
+            return instantiation;
         }
-
-        // TODO
-        auto instantiation =
-            m_irCtx->make(IRStructInstantiation(structType, typeArgs));
-
-        structInstantiations.emplace(structType, instantiation);
-        return instantiation;
+        else
+        {
+            return m_module->getEnv()->addStructInstantiation(
+                structTemplate,
+                m_instantiator.makeStructInstantiation(
+                    m_module, structTemplate, typeArgs
+                )
+            );
+        }
     }
     else
     {
