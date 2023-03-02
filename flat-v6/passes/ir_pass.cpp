@@ -240,7 +240,7 @@ IRNode* IRPass::visit(ASTConstraintDeclaration* node)
         node->name,
         typeParams,
         transformRequirements(node->requirements),
-        std::vector(conditions.begin(), conditions.end())
+        conditions
     ));
 
     irNode->setLocation(node->location);
