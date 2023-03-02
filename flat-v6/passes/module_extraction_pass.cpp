@@ -19,8 +19,6 @@ void ModuleExtractionPass::visit(ASTSourceFile* node)
             m_compCtx.addModule(m_irCtx.make(IRModule(name, {}, {}, {}, {})));
         mod->setIrCtx(m_irCtx.make(GraphContext()));
         mod->setEnv(mod->getIrCtx()->make(Environment(name, &m_compCtx)));
-        mod->setStructInstantiations(IRModule::StructInstantiationMap());
-        mod->setFunctionInstantiations(IRModule::FunctionInstantiationMap());
     }
     auto mod = m_compCtx.getModule(name);
     node->setIRModule(mod);
