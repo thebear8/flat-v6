@@ -2,11 +2,11 @@
 
 ## IR Building
 - Module Extraction
-- Module Import Population
 - Struct Extraction
 - Function Extraction
 - Constraint Extraction
 
+- Module Import Population
 - Struct Population
 - Struct Instantiation Fixups
 - Function Population
