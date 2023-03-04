@@ -32,10 +32,6 @@ void StructExtractionPass::visit(ASTStructDeclaration* node)
 
 void StructExtractionPass::visit(ASTSourceFile* node)
 {
-    std::string name;
-    for (auto const& segment : node->modulePath)
-        name += ((name.empty()) ? "" : ".") + segment;
-
     m_module = node->getIRModule();
     m_irCtx = m_module->getIrCtx();
     m_env = m_module->getEnv();
