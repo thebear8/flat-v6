@@ -16,6 +16,10 @@ public:
         IRStructTemplate* structTemplate, std::vector<IRType*> const& typeArgs
     );
 
+    IRStructInstantiation* fixupStructInstantiationFields(
+        IRStructInstantiation* structInstantiation
+    );
+
     IRFunctionInstantiation* makeFunctionInstantiation(
         IRFunctionTemplate* functionTemplate,
         std::vector<IRType*> const& typeArgs

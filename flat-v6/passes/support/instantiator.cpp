@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cassert>
 #include <ranges>
+#include <vector>
 
 #include "../../util/zip_view.hpp"
 
@@ -38,8 +39,29 @@ IRStructInstantiation* Instantiator::makeStructInstantiation(
         std::unordered_map(fields.begin(), fields.end())
     ));
 
+    instantiation->setInstantiatedFrom(structTemplate);
     instantiation->setLocation(structTemplate->getLocation(SourceRef()));
     return instantiation;
+}
+
+IRStructInstantiation* Instantiator::fixupStructInstantiationFields(
+    IRStructInstantiation* structInstantiation
+)
+{
+    auto structTemplate = structInstantiation->getInstantiatedFrom();
+
+    m_env = &Environment(
+        structInstantiation->name, structTemplate->getParent()->getEnv()
+    );
+
+    auto fields = structTemplate->fields | std::views::transform([&](auto f) {
+                      return std::pair(f.first, (IRType*)dispatch(f.second));
+                  });
+
+    structInstantiation->fields =
+        std::unordered_map(fields.begin(), fields.end());
+
+    m_env = nullptr;
 }
 
 IRFunctionInstantiation* Instantiator::makeFunctionInstantiation(
@@ -90,6 +112,7 @@ IRFunctionInstantiation* Instantiator::makeFunctionInstantiation(
         body
     ));
 
+    instantiation->setInstantiatedFrom(functionTemplate);
     instantiation->setLocation(functionTemplate->getLocation(SourceRef()));
     return instantiation;
 }

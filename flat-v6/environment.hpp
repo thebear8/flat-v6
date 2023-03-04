@@ -179,6 +179,12 @@ public:
         IRStructTemplate* structTemplate, std::vector<IRType*> const& typeArgs
     );
 
+    /// @brief Get the std::unordered_map of struct instantiations in this
+    /// module
+    /// @return The std::unordered_map of struct instantiations in this
+    /// module
+    auto& getStructInstantiationMap() { return m_structInstantiations; }
+
     /// @brief Add a function with specified name and params to this environment
     /// @param function Function to add
     /// @return The added function or nullptr if a function with the same name
