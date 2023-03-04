@@ -219,6 +219,67 @@ IRNode* Instantiator::visit(IRFieldExpression* node)
         ->setLocation(node->getLocation(SourceRef()));
 }
 
+IRNode* Instantiator::visit(IRBlockStatement* node)
+{
+    auto statements = node->statements | std::views::transform([&](auto s) {
+                          return (IRStatement*)dispatch(s);
+                      });
+
+    return m_irCtx
+        ->make(
+            IRBlockStatement(std::vector(statements.begin(), statements.end()))
+        )
+        ->setLocation(node->getLocation(SourceRef()));
+}
+
+IRNode* Instantiator::visit(IRExpressionStatement* node)
+{
+    auto expression = (IRExpression*)dispatch(node->expression);
+
+    return m_irCtx->make(IRExpressionStatement(expression))
+        ->setLocation(node->getLocation(SourceRef()));
+}
+
+IRNode* Instantiator::visit(IRVariableStatement* node)
+{
+    auto items =
+        node->items | std::views::transform([&](auto i) {
+            return std::pair(i.first, (IRExpression*)dispatch(i.second));
+        });
+
+    return m_irCtx
+        ->make(IRVariableStatement(std::vector(items.begin(), items.end())))
+        ->setLocation(node->getLocation(SourceRef()));
+}
+
+IRNode* Instantiator::visit(IRReturnStatement* node)
+{
+    auto expression = (IRExpression*)dispatch(node->expression);
+
+    return m_irCtx->make(IRReturnStatement(expression))
+        ->setLocation(node->getLocation(SourceRef()));
+}
+
+IRNode* Instantiator::visit(IRWhileStatement* node)
+{
+    auto condition = (IRExpression*)dispatch(node->condition);
+    auto body = (IRStatement*)dispatch(node->body);
+
+    return m_irCtx->make(IRWhileStatement(condition, body))
+        ->setLocation(node->getLocation(SourceRef()));
+}
+
+IRNode* Instantiator::visit(IRIfStatement* node)
+{
+    auto condition = (IRExpression*)dispatch(node->condition);
+    auto ifBody = (IRStatement*)dispatch(node->ifBody);
+    auto elseBody =
+        node->elseBody ? (IRStatement*)dispatch(node->elseBody) : nullptr;
+
+    return m_irCtx->make(IRIfStatement(condition, ifBody, elseBody))
+        ->setLocation(node->getLocation(SourceRef()));
+}
+
 IRNode* Instantiator::visit(IRGenericType* node)
 {
     if (auto v = m_env->findTypeParamValue(node))
