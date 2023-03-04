@@ -1,0 +1,52 @@
+#include "struct_population_pass.hpp"
+
+#include "../environment.hpp"
+#include "../ir/ir.hpp"
+#include "../util/error_logger.hpp"
+#include "../util/graph_context.hpp"
+#include "support/ast_type_resolver.hpp"
+
+void StructPopulationPass::visit(ASTStructDeclaration* node)
+{
+    m_env = m_irCtx->make(Environment(node->name, m_module->getEnv()));
+
+    auto resolver = ASTTypeResolver(m_env, m_irCtx);
+    auto structType = node->getIRStruct();
+
+    for (auto typeParam : structType->typeParams)
+        m_env->addTypeParam(typeParam);
+
+    for (auto const& [name, type] : node->fields)
+    {
+        if (structType->fields.contains(name))
+        {
+            return m_logger.error(
+                node->location,
+                "Field " + name + " of struct " + node->name
+                    + " has multiple definitions"
+            );
+        }
+
+        auto [irType, error] = resolver.getIRType(type);
+        if (!irType)
+            return m_logger.error(node->location, error);
+
+        structType->fields.try_emplace(name, irType);
+    }
+
+    m_env = nullptr;
+}
+
+void StructPopulationPass::process(ASTSourceFile* node)
+{
+    return dispatch(node);
+}
+
+void StructPopulationPass::visit(ASTSourceFile* node)
+{
+    m_module = node->getIRModule();
+    m_irCtx = m_module->getIrCtx();
+
+    for (auto declaration : node->declarations)
+        dispatch(declaration);
+}
