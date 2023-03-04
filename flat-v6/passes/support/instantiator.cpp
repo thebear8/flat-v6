@@ -7,12 +7,12 @@
 #include "../../util/zip_view.hpp"
 
 IRStructInstantiation* Instantiator::makeStructInstantiation(
-    IRModule* irModule,
-    IRStructTemplate* structTemplate,
-    std::vector<IRType*> const& typeArgs
+    IRStructTemplate* structTemplate, std::vector<IRType*> const& typeArgs
 )
 {
-    m_env = &Environment(structTemplate->name, irModule->getEnv());
+    m_env = &Environment(
+        structTemplate->name, structTemplate->getParent()->getEnv()
+    );
 
     assert(
         typeArgs.size() == structTemplate->typeParams.size()
@@ -43,12 +43,12 @@ IRStructInstantiation* Instantiator::makeStructInstantiation(
 }
 
 IRFunctionInstantiation* Instantiator::makeFunctionInstantiation(
-    IRModule* irModule,
-    IRFunctionTemplate* functionTemplate,
-    std::vector<IRType*> const& typeArgs
+    IRFunctionTemplate* functionTemplate, std::vector<IRType*> const& typeArgs
 )
 {
-    m_env = &Environment(functionTemplate->name, irModule->getEnv());
+    m_env = &Environment(
+        functionTemplate->name, functionTemplate->getParent()->getEnv()
+    );
 
     assert(
         typeArgs.size() == functionTemplate->typeParams.size()

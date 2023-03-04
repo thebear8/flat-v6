@@ -13,13 +13,10 @@ public:
     Instantiator() : m_env(nullptr), m_irCtx(nullptr) {}
 
     IRStructInstantiation* makeStructInstantiation(
-        IRModule* irModule,
-        IRStructTemplate* structTemplate,
-        std::vector<IRType*> const& typeArgs
+        IRStructTemplate* structTemplate, std::vector<IRType*> const& typeArgs
     );
 
     IRFunctionInstantiation* makeFunctionInstantiation(
-        IRModule* irModule,
         IRFunctionTemplate* functionTemplate,
         std::vector<IRType*> const& typeArgs
     );

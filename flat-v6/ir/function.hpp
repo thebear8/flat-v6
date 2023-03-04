@@ -9,7 +9,9 @@ namespace llvm
 class Function;
 };
 
+struct IRModule;
 struct IRType;
+
 struct IRFunction : public IRNode
 {
     std::string name;
@@ -62,6 +64,8 @@ struct IRFunctionTemplate : IRFunction
     }
 
     IMPLEMENT_ACCEPT()
+
+    METADATA_PROP(parent, IRModule*, getParent, setParent)
 };
 
 struct IRFunctionInstantiation : IRFunction

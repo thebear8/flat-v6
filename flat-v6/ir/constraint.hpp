@@ -4,6 +4,8 @@
 
 #include "ir_node.hpp"
 
+struct IRModule;
+
 struct IRConstraint : IRNode
 {
     std::string name;
@@ -26,4 +28,6 @@ struct IRConstraint : IRNode
     }
 
     IMPLEMENT_ACCEPT()
+
+    METADATA_PROP(parent, IRModule*, getParent, setParent)
 };

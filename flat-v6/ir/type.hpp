@@ -4,6 +4,8 @@
 
 #include "ir_node.hpp"
 
+struct IRModule;
+
 struct IRType : public IRNode
 {
     virtual size_t getBitSize()
@@ -163,6 +165,8 @@ struct IRStructTemplate : public IRStruct
     virtual bool isStructTemplate() override { return true; }
 
     IMPLEMENT_ACCEPT()
+
+    METADATA_PROP(parent, IRModule*, getParent, setParent)
 };
 
 struct IRStructInstantiation : public IRStruct
