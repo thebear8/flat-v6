@@ -24,7 +24,9 @@ protected:
 
     std::unordered_map<std::string, IRType*> m_builtinTypes;
 
-    std::unordered_map<std::string, IRConstraint*> m_constraints;
+    std::unordered_map<std::string, IRConstraintTemplate*> m_constraints;
+    std::unordered_multimap<IRConstraintTemplate*, IRConstraintInstantiation*>
+        m_constraintInstantiations;
 
     std::unordered_map<std::string, IRStructTemplate*> m_structs;
     std::unordered_multimap<IRStructTemplate*, IRStructInstantiation*>
@@ -111,25 +113,58 @@ public:
     /// found
     IRType* findTypeParamValue(IRGenericType* typeParam);
 
-    /// @brief Add a constraint declaration to this environment
-    /// @param constraint Constraint declaration to add
-    /// @return The added constraint declaration or nullptr if a constraint
-    /// declaration with the same name already exists
-    IRConstraint* addConstraint(IRConstraint* constraint);
+    /// @brief Add a constraint template to this environment
+    /// @param constraint Constraint template to add
+    /// @return The added constraint template or nullptr if a constraint
+    /// template with the same name already exists
+    IRConstraintTemplate* addConstraint(IRConstraintTemplate* constraint);
 
-    /// @brief Search for a constraint declaration by name in this environment
+    /// @brief Search for a constraint template by name in this environment
     /// only
-    /// @param name Name of the constraint declaration
-    /// @return The found constraint declaration or nullptr if the constraint
-    /// declaration was not found
-    IRConstraint* getConstraint(std::string const& name);
+    /// @param name Name of the constraint template
+    /// @return The found constraint template or nullptr if the constraint
+    /// template was not found
+    IRConstraintTemplate* getConstraint(std::string const& name);
 
-    /// @brief Search for a constraint declaration by name in the environment
+    /// @brief Search for a constraint template by name in the environment
     /// chain
-    /// @param name Name of the constraint declaration
-    /// @return The found constraint declaration or nullptr if the constraint
-    /// declaration was not found
-    IRConstraint* findConstraint(std::string const& name);
+    /// @param name Name of the constraint template
+    /// @return The found constraint template or nullptr if the constraint
+    /// template was not found
+    IRConstraintTemplate* findConstraint(std::string const& name);
+
+    /// @brief Add a constraint instantiation to this environment
+    /// @param constraintTemplate Constraint template for which to add an
+    /// instantiation
+    /// @param constraintInstantiation Constraint instantiation to add
+    /// @return The added instantiation or nullptr if an instantiation with the
+    /// same type args already exists
+    IRConstraintInstantiation* addConstraintInstantiation(
+        IRConstraintTemplate* constraintTemplate,
+        IRConstraintInstantiation* constraintInstantiation
+    );
+
+    /// @brief Search for a constraint instantiation by type args in this
+    /// environment only
+    /// @param constraintTemplate Constraint template for which to get an
+    /// instantiation
+    /// @param typeArgs The type args of the instantiation to get
+    /// @return The found instantiation or nullptr if no instantiation was found
+    IRConstraintInstantiation* getConstraintInstantiation(
+        IRConstraintTemplate* constraintTemplate,
+        std::vector<IRType*> const& typeArgs
+    );
+
+    /// @brief Search for a constraint instantiation by type args in the
+    /// environment chain
+    /// @param constraintTemplate Constraint template for which to get an
+    /// instantiation
+    /// @param typeArgs The type args of the instantiation to get
+    /// @return The found instantiation or nullptr if no instantiation was found
+    IRConstraintInstantiation* findConstraintInstantiation(
+        IRConstraintTemplate* constraintTemplate,
+        std::vector<IRType*> const& typeArgs
+    );
 
     /// @brief Add a struct type to this environment
     /// @param structType Struct type to add

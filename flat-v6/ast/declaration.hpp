@@ -4,6 +4,10 @@
 
 #include "ast_node.hpp"
 
+class IRConstraintTemplate;
+class IRStructTemplate;
+class IRFunctionTemplate;
+
 struct ASTDeclaration : public ASTNode
 {
     std::vector<std::string> typeParams;
@@ -40,9 +44,12 @@ struct ASTConstraintDeclaration : public ASTDeclaration
     }
 
     IMPLEMENT_ACCEPT()
+
+    METADATA_PROP(
+        irConstraint, IRConstraintTemplate*, getIRConstraint, setIRConstraint
+    )
 };
 
-class IRStructTemplate;
 struct ASTStructDeclaration : public ASTDeclaration
 {
     std::string name;
@@ -107,4 +114,6 @@ struct ASTFunctionDeclaration : public ASTDeclaration
     }
 
     IMPLEMENT_ACCEPT()
+
+    METADATA_PROP(irFunction, IRFunctionTemplate*, getIRFunction, setIRFunction)
 };

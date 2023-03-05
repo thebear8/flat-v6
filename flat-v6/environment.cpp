@@ -86,7 +86,9 @@ IRType* Environment::findTypeParamValue(IRGenericType* typeParam)
     return nullptr;
 }
 
-IRConstraint* Environment::addConstraint(IRConstraint* constraint)
+IRConstraintTemplate* Environment::addConstraint(
+    IRConstraintTemplate* constraint
+)
 {
     if (m_constraints.contains(constraint->name))
         return nullptr;
@@ -95,19 +97,77 @@ IRConstraint* Environment::addConstraint(IRConstraint* constraint)
     return m_constraints.at(constraint->name);
 }
 
-IRConstraint* Environment::getConstraint(std::string const& constraintName)
+IRConstraintTemplate* Environment::getConstraint(
+    std::string const& constraintName
+)
 {
     if (m_constraints.contains(constraintName))
         return m_constraints.at(constraintName);
     return nullptr;
 }
 
-IRConstraint* Environment::findConstraint(std::string const& constraintName)
+IRConstraintTemplate* Environment::findConstraint(
+    std::string const& constraintName
+)
 {
     if (auto constraint = getConstraint(constraintName))
         return constraint;
     else if (m_parent)
         return m_parent->findConstraint(constraintName);
+
+    return nullptr;
+}
+
+IRConstraintInstantiation* Environment::addConstraintInstantiation(
+    IRConstraintTemplate* constraintTemplate,
+    IRConstraintInstantiation* constraintInstantiation
+)
+{
+    if (getConstraintInstantiation(
+            constraintTemplate, constraintInstantiation->typeArgs
+        ))
+    {
+        return nullptr;
+    }
+
+    m_constraintInstantiations.emplace(
+        constraintTemplate, constraintInstantiation
+    );
+    return constraintInstantiation;
+}
+
+IRConstraintInstantiation* Environment::getConstraintInstantiation(
+    IRConstraintTemplate* constraintTemplate,
+    std::vector<IRType*> const& typeArgs
+)
+{
+    for (auto [it, end] =
+             m_constraintInstantiations.equal_range(constraintTemplate);
+         it != end;
+         ++it)
+    {
+        if (std::ranges::equal(it->second->typeArgs, typeArgs))
+            return it->second;
+    }
+
+    return nullptr;
+}
+
+IRConstraintInstantiation* Environment::findConstraintInstantiation(
+    IRConstraintTemplate* constraintTemplate,
+    std::vector<IRType*> const& typeArgs
+)
+{
+    if (auto i = getConstraintInstantiation(constraintTemplate, typeArgs))
+    {
+        return i;
+    }
+    else if (m_parent)
+    {
+        return m_parent->findConstraintInstantiation(
+            constraintTemplate, typeArgs
+        );
+    }
 
     return nullptr;
 }

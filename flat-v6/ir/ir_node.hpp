@@ -28,6 +28,8 @@ using IRTripleDispatchVisitor = triple_dispatch_visitor::TripleDispatchVisitor<
     struct IRIfStatement,
 
     struct IRConstraint,
+    struct IRConstraintTemplate,
+    struct IRConstraintInstantiation,
     struct IRFunction,
     struct IRFunctionTemplate,
     struct IRFunctionInstantiation,
