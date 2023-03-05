@@ -18,13 +18,12 @@ private:
     GraphContext* m_irCtx;
 
 public:
-    ASTTypeResolver(Environment* env, GraphContext* irCtx)
-        : m_env(env), m_irCtx(irCtx)
-    {
-    }
+    ASTTypeResolver() : m_env(nullptr), m_irCtx(nullptr) {}
 
 public:
-    std::tuple<IRType*, std::string> getIRType(ASTType* node);
+    std::tuple<IRType*, std::string> resolve(
+        ASTType* node, Environment* env, GraphContext* irCtx
+    );
 
 private:
     std::tuple<IRType*, std::string> visit(ASTNamedType* node) override;

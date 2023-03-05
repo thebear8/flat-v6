@@ -126,6 +126,7 @@
         "propagate_const": "cpp",
         "__memory": "cpp",
         "*.def": "cpp",
-        "__std_stream": "cpp"
+        "__std_stream": "cpp",
+        "simd": "cpp"
     }
 }

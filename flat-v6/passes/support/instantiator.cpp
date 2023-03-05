@@ -5,6 +5,10 @@
 #include <ranges>
 #include <vector>
 
+#include "../../compiler.hpp"
+#include "../../ir/ir.hpp"
+#include "../../util/error_logger.hpp"
+#include "../../util/graph_context.hpp"
 #include "../../util/zip_view.hpp"
 
 IRStructInstantiation* Instantiator::makeStructInstantiation(

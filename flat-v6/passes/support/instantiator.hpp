@@ -1,7 +1,8 @@
-#include "../../compiler.hpp"
+#pragma once
 #include "../../ir/ir.hpp"
-#include "../../util/error_logger.hpp"
-#include "../../util/graph_context.hpp"
+
+class Environment;
+class GraphContext;
 
 class Instantiator : IRVisitor<IRNode*>
 {

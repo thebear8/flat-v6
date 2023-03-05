@@ -4,8 +4,19 @@
 #include "../../ir/ir.hpp"
 #include "../../util/graph_context.hpp"
 
-std::tuple<IRType*, std::string> ASTTypeResolver::getIRType(ASTType* node)
+std::tuple<IRType*, std::string> ASTTypeResolver::resolve(
+    ASTType* node, Environment* env, GraphContext* irCtx
+)
 {
+    m_env = env;
+    m_irCtx = irCtx;
+
+    auto&& resolved = dispatch(node);
+
+    m_env = nullptr;
+    m_irCtx = nullptr;
+
+    return resolved;
 }
 
 std::tuple<IRType*, std::string> ASTTypeResolver::visit(ASTNamedType* node)
@@ -68,7 +79,7 @@ std::tuple<IRType*, std::string> ASTTypeResolver::visit(ASTNamedType* node)
 
 std::tuple<IRType*, std::string> ASTTypeResolver::visit(ASTPointerType* node)
 {
-    auto&& [base, error] = getIRType(node->base);
+    auto&& [base, error] = dispatch(node->base);
     if (!base)
         return std::make_tuple(nullptr, error);
     return std::make_tuple(m_irCtx->make(IRPointerType(base)), "");
@@ -76,7 +87,7 @@ std::tuple<IRType*, std::string> ASTTypeResolver::visit(ASTPointerType* node)
 
 std::tuple<IRType*, std::string> ASTTypeResolver::visit(ASTArrayType* node)
 {
-    auto&& [base, error] = getIRType(node->base);
+    auto&& [base, error] = dispatch(node->base);
     if (!base)
         return std::make_tuple(nullptr, error);
     return std::make_tuple(m_irCtx->make(IRArrayType(base)), "");
