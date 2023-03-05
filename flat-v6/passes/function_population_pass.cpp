@@ -237,30 +237,12 @@ IRNode* FunctionPopulationPass::visit(ASTIfStatement* node)
 
 IRNode* FunctionPopulationPass::visit(ASTFunctionDeclaration* node)
 {
-    m_env = m_irCtx->make(Environment(node->name, m_module->getEnv()));
+    m_env = &Environment(node->name, m_module->getEnv());
 
-    std::vector<IRGenericType*> typeParams;
-    for (auto typeParam : node->typeParams)
-        typeParams.push_back(m_irCtx->make(IRGenericType(typeParam)));
+    auto function = node->getIRFunction();
+    for (auto typeParam : function->typeParams)
+        m_env->addTypeParam(typeParam);
 
-    for (auto p : typeParams)
-        m_env->addTypeParam(p);
-
-    std::vector<std::pair<std::string, IRType*>> params;
-    for (auto const& [paramName, paramType] : node->parameters)
-    {
-        auto&& [irType, error] = m_resolver.resolve(paramType, m_env, m_irCtx);
-        if (!irType)
-            return m_logger.error(paramType->location, error, nullptr);
-
-        params.push_back(std::make_pair(paramName, irType));
-    }
-
-    auto&& [result, error] = m_resolver.resolve(node->result, m_env, m_irCtx);
-    if (!result)
-        return m_logger.error(node->result->location, error, nullptr);
-
-    std::vector<std::pair<std::string, std::vector<IRType*>>> requirements;
     for (auto const& [name, typeArgs] : node->requirements)
     {
         std::vector<IRType*> irTypeArgs;
@@ -274,29 +256,12 @@ IRNode* FunctionPopulationPass::visit(ASTFunctionDeclaration* node)
             irTypeArgs.push_back(irType);
         }
 
-        requirements.push_back(std::make_pair(name, irTypeArgs));
+        function->requirements.push_back(std::make_pair(name, irTypeArgs));
     }
 
-    auto body = node->body ? (IRStatement*)dispatch(node->body) : nullptr;
-    auto function = m_irCtx->make(IRFunctionTemplate(
-        node->name, typeParams, params, result, requirements, body
-    ));
+    function->body = node->body ? (IRStatement*)dispatch(node->body) : nullptr;
 
-    function->setLibraryNameForImport(node->lib);
-    function->setLocation(node->location);
-    if (!m_module->getEnv()->addFunction(function))
-    {
-        return m_logger.error(
-            node->location,
-            "Function " + node->name + " in module " + m_module->name
-                + " is already defined",
-            nullptr
-        );
-    }
-
-    m_module->functions.push_back(function);
     m_env = nullptr;
-    return function;
 }
 
 IRNode* FunctionPopulationPass::visit(ASTSourceFile* node)

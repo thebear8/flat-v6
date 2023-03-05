@@ -2,7 +2,6 @@
 
 #include "../compiler.hpp"
 #include "../ir/ir.hpp"
-#include "support/ast_type_resolver.hpp"
 
 void FunctionExtractionPass::process(ASTSourceFile* sourceFile)
 {
@@ -11,24 +10,28 @@ void FunctionExtractionPass::process(ASTSourceFile* sourceFile)
 
 void FunctionExtractionPass::visit(ASTFunctionDeclaration* node)
 {
-    ASTTypeResolver resolver(m_env, m_irCtx);
+    m_env = &Environment(node->name, m_module->getEnv());
 
     std::vector<IRGenericType*> typeParams;
     for (auto typeParam : node->typeParams)
         typeParams.push_back(m_irCtx->make(IRGenericType(typeParam)));
 
+    for (auto p : typeParams)
+        m_env->addTypeParam(p);
+
     std::vector<std::pair<std::string, IRType*>> params;
-    for (auto const& [name, type] : node->parameters)
+    for (auto const& [paramName, paramType] : node->parameters)
     {
-        auto&& [irType, error] = resolver.getIRType(type);
+        auto&& [irType, error] = m_resolver.resolve(paramType, m_env, m_irCtx);
         if (!irType)
-        {
-            return m_logger.error(type->location, error);
-        }
-        params.push_back(std::make_pair(name, irType));
+            return m_logger.error(paramType->location, error);
+
+        params.push_back(std::make_pair(paramName, irType));
     }
 
-    auto&& [result, error] = resolver.getIRType(node->result);
+    auto&& [result, error] = m_resolver.resolve(node->result, m_env, m_irCtx);
+    if (!result)
+        return m_logger.error(node->result->location, error);
 
     auto function = m_irCtx->make(
         IRFunctionTemplate(node->name, typeParams, params, result, {}, nullptr)
@@ -37,14 +40,24 @@ void FunctionExtractionPass::visit(ASTFunctionDeclaration* node)
     function->setParent(m_module);
     function->setLibraryNameForImport(node->lib);
     function->setLocation(node->location);
-    m_module->getEnv()->addFunction(function);
+    node->setIRFunction(function);
+
+    if (!m_module->getEnv()->addFunction(function))
+    {
+        return m_logger.error(
+            node->location,
+            "Function " + node->name + " in module " + m_module->name
+                + " is already defined"
+        );
+    }
+
+    m_env = nullptr;
 }
 
 void FunctionExtractionPass::visit(ASTSourceFile* node)
 {
     m_module = node->getIRModule();
     m_irCtx = m_module->getIrCtx();
-    m_env = m_module->getEnv();
 
     for (auto declaration : node->declarations)
         dispatch(declaration);

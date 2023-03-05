@@ -1,5 +1,6 @@
 #pragma once
 #include "../ast/ast.hpp"
+#include "support/ast_type_resolver.hpp"
 
 class ErrorLogger;
 class CompilationContext;
@@ -11,6 +12,7 @@ class FunctionExtractionPass : ASTVisitor<void>
 private:
     ErrorLogger& m_logger;
     CompilationContext& m_compCtx;
+    ASTTypeResolver m_resolver;
 
     IRModule* m_module;
     GraphContext* m_irCtx;
