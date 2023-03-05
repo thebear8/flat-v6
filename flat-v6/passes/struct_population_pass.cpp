@@ -4,21 +4,19 @@
 #include "../ir/ir.hpp"
 #include "../util/error_logger.hpp"
 #include "../util/graph_context.hpp"
-#include "support/ast_type_resolver.hpp"
 
 void StructPopulationPass::visit(ASTStructDeclaration* node)
 {
     m_env = m_irCtx->make(Environment(node->name, m_module->getEnv()));
 
-    auto resolver = ASTTypeResolver(m_env, m_irCtx);
-    auto structType = node->getIRStruct();
+    auto structTemplate = node->getIRStruct();
 
-    for (auto typeParam : structType->typeParams)
+    for (auto typeParam : structTemplate->typeParams)
         m_env->addTypeParam(typeParam);
 
     for (auto const& [name, type] : node->fields)
     {
-        if (structType->fields.contains(name))
+        if (structTemplate->fields.contains(name))
         {
             return m_logger.error(
                 node->location,
@@ -27,11 +25,11 @@ void StructPopulationPass::visit(ASTStructDeclaration* node)
             );
         }
 
-        auto [irType, error] = resolver.getIRType(type);
+        auto [irType, error] = m_resolver.resolve(type, m_env, m_irCtx);
         if (!irType)
             return m_logger.error(node->location, error);
 
-        structType->fields.try_emplace(name, irType);
+        structTemplate->fields.try_emplace(name, irType);
     }
 
     m_env = nullptr;
