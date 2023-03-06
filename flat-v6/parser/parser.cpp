@@ -81,7 +81,11 @@ ASTExpression* Parser::l1()
             while (!match(Token::ParenClose) && !match(Token::Eof))
             {
                 args.push_back(expression());
-                match(Token::Comma);
+                if (!match(Token::Comma))
+                {
+                    expect(Token::ParenClose);
+                    break;
+                }
             }
             e = ctx.make(
                 ASTCallExpression(SourceRef(id, begin, position), e, args)
@@ -93,7 +97,11 @@ ASTExpression* Parser::l1()
             while (!match(Token::BracketClose) && !match(Token::Eof))
             {
                 args.push_back(expression());
-                match(Token::Comma);
+                if (!match(Token::Comma))
+                {
+                    expect(Token::ParenClose);
+                    break;
+                }
             }
             e = ctx.make(
                 ASTIndexExpression(SourceRef(id, begin, position), e, args)
@@ -395,7 +403,9 @@ ASTExpression* Parser::l10()
 
 ASTExpression* Parser::expression()
 {
-    return l10();
+    auto e = l10();
+    expect(Token::NewLine);
+    return e;
 }
 
 ASTStatement* Parser::blockStatement(size_t begin)
@@ -413,12 +423,16 @@ ASTStatement* Parser::blockStatement(size_t begin)
 ASTStatement* Parser::variableStatement(size_t begin)
 {
     std::vector<std::pair<std::string, ASTExpression*>> items;
-    while (match(Token::Identifier))
+    while (!match(Token::NewLine) && match(Token::Identifier))
     {
         auto name = getTokenValue();
         expect(Token::Assign);
         items.push_back(std::pair(name, expression()));
-        match(Token::Comma);
+        if (!match(Token::Comma))
+        {
+            expect(Token::NewLine);
+            break;
+        }
     }
     return ctx.make(ASTVariableStatement(SourceRef(id, begin, position), items)
     );
@@ -435,6 +449,7 @@ ASTStatement* Parser::returnStatement(size_t begin)
     else
     {
         auto e = expression();
+        expect(Token::NewLine);
         return ctx.make(ASTReturnStatement(SourceRef(id, begin, position), e));
     }
 }
@@ -516,8 +531,12 @@ ASTConstraintCondition* Parser::constraintCondition(size_t begin)
         auto paramName = getTokenValue();
         expect(Token::Colon);
         auto type = typeName();
-        parameters.push_back({ paramName, type });
-        match(Token::Comma);
+        parameters.push_back(std::make_pair(paramName, type));
+        if (!match(Token::Comma))
+        {
+            expect(Token::ParenClose);
+            break;
+        }
     }
 
     auto result = (match(Token::Colon) ? typeName() : nullptr);
@@ -540,6 +559,11 @@ ASTConstraintDeclaration* Parser::constraintDeclaration(size_t begin)
     {
         auto conditionBegin = trim();
         conditions.push_back(constraintCondition(conditionBegin));
+        if (!match(Token::Comma))
+        {
+            expect(Token::BraceClose);
+            break;
+        }
     }
 
     return ctx.make(ASTConstraintDeclaration(
@@ -592,7 +616,11 @@ ASTFunctionDeclaration* Parser::functionDeclaration(size_t begin)
         expect(Token::Colon);
         auto type = typeName();
         parameters.push_back({ paramName, type });
-        match(Token::Comma);
+        if (!match(Token::Comma))
+        {
+            expect(Token::ParenClose);
+            break;
+        }
     }
 
     auto result = (match(Token::Colon) ? typeName() : nullptr);
@@ -633,7 +661,11 @@ ASTFunctionDeclaration* Parser::externFunctionDeclaration(size_t begin)
         expect(Token::Colon);
         auto type = typeName();
         parameters.push_back({ paramName, type });
-        match(Token::Comma);
+        if (!match(Token::Comma))
+        {
+            expect(Token::ParenClose);
+            break;
+        }
     }
 
     auto result = (match(Token::Colon) ? typeName() : nullptr);
