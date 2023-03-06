@@ -27,6 +27,7 @@ using IRTripleDispatchVisitor = triple_dispatch_visitor::TripleDispatchVisitor<
     struct IRWhileStatement,
     struct IRIfStatement,
 
+    struct IRConstraintCondition,
     struct IRConstraint,
     struct IRConstraintTemplate,
     struct IRConstraintInstantiation,

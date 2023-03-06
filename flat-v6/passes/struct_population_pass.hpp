@@ -31,10 +31,6 @@ public:
     void process(ASTSourceFile* sourceFile);
 
 private:
-public:
-    void process(ASTSourceFile* sourceFile);
-
-private:
     void visit(ASTStructDeclaration* node) override;
     void visit(ASTConstraintDeclaration* node) override {}
     void visit(ASTFunctionDeclaration* node) override {}

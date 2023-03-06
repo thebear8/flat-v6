@@ -2,7 +2,6 @@
 
 #include "../compiler.hpp"
 #include "../ir/ir.hpp"
-#include "support/ast_type_resolver.hpp"
 
 void ConstraintExtractionPass::process(ASTSourceFile* sourceFile)
 {
@@ -11,25 +10,31 @@ void ConstraintExtractionPass::process(ASTSourceFile* sourceFile)
 
 void ConstraintExtractionPass::visit(ASTConstraintDeclaration* node)
 {
-    ASTTypeResolver resolver(m_env, m_irCtx);
-
     std::vector<IRGenericType*> typeParams;
     for (auto typeParam : node->typeParams)
         typeParams.push_back(m_irCtx->make(IRGenericType(typeParam)));
 
     auto constraint =
-        m_irCtx->make(IRConstraint(node->name, typeParams, {}, {}));
+        m_irCtx->make(IRConstraintTemplate(node->name, typeParams, {}, {}));
 
     constraint->setParent(m_module);
     constraint->setLocation(node->location);
-    m_module->getEnv()->addConstraint(constraint);
+    node->setIRConstraint(constraint);
+
+    if (!m_module->getEnv()->addConstraint(constraint))
+    {
+        return m_logger.error(
+            node->location,
+            "Constraint " + node->name + " is already defined in module "
+                + m_module->name
+        );
+    }
 }
 
 void ConstraintExtractionPass::visit(ASTSourceFile* node)
 {
     m_module = node->getIRModule();
     m_irCtx = m_module->getIrCtx();
-    m_env = m_module->getEnv();
 
     for (auto declaration : node->declarations)
         dispatch(declaration);

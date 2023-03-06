@@ -1,25 +1,31 @@
 #pragma once
 #include "../ast/ast.hpp"
 #include "support/ast_type_resolver.hpp"
+#include "support/instantiator.hpp"
 
 class ErrorLogger;
 class CompilationContext;
 class GraphContext;
 class Environment;
 
-class ConstraintExtractionPass : ASTVisitor<void>
+class ConstraintPopulationPass : ASTVisitor<void>
 {
 private:
     ErrorLogger& m_logger;
     CompilationContext& m_compCtx;
     ASTTypeResolver m_resolver;
+    Instantiator m_instantiator;
 
     IRModule* m_module;
     GraphContext* m_irCtx;
+    Environment* m_env;
 
 public:
-    ConstraintExtractionPass(ErrorLogger& logger, CompilationContext& compCtx)
-        : m_logger(logger), m_compCtx(compCtx), m_module(nullptr)
+    ConstraintPopulationPass(ErrorLogger& logger, CompilationContext& compCtx)
+        : m_logger(logger),
+          m_compCtx(compCtx),
+          m_module(nullptr),
+          m_env(nullptr)
     {
     }
 

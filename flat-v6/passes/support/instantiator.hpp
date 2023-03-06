@@ -26,6 +26,11 @@ public:
         std::vector<IRType*> const& typeArgs
     );
 
+    IRConstraintInstantiation* makeConstraintInstantiation(
+        IRConstraintTemplate* constraintTemplate,
+        std::vector<IRType*> const& typeArgs
+    );
+
 private:
     IRNode* visit(IRIntegerExpression* node) override { return node; }
     IRNode* visit(IRBoolExpression* node) override { return node; }
@@ -45,6 +50,9 @@ private:
     IRNode* visit(IRReturnStatement* node) override;
     IRNode* visit(IRWhileStatement* node) override;
     IRNode* visit(IRIfStatement* node) override;
+
+    IRNode* visit(IRConstraintCondition* node) override;
+    IRNode* visit(IRConstraintInstantiation* node) override;
 
     IRNode* visit(IRGenericType* node) override;
     IRNode* visit(IRVoidType* node) override { return node; }
