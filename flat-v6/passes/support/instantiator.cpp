@@ -102,13 +102,9 @@ IRFunctionInstantiation* Instantiator::makeFunctionInstantiation(
         });
 
     auto requirements =
-        functionTemplate->requirements
-        | std::views::transform([&](auto const& r) {
-              auto args = p.second | std::views::transform([&](auto a) {
-                              return (IRType*)dispatch(a);
-                          });
-              return std::pair(p.first, std::vector(args.begin(), args.end()));
-          });
+        functionTemplate->requirements | std::views::transform([&](auto r) {
+            return (IRConstraintInstantiation*)dispatch(r);
+        });
 
     m_env = nullptr;
     m_irCtx = nullptr;
@@ -118,7 +114,7 @@ IRFunctionInstantiation* Instantiator::makeFunctionInstantiation(
         typeArgs,
         std::vector(params.begin(), params.end()),
         result,
-        std::vector(requirements.begin(), requirements.end()),
+        std::set(requirements.begin(), requirements.end()),
         body
     ));
 
@@ -175,6 +171,52 @@ IRConstraintInstantiation* Instantiator::makeConstraintInstantiation(
     return instantiation;
 }
 
+IRConstraintInstantiation* Instantiator::fixupConstraintInstantiation(
+    IRConstraintInstantiation* constraintInstantiation
+)
+{
+    auto constraintTemplate = constraintInstantiation->getInstantiatedFrom();
+
+    m_irCtx = constraintTemplate->getParent()->getIrCtx();
+    m_env = &Environment(
+        constraintTemplate->name, constraintTemplate->getParent()->getEnv()
+    );
+
+    assert(
+        constraintInstantiation->typeArgs.size()
+            == constraintTemplate->typeParams.size()
+        && "Number of type args has to match number of type params"
+    );
+
+    auto zippedArgs = zip_view(
+        std::views::all(constraintTemplate->typeParams),
+        std::views::all(constraintInstantiation->typeArgs)
+    );
+
+    for (auto [typeParam, typeArg] : zippedArgs)
+        m_env->addTypeParamValue(typeParam, typeArg);
+
+    auto requirements =
+        constraintTemplate->requirements | std::views::transform([&](auto r) {
+            return (IRConstraintInstantiation*)dispatch(r);
+        });
+
+    auto conditions =
+        constraintTemplate->conditions | std::views::transform([&](auto c) {
+            return (IRConstraintCondition*)dispatch(c);
+        });
+
+    constraintInstantiation->requirements =
+        std::set(requirements.begin(), requirements.end());
+
+    constraintInstantiation->conditions =
+        std::vector(conditions.begin(), conditions.end());
+
+    m_env = nullptr;
+    m_irCtx = nullptr;
+    return constraintInstantiation;
+}
+
 IRNode* Instantiator::visit(IRIdentifierExpression* node)
 {
     auto type = (IRType*)dispatch(node->getType());
@@ -183,7 +225,10 @@ IRNode* Instantiator::visit(IRIdentifierExpression* node)
                         return (IRType*)dispatch(a);
                     });
 
-    return m_irCtx->make(IRIdentifierExpression(node->value, typeArgs))
+    return m_irCtx
+        ->make(IRIdentifierExpression(
+            node->value, std::vector(typeArgs.begin(), typeArgs.end())
+        ))
         ->setType(type)
         ->setLocation(location);
 }
@@ -372,7 +417,7 @@ IRNode* Instantiator::visit(IRConstraintInstantiation* node)
 
     auto instantiation = m_irCtx->make(IRConstraintInstantiation(
         node->name,
-        typeArgs,
+        std::vector(typeArgs.begin(), typeArgs.end()),
         std::set(requirements.begin(), requirements.end()),
         std::vector(conditions.begin(), conditions.end())
     ));

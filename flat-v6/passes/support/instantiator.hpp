@@ -31,6 +31,10 @@ public:
         std::vector<IRType*> const& typeArgs
     );
 
+    IRConstraintInstantiation* fixupConstraintInstantiation(
+        IRConstraintInstantiation* constraintInstantiation
+    );
+
 private:
     IRNode* visit(IRIntegerExpression* node) override { return node; }
     IRNode* visit(IRBoolExpression* node) override { return node; }

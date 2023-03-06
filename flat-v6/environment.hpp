@@ -166,6 +166,12 @@ public:
         std::vector<IRType*> const& typeArgs
     );
 
+    /// @brief Get the std::unordered_multimap of constraint instantiations in
+    /// this environment
+    /// @return The std::unordered_multipmap of constraint instantiations in
+    /// this environment
+    auto& getConstraintInstantiationMap() { return m_constraintInstantiations; }
+
     /// @brief Add a struct type to this environment
     /// @param structType Struct type to add
     /// @return The added struct type or nullptr if a struct type with the same
@@ -214,9 +220,9 @@ public:
         IRStructTemplate* structTemplate, std::vector<IRType*> const& typeArgs
     );
 
-    /// @brief Get the std::unordered_map of struct instantiations in this
+    /// @brief Get the std::unordered_multimap of struct instantiations in this
     /// module
-    /// @return The std::unordered_map of struct instantiations in this
+    /// @return The std::unordered_multimap of struct instantiations in this
     /// module
     auto& getStructInstantiationMap() { return m_structInstantiations; }
 
