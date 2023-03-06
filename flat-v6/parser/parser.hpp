@@ -46,7 +46,6 @@ public:
     ASTConstraintDeclaration* constraintDeclaration(size_t begin);
     ASTStructDeclaration* structDeclaration(size_t begin);
     ASTFunctionDeclaration* functionDeclaration(size_t begin);
-    ASTFunctionDeclaration* functionDeclarationWithoutBody(size_t begin);
     ASTFunctionDeclaration* externFunctionDeclaration(size_t begin);
 
     ASTSourceFile* sourceFile();

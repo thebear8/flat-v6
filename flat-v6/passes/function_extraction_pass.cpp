@@ -29,7 +29,10 @@ void FunctionExtractionPass::visit(ASTFunctionDeclaration* node)
         params.push_back(std::make_pair(paramName, irType));
     }
 
-    auto&& [result, error] = m_resolver.resolve(node->result, m_env, m_irCtx);
+    auto&& [result, error] = (node->result)
+        ? (m_resolver.resolve(node->result, m_env, m_irCtx))
+        : (std::make_tuple(m_compCtx.getVoid(), std::string()));
+
     if (!result)
         return m_logger.error(node->result->location, error);
 

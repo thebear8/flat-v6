@@ -595,11 +595,7 @@ ASTFunctionDeclaration* Parser::functionDeclaration(size_t begin)
         match(Token::Comma);
     }
 
-    ASTType* result =
-        (!match(Token::Colon)
-             ? ctx.make(ASTNamedType(SourceRef(id, begin, position), "void", {})
-             )
-             : typeName());
+    auto result = (match(Token::Colon) ? typeName() : nullptr);
 
     auto requirements = requirementList();
 
@@ -614,43 +610,6 @@ ASTFunctionDeclaration* Parser::functionDeclaration(size_t begin)
         result,
         requirements,
         body
-    ));
-}
-
-ASTFunctionDeclaration* Parser::functionDeclarationWithoutBody(size_t begin)
-{
-    expect(Token::Identifier);
-    auto name = getTokenValue();
-    auto typeParams = typeParamList();
-
-    std::vector<std::pair<std::string, ASTType*>> parameters;
-    expect(Token::ParenOpen);
-    while (!match(Token::ParenClose) && !match(Token::Eof))
-    {
-        expect(Token::Identifier);
-        auto paramName = getTokenValue();
-        expect(Token::Colon);
-        auto type = typeName();
-        parameters.push_back({ paramName, type });
-        match(Token::Comma);
-    }
-
-    ASTType* result =
-        (!match(Token::Colon)
-             ? ctx.make(ASTNamedType(SourceRef(id, begin, position), "void", {})
-             )
-             : typeName());
-
-    auto requirements = requirementList();
-
-    return ctx.make(ASTFunctionDeclaration(
-        SourceRef(id, begin, position),
-        name,
-        typeParams,
-        parameters,
-        result,
-        requirements,
-        nullptr
     ));
 }
 
@@ -677,11 +636,7 @@ ASTFunctionDeclaration* Parser::externFunctionDeclaration(size_t begin)
         match(Token::Comma);
     }
 
-    ASTType* result =
-        (!match(Token::Colon)
-             ? ctx.make(ASTNamedType(SourceRef(id, begin, position), "void", {})
-             )
-             : typeName());
+    auto result = (match(Token::Colon) ? typeName() : nullptr);
 
     return ctx.make(ASTFunctionDeclaration(
         SourceRef(id, begin, position), lib, name, parameters, result
