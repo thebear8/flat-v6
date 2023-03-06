@@ -26,6 +26,11 @@ IRStructInstantiation* Instantiator::makeStructInstantiation(
 
     instantiation->setInstantiatedFrom(structTemplate);
     instantiation->setLocation(structTemplate->getLocation(SourceRef()));
+
+    structTemplate->getParent()->getEnv()->addStructInstantiation(
+        structTemplate, instantiation
+    );
+
     return instantiation;
 }
 
@@ -72,6 +77,11 @@ IRFunctionInstantiation* Instantiator::makeFunctionInstantiation(
 
     instantiation->setInstantiatedFrom(functionTemplate);
     instantiation->setLocation(functionTemplate->getLocation(SourceRef()));
+
+    functionTemplate->getParent()->getEnv()->addFunctionInstantiation(
+        functionTemplate, instantiation
+    );
+
     return instantiation;
 }
 
@@ -91,6 +101,11 @@ IRConstraintInstantiation* Instantiator::makeConstraintInstantiation(
 
     instantiation->setInstantiatedFrom(constraintTemplate);
     instantiation->setLocation(constraintTemplate->getLocation(SourceRef()));
+
+    constraintTemplate->getParent()->getEnv()->addConstraintInstantiation(
+        constraintTemplate, instantiation
+    );
+
     return instantiation;
 }
 

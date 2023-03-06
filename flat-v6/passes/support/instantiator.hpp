@@ -14,7 +14,7 @@ public:
     Instantiator() : m_env(nullptr), m_irCtx(nullptr) {}
 
     /// @brief Create an empty struct instantiation with only name and typeArgs
-    /// set
+    /// set. Add this instantiation to the parent module of the template
     /// @param structTemplate The struct template to create an instantiation of
     /// @param typeArgs The type args of the instantiation
     /// @return The created struct instantiation
@@ -23,7 +23,8 @@ public:
     );
 
     /// @brief Create an empty function instantiation with only name, typeArgs,
-    /// params and result set
+    /// params and result set. Add this instantiation to the parent module of
+    /// the template
     /// @param functionTemplate The function template to create an instantiation
     /// of
     /// @param typeArgs The type args of the instantiation
@@ -34,7 +35,8 @@ public:
     );
 
     /// @brief Create an empty constraint instantiation with only name and
-    /// typeArgs set
+    /// typeArgs set. Add this instantiation to the parent module of the
+    /// template
     /// @param constraintTemplate The constraint template to create an
     /// instantiation of
     /// @param typeArgs The type args of the instantiation
