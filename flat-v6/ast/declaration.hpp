@@ -22,11 +22,30 @@ struct ASTDeclaration : public ASTNode
     IMPLEMENT_ACCEPT()
 };
 
+struct ASTConstraintCondition : public ASTNode
+{
+    std::string name;
+    std::vector<std::pair<std::string, ASTType*>> params;
+    ASTType* result;
+
+    ASTConstraintCondition(
+        SourceRef const& location,
+        std::string const& name,
+        std::vector<std::pair<std::string, ASTType*>> const& params,
+        ASTType* result
+    )
+        : ASTNode(location), name(name), params(params), result(result)
+    {
+    }
+
+    IMPLEMENT_ACCEPT()
+};
+
 struct ASTConstraintDeclaration : public ASTDeclaration
 {
     std::string name;
     std::vector<std::pair<std::string, std::vector<ASTType*>>> requirements;
-    std::vector<ASTFunctionDeclaration*> conditions;
+    std::vector<ASTConstraintCondition*> conditions;
 
     ASTConstraintDeclaration(
         SourceRef const& location,
@@ -34,7 +53,7 @@ struct ASTConstraintDeclaration : public ASTDeclaration
         std::vector<std::string> const& typeParams,
         std::vector<std::pair<std::string, std::vector<ASTType*>>> const&
             requirements,
-        std::vector<ASTFunctionDeclaration*> const& conditions
+        std::vector<ASTConstraintCondition*> const& conditions
     )
         : ASTDeclaration(location, typeParams),
           name(name),

@@ -503,6 +503,30 @@ ASTStatement* Parser::statement()
     }
 }
 
+ASTConstraintCondition* Parser::constraintCondition(size_t begin)
+{
+    expect(Token::Identifier);
+    auto name = getTokenValue();
+
+    std::vector<std::pair<std::string, ASTType*>> parameters;
+    expect(Token::ParenOpen);
+    while (!match(Token::ParenClose) && !match(Token::Eof))
+    {
+        expect(Token::Identifier);
+        auto paramName = getTokenValue();
+        expect(Token::Colon);
+        auto type = typeName();
+        parameters.push_back({ paramName, type });
+        match(Token::Comma);
+    }
+
+    auto result = (match(Token::Colon) ? typeName() : nullptr);
+
+    return ctx.make(ASTConstraintCondition(
+        SourceRef(id, begin, position), name, parameters, result
+    ));
+}
+
 ASTConstraintDeclaration* Parser::constraintDeclaration(size_t begin)
 {
     expect(Token::Identifier);
@@ -511,20 +535,11 @@ ASTConstraintDeclaration* Parser::constraintDeclaration(size_t begin)
     auto requirements = requirementList();
 
     expect(Token::BraceOpen);
-    std::vector<ASTFunctionDeclaration*> declarations;
+    std::vector<ASTConstraintCondition*> conditions;
     while (!match(Token::BraceClose) && !match(Token::Eof))
     {
-        auto declBegin = trim();
-        if (match(Token::Function))
-        {
-            declarations.push_back(functionDeclarationWithoutBody(declBegin));
-        }
-        else
-        {
-            logger.error(
-                SourceRef(id, position), "Expected FunctionDeclaration"
-            );
-        }
+        auto conditionBegin = trim();
+        conditions.push_back(constraintCondition(conditionBegin));
     }
 
     return ctx.make(ASTConstraintDeclaration(
@@ -532,7 +547,7 @@ ASTConstraintDeclaration* Parser::constraintDeclaration(size_t begin)
         constraintName,
         typeParams,
         requirements,
-        declarations
+        conditions
     ));
 }
 

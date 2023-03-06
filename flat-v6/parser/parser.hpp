@@ -42,6 +42,7 @@ public:
     ASTStatement* ifStatement(size_t begin);
     ASTStatement* statement();
 
+    ASTConstraintCondition* constraintCondition(size_t begin);
     ASTConstraintDeclaration* constraintDeclaration(size_t begin);
     ASTStructDeclaration* structDeclaration(size_t begin);
     ASTFunctionDeclaration* functionDeclaration(size_t begin);
