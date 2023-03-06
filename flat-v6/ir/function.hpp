@@ -46,15 +46,14 @@ struct IRFunction : public IRNode
 struct IRFunctionTemplate : IRFunction
 {
     std::vector<IRGenericType*> typeParams;
-    std::vector<std::pair<std::string, std::vector<IRType*>>> requirements;
+    std::set<IRConstraintInstantiation*> requirements;
 
     IRFunctionTemplate(
         std::string const& name,
         std::vector<IRGenericType*> const& typeParams,
         std::vector<std::pair<std::string, IRType*>> const& params,
         IRType* result,
-        std::vector<std::pair<std::string, std::vector<IRType*>>> const&
-            requirements,
+        std::set<IRConstraintInstantiation*> const& requirements,
         IRStatement* body
     )
         : IRFunction(name, params, result, body),
@@ -71,15 +70,14 @@ struct IRFunctionTemplate : IRFunction
 struct IRFunctionInstantiation : IRFunction
 {
     std::vector<IRType*> typeArgs;
-    std::vector<std::pair<std::string, std::vector<IRType*>>> requirements;
+    std::set<IRConstraintInstantiation*> requirements;
 
     IRFunctionInstantiation(
         std::string const& name,
         std::vector<IRType*> const& typeArgs,
         std::vector<std::pair<std::string, IRType*>> const& params,
         IRType* result,
-        std::vector<std::pair<std::string, std::vector<IRType*>>> const&
-            requirements,
+        std::set<IRConstraintInstantiation*> const& requirements,
         IRStatement* body
     )
         : IRFunction(name, params, result, body),

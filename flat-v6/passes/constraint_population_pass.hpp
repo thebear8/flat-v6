@@ -3,12 +3,13 @@
 #include "support/ast_type_resolver.hpp"
 #include "support/instantiator.hpp"
 
+class IRNode;
 class ErrorLogger;
 class CompilationContext;
 class GraphContext;
 class Environment;
 
-class ConstraintPopulationPass : ASTVisitor<void>
+class ConstraintPopulationPass : ASTVisitor<IRNode*>
 {
 private:
     ErrorLogger& m_logger;
@@ -33,8 +34,10 @@ public:
     void process(ASTSourceFile* sourceFile);
 
 private:
-    void visit(ASTStructDeclaration* node) override {}
-    void visit(ASTConstraintDeclaration* node) override;
-    void visit(ASTFunctionDeclaration* node) override {}
-    void visit(ASTSourceFile* node) override;
+    IRNode* visit(ASTRequirement* node) override;
+    IRNode* visit(ASTConstraintCondition* node) override;
+    IRNode* visit(ASTStructDeclaration* node) override {}
+    IRNode* visit(ASTConstraintDeclaration* node) override;
+    IRNode* visit(ASTFunctionDeclaration* node) override {}
+    IRNode* visit(ASTSourceFile* node) override;
 };

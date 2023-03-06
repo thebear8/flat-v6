@@ -55,6 +55,5 @@ public:
 private:
     std::vector<std::string> typeParamList();
     std::vector<ASTType*> typeArgList();
-    std::vector<std::pair<std::string, std::vector<ASTType*>>> requirementList(
-    );
+    std::vector<ASTRequirement*> requirementList();
 };

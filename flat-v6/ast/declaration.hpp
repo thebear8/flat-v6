@@ -22,19 +22,37 @@ struct ASTDeclaration : public ASTNode
     IMPLEMENT_ACCEPT()
 };
 
+struct ASTRequirement : public ASTNode
+{
+    std::string constraintName;
+    std::vector<ASTType*> typeArgs;
+
+    ASTRequirement(
+        SourceRef const& location,
+        std::string const& constraintName,
+        std::vector<ASTType*> const& typeArgs
+    )
+        : ASTNode(location), constraintName(constraintName), typeArgs(typeArgs)
+    {
+    }
+};
+
 struct ASTConstraintCondition : public ASTNode
 {
-    std::string name;
+    std::string functionName;
     std::vector<std::pair<std::string, ASTType*>> params;
     ASTType* result;
 
     ASTConstraintCondition(
         SourceRef const& location,
-        std::string const& name,
+        std::string const& functionName,
         std::vector<std::pair<std::string, ASTType*>> const& params,
         ASTType* result
     )
-        : ASTNode(location), name(name), params(params), result(result)
+        : ASTNode(location),
+          functionName(functionName),
+          params(params),
+          result(result)
     {
     }
 
@@ -44,15 +62,14 @@ struct ASTConstraintCondition : public ASTNode
 struct ASTConstraintDeclaration : public ASTDeclaration
 {
     std::string name;
-    std::vector<std::pair<std::string, std::vector<ASTType*>>> requirements;
+    std::vector<ASTRequirement*> requirements;
     std::vector<ASTConstraintCondition*> conditions;
 
     ASTConstraintDeclaration(
         SourceRef const& location,
         std::string const& name,
         std::vector<std::string> const& typeParams,
-        std::vector<std::pair<std::string, std::vector<ASTType*>>> const&
-            requirements,
+        std::vector<ASTRequirement*> const& requirements,
         std::vector<ASTConstraintCondition*> const& conditions
     )
         : ASTDeclaration(location, typeParams),
@@ -94,41 +111,26 @@ struct ASTFunctionDeclaration : public ASTDeclaration
     std::string lib, name;
     std::vector<std::pair<std::string, ASTType*>> parameters;
     ASTType* result;
-    std::vector<std::pair<std::string, std::vector<ASTType*>>> requirements;
+    std::vector<ASTRequirement*> requirements;
     ASTStatement* body;
-
-    ASTFunctionDeclaration(
-        SourceRef const& location,
-        std::string const& name,
-        std::vector<std::string> const& typeParams,
-        std::vector<std::pair<std::string, ASTType*>> const& parameters,
-        ASTType* result,
-        std::vector<std::pair<std::string, std::vector<ASTType*>>> const&
-            requirements,
-        ASTStatement* body
-    )
-        : ASTDeclaration(location, typeParams),
-          name(name),
-          parameters(parameters),
-          result(result),
-          requirements(requirements),
-          body(body)
-    {
-    }
 
     ASTFunctionDeclaration(
         SourceRef const& location,
         std::string const& lib,
         std::string const& name,
+        std::vector<std::string> const& typeParams,
         std::vector<std::pair<std::string, ASTType*>> const& parameters,
-        ASTType* result
+        ASTType* result,
+        std::vector<ASTRequirement*> const& requirements,
+        ASTStatement* body
     )
         : ASTDeclaration(location, typeParams),
           lib(lib),
           name(name),
           parameters(parameters),
           result(result),
-          body(nullptr)
+          requirements(requirements),
+          body(body)
     {
     }
 

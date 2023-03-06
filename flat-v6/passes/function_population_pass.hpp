@@ -12,6 +12,7 @@ private:
     ErrorLogger& m_logger;
     CompilationContext& m_compCtx;
     ASTTypeResolver m_resolver;
+    Instantiator m_instantiator;
 
     IRModule* m_module;
     GraphContext* m_irCtx;
@@ -50,6 +51,7 @@ private:
     IRNode* visit(ASTWhileStatement* node) override;
     IRNode* visit(ASTIfStatement* node) override;
 
+    IRNode* visit(ASTRequirement* node) override;
     IRNode* visit(ASTConstraintDeclaration* node) override { return nullptr; }
     IRNode* visit(ASTStructDeclaration* node) override { return nullptr; }
     IRNode* visit(ASTFunctionDeclaration* node) override;

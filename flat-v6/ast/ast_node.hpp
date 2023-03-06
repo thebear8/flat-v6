@@ -28,6 +28,8 @@ using ASTTripleDispatchVisitor = triple_dispatch_visitor::TripleDispatchVisitor<
     struct ASTIfStatement,
 
     struct ASTDeclaration,
+    struct ASTRequirement,
+    struct ASTConstraintCondition,
     struct ASTConstraintDeclaration,
     struct ASTStructDeclaration,
     struct ASTFunctionDeclaration,

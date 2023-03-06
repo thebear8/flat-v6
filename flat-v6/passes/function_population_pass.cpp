@@ -235,6 +235,52 @@ IRNode* FunctionPopulationPass::visit(ASTIfStatement* node)
         ->setLocation(node->location);
 }
 
+IRNode* FunctionPopulationPass::visit(ASTRequirement* node)
+{
+    auto constraint = m_env->findConstraint(node->constraintName);
+
+    if (!constraint)
+    {
+        return m_logger.error(
+            node->location,
+            "No constraint named " + node->constraintName,
+            nullptr
+        );
+    }
+
+    if (node->typeArgs.size() != constraint->typeParams.size())
+    {
+        return m_logger.error(
+            node->location,
+            "Number of type args does not match number of type parameters",
+            nullptr
+        );
+    }
+
+    std::vector<IRType*> typeArgs;
+    for (auto typeArg : node->typeArgs)
+    {
+        auto&& [irType, error] = m_resolver.resolve(typeArg, m_env, m_irCtx);
+        if (!irType)
+            return m_logger.error(typeArg->location, error, nullptr);
+
+        typeArgs.push_back(irType);
+    }
+
+    auto instantiation =
+        m_env->findConstraintInstantiation(constraint, typeArgs);
+
+    if (!instantiation)
+    {
+        instantiation = m_env->addConstraintInstantiation(
+            constraint,
+            m_instantiator.makeConstraintInstantiation(constraint, typeArgs)
+        );
+    }
+
+    return instantiation;
+}
+
 IRNode* FunctionPopulationPass::visit(ASTFunctionDeclaration* node)
 {
     m_env = &Environment(node->name, m_module->getEnv());
@@ -243,20 +289,20 @@ IRNode* FunctionPopulationPass::visit(ASTFunctionDeclaration* node)
     for (auto typeParam : function->typeParams)
         m_env->addTypeParam(typeParam);
 
-    for (auto const& [name, typeArgs] : node->requirements)
+    for (auto requirement : node->requirements)
     {
-        std::vector<IRType*> irTypeArgs;
-        for (auto typeArg : typeArgs)
-        {
-            auto&& [irType, error] =
-                m_resolver.resolve(typeArg, m_env, m_irCtx);
-            if (!irType)
-                return m_logger.error(typeArg->location, error, nullptr);
+        auto instantiation = (IRConstraintInstantiation*)dispatch(requirement);
 
-            irTypeArgs.push_back(irType);
+        if (function->requirements.contains(instantiation))
+        {
+            return m_logger.error(
+                requirement->location,
+                "Requirement of same type already exists",
+                nullptr
+            );
         }
 
-        function->requirements.push_back(std::make_pair(name, irTypeArgs));
+        function->requirements.emplace(instantiation);
     }
 
     function->body = node->body ? (IRStatement*)dispatch(node->body) : nullptr;
