@@ -10,8 +10,9 @@
 - Struct Population
 - Constraint Population
 - Function Population
-- Struct Instantiation Fixups
-- Constraint Instantiation Fixups
+- Update Struct Instantiations
+- Update Constraint Instantiations
+- Update Function Instantiations
 
 ## IR Validation
 - Expression type checking
