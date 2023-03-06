@@ -9,8 +9,9 @@
 - Module Import Population
 - Struct Population
 - Struct Instantiation Fixups
-- Function Population
 - Constraint Population
+- Constraint Instantiation Fixups
+- Function Population
 
 ## IR Validation
 - Expression type checking
