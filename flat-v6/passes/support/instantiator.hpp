@@ -13,25 +13,55 @@ private:
 public:
     Instantiator() : m_env(nullptr), m_irCtx(nullptr) {}
 
+    /// @brief Create an empty struct instantiation with only name and typeArgs
+    /// set
+    /// @param structTemplate The struct template to create an instantiation of
+    /// @param typeArgs The type args of the instantiation
+    /// @return The created struct instantiation
     IRStructInstantiation* makeStructInstantiation(
         IRStructTemplate* structTemplate, std::vector<IRType*> const& typeArgs
     );
 
-    IRStructInstantiation* fixupStructInstantiationFields(
-        IRStructInstantiation* structInstantiation
-    );
-
+    /// @brief Create an empty function instantiation with only name, typeArgs,
+    /// params and result set
+    /// @param functionTemplate The function template to create an instantiation
+    /// of
+    /// @param typeArgs The type args of the instantiation
+    /// @return The created function instantiation
     IRFunctionInstantiation* makeFunctionInstantiation(
         IRFunctionTemplate* functionTemplate,
         std::vector<IRType*> const& typeArgs
     );
 
+    /// @brief Create an empty constraint instantiation with only name and
+    /// typeArgs set
+    /// @param constraintTemplate The constraint template to create an
+    /// instantiation of
+    /// @param typeArgs The type args of the instantiation
+    /// @return The created constraint instantiation
     IRConstraintInstantiation* makeConstraintInstantiation(
         IRConstraintTemplate* constraintTemplate,
         std::vector<IRType*> const& typeArgs
     );
 
-    IRConstraintInstantiation* fixupConstraintInstantiation(
+    /// @brief Fully instantiate a struct template
+    /// @param structInstantiation The struct instantiation to update
+    /// @return The updated struct instantiation
+    IRStructInstantiation* updateStructInstantiation(
+        IRStructInstantiation* structInstantiation
+    );
+
+    /// @brief Fully instantiate a function template
+    /// @param functionInstantiation The function instantiation to update
+    /// @return The updated function instantiation
+    IRFunctionInstantiation* updateFunctionInstantiation(
+        IRFunctionInstantiation* functionInstantiation
+    );
+
+    /// @brief Fully instantiate a constraint template
+    /// @param constraintInstantiation The constraint template to update
+    /// @return The updated constraint instantiation
+    IRConstraintInstantiation* updateConstraintInstantiation(
         IRConstraintInstantiation* constraintInstantiation
     );
 

@@ -15,96 +15,48 @@ IRStructInstantiation* Instantiator::makeStructInstantiation(
     IRStructTemplate* structTemplate, std::vector<IRType*> const& typeArgs
 )
 {
-    m_irCtx = structTemplate->getParent()->getIrCtx();
-    m_env = &Environment(
-        structTemplate->name, structTemplate->getParent()->getEnv()
-    );
-
     assert(
         typeArgs.size() == structTemplate->typeParams.size()
         && "Number of type args has to match number of type params"
     );
 
-    auto zippedArgs = zip_view(
-        std::views::all(structTemplate->typeParams), std::views::all(typeArgs)
+    auto instantiation = structTemplate->getParent()->getIrCtx()->make(
+        IRStructInstantiation(structTemplate->name, typeArgs, {})
     );
-
-    for (auto [typeParam, typeArg] : zippedArgs)
-        m_env->addTypeParamValue(typeParam, typeArg);
-
-    auto fields = structTemplate->fields | std::views::transform([&](auto f) {
-                      return std::pair(f.first, (IRType*)dispatch(f.second));
-                  });
-
-    m_env = nullptr;
-    m_irCtx = nullptr;
-
-    auto instantiation = m_irCtx->make(IRStructInstantiation(
-        structTemplate->name,
-        typeArgs,
-        std::unordered_map(fields.begin(), fields.end())
-    ));
 
     instantiation->setInstantiatedFrom(structTemplate);
     instantiation->setLocation(structTemplate->getLocation(SourceRef()));
     return instantiation;
 }
 
-IRStructInstantiation* Instantiator::fixupStructInstantiationFields(
-    IRStructInstantiation* structInstantiation
-)
-{
-    auto structTemplate = structInstantiation->getInstantiatedFrom();
-
-    m_irCtx = structTemplate->getParent()->getIrCtx();
-    m_env = &Environment(
-        structInstantiation->name, structTemplate->getParent()->getEnv()
-    );
-
-    auto fields = structTemplate->fields | std::views::transform([&](auto f) {
-                      return std::pair(f.first, (IRType*)dispatch(f.second));
-                  });
-
-    structInstantiation->fields =
-        std::unordered_map(fields.begin(), fields.end());
-
-    m_env = nullptr;
-    m_irCtx = nullptr;
-}
-
 IRFunctionInstantiation* Instantiator::makeFunctionInstantiation(
     IRFunctionTemplate* functionTemplate, std::vector<IRType*> const& typeArgs
 )
 {
-    m_irCtx = functionTemplate->getParent()->getIrCtx();
-    m_env = &Environment(
-        functionTemplate->name, functionTemplate->getParent()->getEnv()
-    );
-
     assert(
         typeArgs.size() == functionTemplate->typeParams.size()
         && "Number of type args has to match number of type params"
     );
 
-    auto zippedArgs = zip_view(
+    Environment env(
+        functionTemplate->name, functionTemplate->getParent()->getEnv()
+    );
+    m_env = &env;
+    m_irCtx = functionTemplate->getParent()->getIrCtx();
+
+    auto zippedTypeArgs = zip_view(
         std::views::all(functionTemplate->typeParams), std::views::all(typeArgs)
     );
 
-    for (auto [typeParam, typeArg] : zippedArgs)
+    for (auto [typeParam, typeArg] : zippedTypeArgs)
         m_env->addTypeParamValue(typeParam, typeArg);
-
-    auto result = (IRType*)dispatch(functionTemplate->result);
-    auto body = (IRStatement*)dispatch(functionTemplate->body);
 
     auto params =
         functionTemplate->params | std::views::transform([&](auto const& p) {
             return std::pair(p.first, (IRType*)dispatch(p.second));
         });
 
-    auto requirements =
-        functionTemplate->requirements | std::views::transform([&](auto r) {
-            return (IRConstraintInstantiation*)dispatch(r);
-        });
+    auto result = (IRType*)dispatch(functionTemplate->result);
 
     m_env = nullptr;
     m_irCtx = nullptr;
@@ -114,8 +66,8 @@ IRFunctionInstantiation* Instantiator::makeFunctionInstantiation(
         typeArgs,
         std::vector(params.begin(), params.end()),
         result,
-        std::set(requirements.begin(), requirements.end()),
-        body
+        {},
+        nullptr
     ));
 
     instantiation->setInstantiatedFrom(functionTemplate);
@@ -128,50 +80,99 @@ IRConstraintInstantiation* Instantiator::makeConstraintInstantiation(
     std::vector<IRType*> const& typeArgs
 )
 {
-    m_irCtx = constraintTemplate->getParent()->getIrCtx();
-    m_env = &Environment(
-        constraintTemplate->name, constraintTemplate->getParent()->getEnv()
-    );
-
     assert(
         typeArgs.size() == constraintTemplate->typeParams.size()
         && "Number of type args has to match number of type params"
     );
 
-    auto zippedArgs = zip_view(
-        std::views::all(constraintTemplate->typeParams),
-        std::views::all(typeArgs)
+    auto instantiation = constraintTemplate->getParent()->getIrCtx()->make(
+        IRConstraintInstantiation(constraintTemplate->name, typeArgs, {}, {})
     );
-
-    for (auto [typeParam, typeArg] : zippedArgs)
-        m_env->addTypeParamValue(typeParam, typeArg);
-
-    auto requirements =
-        constraintTemplate->requirements | std::views::transform([&](auto r) {
-            return (IRConstraintInstantiation*)dispatch(r);
-        });
-
-    auto conditions =
-        constraintTemplate->conditions | std::views::transform([&](auto c) {
-            return (IRConstraintCondition*)dispatch(c);
-        });
-
-    m_env = nullptr;
-    m_irCtx = nullptr;
-
-    auto instantiation = m_irCtx->make(IRConstraintInstantiation(
-        constraintTemplate->name,
-        typeArgs,
-        std::set(requirements.begin(), requirements.end()),
-        std::vector(conditions.begin(), conditions.end())
-    ));
 
     instantiation->setInstantiatedFrom(constraintTemplate);
     instantiation->setLocation(constraintTemplate->getLocation(SourceRef()));
     return instantiation;
 }
 
-IRConstraintInstantiation* Instantiator::fixupConstraintInstantiation(
+IRStructInstantiation* Instantiator::updateStructInstantiation(
+    IRStructInstantiation* structInstantiation
+)
+{
+    auto structTemplate = structInstantiation->getInstantiatedFrom();
+
+    assert(
+        structInstantiation->typeArgs.size()
+            == structTemplate->typeParams.size()
+        && "Number of type args has to match number of type params"
+    );
+
+    Environment env(
+        structTemplate->name, structTemplate->getParent()->getEnv()
+    );
+    m_env = &env;
+    m_irCtx = structTemplate->getParent()->getIrCtx();
+
+    auto zippedTypeArgs = zip_view(
+        std::views::all(structTemplate->typeParams),
+        std::views::all(structInstantiation->typeArgs)
+    );
+
+    for (auto [typeParam, typeArg] : zippedTypeArgs)
+        m_env->addTypeParamValue(typeParam, typeArg);
+
+    auto fields = structTemplate->fields | std::views::transform([&](auto f) {
+                      return std::pair(f.first, (IRType*)dispatch(f.second));
+                  });
+
+    structInstantiation->fields =
+        std::unordered_map(fields.begin(), fields.end());
+
+    m_env = nullptr;
+    m_irCtx = nullptr;
+}
+
+IRFunctionInstantiation* Instantiator::updateFunctionInstantiation(
+    IRFunctionInstantiation* functionInstantiation
+)
+{
+    auto functionTemplate = functionInstantiation->getInstantiatedFrom();
+
+    assert(
+        functionInstantiation->typeArgs.size()
+            == functionTemplate->typeParams.size()
+        && "Number of type args has to match number of type params"
+    );
+
+    Environment env(
+        functionTemplate->name, functionTemplate->getParent()->getEnv()
+    );
+    m_env = &env;
+    m_irCtx = functionTemplate->getParent()->getIrCtx();
+
+    auto zippedTypeArgs = zip_view(
+        std::views::all(functionTemplate->typeParams),
+        std::views::all(functionInstantiation->typeArgs)
+    );
+
+    for (auto [typeParam, typeArg] : zippedTypeArgs)
+        m_env->addTypeParamValue(typeParam, typeArg);
+
+    auto requirements =
+        functionTemplate->requirements | std::views::transform([&](auto r) {
+            return (IRConstraintInstantiation*)dispatch(r);
+        });
+
+    functionInstantiation->requirements =
+        std::set(requirements.begin(), requirements.end());
+
+    functionInstantiation->body =
+        (IRStatement*)dispatch(functionTemplate->body);
+
+    m_env = nullptr;
+    m_irCtx = nullptr;
+}
+
+IRConstraintInstantiation* Instantiator::updateConstraintInstantiation(
     IRConstraintInstantiation* constraintInstantiation
 )
 {
