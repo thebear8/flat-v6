@@ -276,8 +276,10 @@ IRNode* Instantiator::visit(IRUnaryExpression* node)
     auto type = (IRType*)dispatch(node->getType());
     auto location = node->getLocation(SourceRef());
     auto expression = (IRExpression*)dispatch(node->expression);
+    auto target = (IRFunctionInstantiation*)dispatch(node->getTarget());
 
     return m_irCtx->make(IRUnaryExpression(node->operation, expression))
+        ->setTarget(target)
         ->setType(type)
         ->setLocation(location);
 }
@@ -288,8 +290,10 @@ IRNode* Instantiator::visit(IRBinaryExpression* node)
     auto location = node->getLocation(SourceRef());
     auto left = (IRExpression*)dispatch(node->left);
     auto right = (IRExpression*)dispatch(node->right);
+    auto target = (IRFunctionInstantiation*)dispatch(node->getTarget());
 
     return m_irCtx->make(IRBinaryExpression(node->operation, left, right))
+        ->setTarget(target)
         ->setType(type)
         ->setLocation(location);
 }
@@ -302,11 +306,13 @@ IRNode* Instantiator::visit(IRCallExpression* node)
     auto args = node->args | std::views::transform([&](auto a) {
                     return (IRExpression*)dispatch(a);
                 });
+    auto target = (IRFunctionInstantiation*)dispatch(node->getTarget());
 
     return m_irCtx
         ->make(
             IRCallExpression(expression, std::vector(args.begin(), args.end()))
         )
+        ->setTarget(target)
         ->setType(type)
         ->setLocation(location);
 }
@@ -319,11 +325,13 @@ IRNode* Instantiator::visit(IRIndexExpression* node)
     auto args = node->args | std::views::transform([&](auto a) {
                     return (IRExpression*)dispatch(a);
                 });
+    auto target = (IRFunctionInstantiation*)dispatch(node->getTarget());
 
     return m_irCtx
         ->make(
             IRIndexExpression(expression, std::vector(args.begin(), args.end()))
         )
+        ->setTarget(target)
         ->setType(type)
         ->setLocation(location);
 }
@@ -423,24 +431,61 @@ IRNode* Instantiator::visit(IRConstraintInstantiation* node)
                         return (IRType*)dispatch(a);
                     });
 
-    auto requirements = node->requirements | std::views::transform([&](auto r) {
-                            return (IRConstraintInstantiation*)dispatch(r);
-                        });
+    auto constraintTemplate = node->getInstantiatedFrom();
+    auto env = constraintTemplate->getParent()->getEnv();
 
-    auto conditions = node->conditions | std::views::transform([&](auto c) {
-                          return (IRConstraintCondition*)dispatch(c);
-                      });
+    auto instantiation = env->findConstraintInstantiation(
+        constraintTemplate, std::vector(typeArgs.begin(), typeArgs.end())
+    );
 
-    auto instantiation = m_irCtx->make(IRConstraintInstantiation(
-        node->name,
-        std::vector(typeArgs.begin(), typeArgs.end()),
-        std::set(requirements.begin(), requirements.end()),
-        std::vector(conditions.begin(), conditions.end())
-    ));
+    if (instantiation)
+        return instantiation;
 
-    instantiation->setInstantiatedFrom(node->getInstantiatedFrom());
-    instantiation->setLocation(node->getLocation(SourceRef()));
-    return instantiation;
+    return makeConstraintInstantiation(
+        constraintTemplate, std::vector(typeArgs.begin(), typeArgs.end())
+    );
+}
+
+IRNode* Instantiator::visit(IRStructInstantiation* node)
+{
+    auto typeArgs = node->typeArgs | std::views::transform([&](auto arg) {
+                        return (IRType*)dispatch(arg);
+                    });
+
+    auto structTemplate = node->getInstantiatedFrom();
+    auto env = structTemplate->getParent()->getEnv();
+
+    auto instantiation = env->findStructInstantiation(
+        structTemplate, std::vector(typeArgs.begin(), typeArgs.end())
+    );
+
+    if (instantiation)
+        return instantiation;
+
+    return makeStructInstantiation(
+        structTemplate, std::vector(typeArgs.begin(), typeArgs.end())
+    );
+}
+
+IRNode* Instantiator::visit(IRFunctionInstantiation* node)
+{
+    auto typeArgs = node->typeArgs | std::views::transform([&](auto arg) {
+                        return (IRType*)dispatch(arg);
+                    });
+
+    auto functionTemplate = node->getInstantiatedFrom();
+    auto env = functionTemplate->getParent()->getEnv();
+
+    auto instantiation = env->findFunctionInstantiation(
+        functionTemplate, std::vector(typeArgs.begin(), typeArgs.end())
+    );
+
+    if (instantiation)
+        return instantiation;
+
+    return makeFunctionInstantiation(
+        functionTemplate, std::vector(typeArgs.begin(), typeArgs.end())
+    );
 }
 
 IRNode* Instantiator::visit(IRGenericType* node)
@@ -466,22 +511,4 @@ IRNode* Instantiator::visit(IRArrayType* node)
         return node;
 
     return m_irCtx->make(IRArrayType(base));
-}
-
-IRNode* Instantiator::visit(IRStructInstantiation* node)
-{
-    auto typeArgs = node->typeArgs | std::views::transform([&](auto arg) {
-                        return (IRType*)dispatch(arg);
-                    });
-    auto fields = node->fields | std::views::transform([&](auto f) {
-                      return std::pair(f.first, (IRType*)dispatch(f.second));
-                  });
-
-    return m_irCtx
-        ->make(IRStructInstantiation(
-            node->name,
-            std::vector(typeArgs.begin(), typeArgs.end()),
-            std::unordered_map(fields.begin(), fields.end())
-        ))
-        ->setLocation(node->getLocation(SourceRef()));
 }

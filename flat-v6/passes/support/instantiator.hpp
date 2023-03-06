@@ -89,6 +89,8 @@ private:
 
     IRNode* visit(IRConstraintCondition* node) override;
     IRNode* visit(IRConstraintInstantiation* node) override;
+    IRNode* visit(IRStructInstantiation* node) override;
+    IRNode* visit(IRFunctionInstantiation* node) override;
 
     IRNode* visit(IRGenericType* node) override;
     IRNode* visit(IRVoidType* node) override { return node; }
@@ -98,5 +100,4 @@ private:
     IRNode* visit(IRStringType* node) override { return node; }
     IRNode* visit(IRPointerType* node) override;
     IRNode* visit(IRArrayType* node) override;
-    IRNode* visit(IRStructInstantiation* node) override;
 };
