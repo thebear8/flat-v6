@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <ranges>
+#include <sstream>
 
 #include "../util/zip_view.hpp"
 
@@ -116,7 +117,7 @@ IRType* SemanticPass::visit(IRStructExpression* node)
     {
         auto fieldType = structTemplate->fields.at(name);
         auto error = m_env->inferTypeArgsAndValidate(
-            fieldType, value->getType(), typeArgs
+            fieldType, value->getType(), typeArgs, true
         );
 
         if (error.has_value())
@@ -190,11 +191,10 @@ IRType* SemanticPass::visit(IRUnaryExpression* node)
     else
     {
         auto args = std::vector({ value });
-        auto typeArgs = std::unordered_map<IRGenericType*, IRType*>();
 
         std::string error;
         auto target = findCallTarget(
-            unaryOperators.at(node->operation).name, typeArgs, args, error
+            unaryOperators.at(node->operation).name, {}, args, error
         );
 
         if (!target)
@@ -291,11 +291,10 @@ IRType* SemanticPass::visit(IRBinaryExpression* node)
     else
     {
         auto args = std::vector({ left, right });
-        auto typeArgs = std::unordered_map<IRGenericType*, IRType*>();
 
         std::string error;
         auto target = findCallTarget(
-            binaryOperators.at(node->operation).name, typeArgs, args, error
+            binaryOperators.at(node->operation).name, {}, args, error
         );
 
         if (!target)
@@ -322,11 +321,9 @@ IRType* SemanticPass::visit(IRCallExpression* node)
     if (auto identifierExpression =
             dynamic_cast<IRIdentifierExpression*>(node->expression))
     {
-        auto typeArgs = std::unordered_map<IRGenericType*, IRType*>();
-
         std::string error;
         auto target =
-            findCallTarget(identifierExpression->value, typeArgs, args, error);
+            findCallTarget(identifierExpression->value, {}, args, error);
 
         if (!target)
         {
@@ -344,10 +341,9 @@ IRType* SemanticPass::visit(IRCallExpression* node)
     else
     {
         args.insert(args.begin(), dispatch(node->expression));
-        auto typeArgs = std::unordered_map<IRGenericType*, IRType*>();
 
         std::string error;
-        auto target = findCallTarget("__call__", typeArgs, args, error);
+        auto target = findCallTarget("__call__", {}, args, error);
 
         if (!target)
         {
@@ -386,10 +382,9 @@ IRType* SemanticPass::visit(IRIndexExpression* node)
     else
     {
         args.insert(args.begin(), value);
-        auto typeArgs = std::unordered_map<IRGenericType*, IRType*>();
 
         std::string error;
-        auto target = findCallTarget("__call__", typeArgs, args, error);
+        auto target = findCallTarget("__call__", {}, args, error);
 
         if (!target)
         {
@@ -599,7 +594,7 @@ IRType* SemanticPass::visit(IRFunctionTemplate* node)
                               return p;
                           });
 
-            m_env->addFunction(m_irCtx->make(IRFunction(
+            m_env->addFunctionTemplate(m_irCtx->make(IRFunction(
                 function->name,
                 function->typeParams,
                 std::vector<std::pair<std::string, std::vector<IRType*>>>(),
@@ -642,42 +637,210 @@ IRType* SemanticPass::visit(IRModule* node)
 
 IRFunctionInstantiation* SemanticPass::findCallTarget(
     std::string const& name,
-    std::unordered_map<IRGenericType*, IRType*>& typeArgMap,
+    std::vector<IRType*> const& typeArgs,
     std::vector<IRType*> const& args,
     std::string& error
 )
 {
-    auto function =
-        m_env->findCallTargetAndInferTypeArgs(name, args, typeArgMap);
-    if (!function)
-    {
-        std::string argsString;
-        for (auto arg : args)
-            argsString += (argsString.empty() ? "" : ", ") + arg->toString();
+    std::unordered_multimap<IRFunctionTemplate*, std::string> candidates;
 
-        error = "No target for call to " + name + "(" + argsString + ")";
-        return nullptr;
-    }
-
-    std::vector<IRType*> typeArgList;
-    for (auto typeParam : function->typeParams)
+    for (auto [i, iEnd] =
+             m_module->getEnv()->getFunctionTemplateMap().equal_range(name);
+         i != iEnd;
+         ++i)
     {
-        if (!typeArgMap.contains(typeParam))
+        auto functionTemplate = i->second;
+        auto const& functionTemplateTypeParams = i->second->typeParams;
+        auto const& functionTemplateParams = i->second->params;
+
+        if (args.size() != functionTemplateParams.size()
+            || typeArgs.size() > functionTemplateTypeParams.size())
         {
-            std::string argsString;
-            for (auto arg : args)
-            {
-                argsString +=
-                    (argsString.empty() ? "" : ", ") + arg->toString();
-            }
-
-            error = "Could not infer type argument " + typeParam->toString()
-                + " for call to function " + name + "(" + argsString + ")";
-            return nullptr;
+            continue;
         }
 
-        typeArgList.push_back(typeParam);
+        for (auto [j, jEnd] =
+                 m_module->getEnv()->getFunctionInstantiationMap().equal_range(
+                     i->second
+                 );
+             j != jEnd;
+             ++j)
+        {
+            auto functionInstantiation = j->second;
+            auto const& functionInstantiationTypeArgs = j->second->typeArgs;
+            auto const& functionInstantiationParams = j->second->params;
+
+            auto zippedTypeArgs = zip_view(
+                std::views::all(functionInstantiationTypeArgs),
+                std::views::all(typeArgs)
+            );
+
+            bool differingTypeArgs = false;
+            for (auto [a, b] : zippedTypeArgs)
+                differingTypeArgs = differingTypeArgs || (a != b);
+
+            if (differingTypeArgs)
+                continue;
+
+            auto zippedArgs = zip_view(
+                functionInstantiationParams | std::views::values,
+                std::views::all(args)
+            );
+
+            bool differingArgs;
+            for (auto [a, b] : zippedArgs)
+                differingArgs = differingArgs || (a != b);
+
+            if (differingArgs)
+                continue;
+
+            return functionInstantiation;
+        }
+
+        auto zippedTypeArgs = zip_view(
+            std::views::all(functionTemplate->typeParams),
+            std::views::all(typeArgs)
+        );
+
+        std::unordered_map typeArgMap(
+            zippedTypeArgs.begin(), zippedTypeArgs.end()
+        );
+
+        auto zippedArgs = zip_view(
+            functionTemplate->params | std::views::values, std::views::all(args)
+        );
+
+        bool incompatibleArgs = false;
+        for (auto [param, arg] : zippedArgs)
+        {
+            incompatibleArgs = incompatibleArgs
+                || !m_env->inferTypeArgsAndMatch(param, arg, typeArgMap, false);
+        }
+
+        if (incompatibleArgs)
+            continue;
+
+        std::vector<IRType*> typeArgList;
+        for (auto typeParam : functionTemplate->typeParams)
+        {
+            if (!typeArgMap.contains(typeParam))
+            {
+                candidates.emplace(
+                    functionTemplate,
+                    "Could not infer value for type parameter "
+                        + typeParam->toString() + " for call to "
+                        + formatCallDescriptor(name, typeArgs, args)
+                );
+            }
+
+            typeArgList.push_back(typeArgMap.at(typeParam));
+        }
+
+        if (!candidates.contains(functionTemplate))
+        {
+            return m_instantiator.makeFunctionInstantiation(
+                functionTemplate, typeArgList
+            );
+        }
     }
 
-    return m_instantiator.makeFunctionInstantiation(function, typeArgList);
+    error =
+        "No target for call to " + formatCallDescriptor(name, typeArgs, args);
+
+    for (auto i = candidates.begin(), iEnd = candidates.end(); i != iEnd; ++i)
+    {
+        auto candidate = i->first;
+        error +=
+            "\n  Candidate: " + formatFunctionTemplateDescriptor(candidate);
+
+        for (auto [j, jEnd] = candidates.equal_range(candidate); j != jEnd; ++j)
+            error += "\n    " + j->second;
+    }
+
+    return nullptr;
+}
+
+std::string SemanticPass::formatFunctionTemplateDescriptor(
+    IRFunctionTemplate* value
+)
+{
+    std::stringstream descriptor;
+
+    std::string typeParams;
+    for (auto typeParam : value->typeParams)
+    {
+        typeParams += (typeParams.empty() ? "" : ", ") + typeParam->toString();
+    }
+
+    if (!typeParams.empty())
+        descriptor << "<" << typeParams << ">";
+
+    std::string params;
+    for (auto param : value->params)
+    {
+        params += (params.empty() ? "" : ", ") + param.first + ": "
+            + param.second->toString();
+    }
+
+    descriptor << "(" << params << ")";
+    return descriptor.str();
+}
+
+std::string SemanticPass::formatFunctionInstantiationDescriptor(
+    IRFunctionInstantiation* value
+)
+{
+    std::stringstream descriptor;
+
+    std::string typeArgs;
+    auto zippedTypeArgs = zip_view(
+        std::views::all(value->getInstantiatedFrom()->typeParams),
+        std::views::all(value->typeArgs)
+    );
+    for (auto [typeParam, typeArg] : zippedTypeArgs)
+    {
+        typeArgs += (typeArgs.empty() ? "" : ", ") + typeParam->toString()
+            + " = " + typeArg->toString();
+    }
+
+    if (!typeArgs.empty())
+        descriptor << "<" << typeArgs << ">";
+
+    std::string params;
+    for (auto param : value->params)
+    {
+        params += (params.empty() ? "" : ", ") + param.first + ": "
+            + param.second->toString();
+    }
+
+    descriptor << "(" << params << ")";
+    return descriptor.str();
+}
+
+std::string SemanticPass::formatCallDescriptor(
+    std::string targetName,
+    std::vector<IRType*> const& typeArgs,
+    std::vector<IRType*> const& args
+)
+{
+    std::stringstream descriptor;
+
+    std::string typeArgString;
+    for (auto typeArg : typeArgs)
+    {
+        typeArgString +=
+            (typeArgString.empty() ? "" : ", ") + typeArg->toString();
+    }
+
+    if (!typeArgString.empty())
+        descriptor << "<" << typeArgString << ">";
+
+    std::string argString;
+    for (auto arg : args)
+    {
+        argString += (argString.empty() ? "" : ", ") + arg->toString();
+    }
+
+    descriptor << "(" << argString << ")";
+    return descriptor.str();
 }

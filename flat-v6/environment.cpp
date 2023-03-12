@@ -236,7 +236,9 @@ IRStructInstantiation* Environment::findStructInstantiation(
     return nullptr;
 }
 
-IRFunctionTemplate* Environment::addFunction(IRFunctionTemplate* function)
+IRFunctionTemplate* Environment::addFunctionTemplate(
+    IRFunctionTemplate* function
+)
 {
     for (auto [i, end] = m_functions.equal_range(function->name); i != end; ++i)
     {
@@ -257,7 +259,7 @@ IRFunctionTemplate* Environment::addFunction(IRFunctionTemplate* function)
     return function;
 }
 
-IRFunctionTemplate* Environment::getFunction(
+IRFunctionTemplate* Environment::getFunctionTemplate(
     std::string const& functionName, std::vector<IRType*> const& params
 )
 {
@@ -278,14 +280,14 @@ IRFunctionTemplate* Environment::getFunction(
     return nullptr;
 }
 
-IRFunctionTemplate* Environment::findFunction(
+IRFunctionTemplate* Environment::findFunctionTemplate(
     std::string const& functionName, std::vector<IRType*> const& params
 )
 {
-    if (auto f = getFunction(functionName, params))
+    if (auto f = getFunctionTemplate(functionName, params))
         return f;
     else if (m_parent)
-        return m_parent->findFunction(functionName, params);
+        return m_parent->findFunctionTemplate(functionName, params);
 
     return nullptr;
 }
@@ -329,33 +331,6 @@ IRFunctionInstantiation* Environment::findFunctionInstantiation(
         return m_parent->findFunctionInstantiation(functionTemplate, typeArgs);
 
     return nullptr;
-}
-
-IRFunctionTemplate* Environment::findCallTargetAndInferTypeArgs(
-    std::string const& name,
-    std::vector<IRType*> const& args,
-    std::unordered_map<IRGenericType*, IRType*>& typeArgs
-)
-{
-    for (auto [i, end] = m_functions.equal_range(name); i != end; ++i)
-    {
-        auto candidate = i->second;
-        auto candidateParams = candidate->params | std::views::values;
-
-        if (args.size() != candidateParams.size())
-            continue;
-
-        typeArgs.clear();
-
-        auto incompatibleParams =
-            zip_view(std::views::all(args), std::views::all(candidateParams))
-            | std::views::filter([&](auto const& p) {
-                  return !inferTypeArgsAndMatch(p.first, p.second, typeArgs);
-              });
-
-        if (incompatibleParams.empty())
-            return candidate;
-    }
 }
 
 IRType* Environment::addVariableType(
@@ -414,14 +389,15 @@ llvm::Value* Environment::findVariableValue(std::string const& name)
 bool Environment::inferTypeArgsAndMatch(
     IRType* genericType,
     IRType* actualType,
-    std::unordered_map<IRGenericType*, IRType*>& typeArgs
+    std::unordered_map<IRGenericType*, IRType*>& typeArgs,
+    bool allowGenericSubstitution
 )
 {
     if (actualType == genericType)
     {
         return true;
     }
-    else if (genericType->isGenericType())
+    else if (genericType->isGenericType() && (!actualType->isGenericType() || allowGenericSubstitution))
     {
         if (!typeArgs.contains((IRGenericType*)genericType))
             typeArgs.try_emplace((IRGenericType*)genericType, actualType);
@@ -452,7 +428,8 @@ bool Environment::inferTypeArgsAndMatch(
             auto result = inferTypeArgsAndMatch(
                 genericInstantiated->typeArgs.at(i),
                 actualInstantiated->typeArgs.at(i),
-                typeArgs
+                typeArgs,
+                allowGenericSubstitution
             );
 
             if (!result)
@@ -469,7 +446,8 @@ bool Environment::inferTypeArgsAndMatch(
         return inferTypeArgsAndMatch(
             ((IRPointerType*)genericType)->base,
             ((IRPointerType*)actualType)->base,
-            typeArgs
+            typeArgs,
+            allowGenericSubstitution
         );
     }
     else if (genericType->isArrayType())
@@ -480,7 +458,8 @@ bool Environment::inferTypeArgsAndMatch(
         return inferTypeArgsAndMatch(
             ((IRArrayType*)genericType)->base,
             ((IRArrayType*)actualType)->base,
-            typeArgs
+            typeArgs,
+            allowGenericSubstitution
         );
     }
     else
@@ -492,14 +471,15 @@ bool Environment::inferTypeArgsAndMatch(
 std::optional<std::string> Environment::inferTypeArgsAndValidate(
     IRType* genericType,
     IRType* actualType,
-    std::unordered_map<IRGenericType*, IRType*>& typeArgs
+    std::unordered_map<IRGenericType*, IRType*>& typeArgs,
+    bool allowGenericSubstitution
 )
 {
     if (actualType == genericType)
     {
         return std::nullopt;
     }
-    else if (genericType->isGenericType())
+    else if (genericType->isGenericType() && (!actualType->isGenericType() || allowGenericSubstitution))
     {
         if (!typeArgs.contains((IRGenericType*)genericType))
             typeArgs.try_emplace((IRGenericType*)genericType, actualType);
@@ -546,7 +526,8 @@ std::optional<std::string> Environment::inferTypeArgsAndValidate(
             auto result = inferTypeArgsAndValidate(
                 genericInstantiated->typeArgs.at(i),
                 actualInstantiated->typeArgs.at(i),
-                typeArgs
+                typeArgs,
+                allowGenericSubstitution
             );
 
             if (result.has_value())
@@ -565,7 +546,8 @@ std::optional<std::string> Environment::inferTypeArgsAndValidate(
         return inferTypeArgsAndValidate(
             ((IRPointerType*)genericType)->base,
             ((IRPointerType*)actualType)->base,
-            typeArgs
+            typeArgs,
+            allowGenericSubstitution
         );
     }
     else if (genericType->isArrayType())
@@ -578,7 +560,8 @@ std::optional<std::string> Environment::inferTypeArgsAndValidate(
         return inferTypeArgsAndValidate(
             ((IRArrayType*)genericType)->base,
             ((IRArrayType*)actualType)->base,
-            typeArgs
+            typeArgs,
+            allowGenericSubstitution
         );
     }
     else

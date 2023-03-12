@@ -330,7 +330,7 @@ IRNode* IRPass::visit(ASTFunctionDeclaration* node)
 
     function->setLocation(node->location);
     m_env = m_env->getParent();
-    if (!m_env->addFunction(function))
+    if (!m_env->addFunctionTemplate(function))
     {
         return m_logger.error(
             node->location,

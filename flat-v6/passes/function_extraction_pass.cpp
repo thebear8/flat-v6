@@ -45,7 +45,7 @@ void FunctionExtractionPass::visit(ASTFunctionDeclaration* node)
     function->setLocation(node->location);
     node->setIRFunction(function);
 
-    if (!m_module->getEnv()->addFunction(function))
+    if (!m_module->getEnv()->addFunctionTemplate(function))
     {
         return m_logger.error(
             node->location,

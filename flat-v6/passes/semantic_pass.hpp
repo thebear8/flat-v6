@@ -64,8 +64,18 @@ private:
 private:
     IRFunctionInstantiation* findCallTarget(
         std::string const& name,
-        std::unordered_map<IRGenericType*, IRType*>& typeArgs,
+        std::vector<IRType*> const& typeArgs,
         std::vector<IRType*> const& args,
         std::string& error
+    );
+
+    std::string formatFunctionTemplateDescriptor(IRFunctionTemplate* value);
+    std::string formatFunctionInstantiationDescriptor(
+        IRFunctionInstantiation* value
+    );
+    std::string formatCallDescriptor(
+        std::string targetName,
+        std::vector<IRType*> const& typeArgs,
+        std::vector<IRType*> const& args
     );
 };

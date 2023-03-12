@@ -1,3 +1,4 @@
+#include <optional>
 #include <string>
 #include <unordered_map>
 
@@ -8,7 +9,8 @@ class Value;
 
 class IRType;
 class IRGenericType;
-class IRConstraint;
+class IRConstraintTemplate;
+class IRConstraintInstantiation;
 class IRStructTemplate;
 class IRStructInstantiation;
 class IRFunctionTemplate;
@@ -230,13 +232,13 @@ public:
     /// @param function Function to add
     /// @return The added function or nullptr if a function with the same name
     /// and parameters already exists
-    IRFunctionTemplate* addFunction(IRFunctionTemplate* function);
+    IRFunctionTemplate* addFunctionTemplate(IRFunctionTemplate* function);
 
     /// @brief Search for a function by name and params in this environment
     /// @param name Name of the function
     /// @param params Parameters of the function
     /// @return The found function or nullptr if the function was not found
-    IRFunctionTemplate* getFunction(
+    IRFunctionTemplate* getFunctionTemplate(
         std::string const& name, std::vector<IRType*> const& params
     );
 
@@ -244,9 +246,13 @@ public:
     /// @param name Name of the function
     /// @param params Parameters of the function
     /// @return The found function or nullptr if the function was not found
-    IRFunctionTemplate* findFunction(
+    IRFunctionTemplate* findFunctionTemplate(
         std::string const& name, std::vector<IRType*> const& params
     );
+
+    /// @brief Get the std::unordered_multimap of function templates in this
+    /// environment
+    auto& getFunctionTemplateMap() { return m_functions; }
 
     /// @brief Add a function instantiation with specified type args to this
     /// environment
@@ -280,17 +286,9 @@ public:
         std::vector<IRType*> const& typeArgs
     );
 
-    /// @brief Search for a call target by name and argument types
-    /// @param name Name of the function
-    /// @param params Parameters
-    /// @param typeArgs Reference to std::map to which to add the inferred type
-    /// parameter values
-    /// @return The found function or nullptr if the function was not found
-    IRFunctionTemplate* findCallTargetAndInferTypeArgs(
-        std::string const& name,
-        std::vector<IRType*> const& args,
-        std::unordered_map<IRGenericType*, IRType*>& typeArgs
-    );
+    /// @brief Get the std::unordered_multimap of function instantiations in
+    /// this environment
+    auto& getFunctionInstantiationMap() { return m_functionInstantiations; }
 
     /// @brief Add a type for a variable of given name to the current
     /// environment
@@ -332,35 +330,78 @@ public:
     llvm::Value* findVariableValue(std::string const& name);
 
 public:
-    /// @brief Determine if @p actualType is either equal to @p genericType or
-    /// an instantiation of @p genericType. If @p actualType is an instantiation
-    /// of @p genericType also determine values for type parameters of
-    /// @p genericType
-    /// @param actualType
-    /// @param genericType
-    /// @param typeArgs
-    /// @return true if @p actualType is compatible with @p genericType,
-    /// otherwise false
+    /// @brief Determine if @p actualType and @p genericType are compatible.
+    /// @note Compatible is defined as either: \n
+    /// @p actualType is equal to @p genericType; \n
+    /// @p genericType is a generic placeholder type (e.g. T) and @p actualType
+    /// is a concrete type (not a generic placeholder type) (e.g. i32) and @p
+    /// typeArgs either does not yet contain a value for @p genericType or the
+    /// the contained value is the same as @p actualType ; \n
+    /// If @p allowGenericSubstitution == true:
+    /// @p genericType is a generic placeholder type (e.g. T) and @p typeArgs
+    /// either does not yet contain a value for @p genericType or the the
+    /// contained value is the same as @p actualType ; \n
+    /// If @p allowGenericSubstitution == false:
+    /// @p genericType is a generic placeholder type (e.g. T) and @p actualType
+    /// is a concrete type (not a generic placeholder type) (e.g. i32) and
+    /// @p typeArgs either does not yet contain a value for @p genericType or
+    /// the the contained value is the same as @p actualType ; \n
+    /// @p actualType and @p genericType are both struct types and @p actualType
+    /// is a concrete instantiation of @p genericType; \n
+    /// @p actualType and @p genericType are both pointer/array types and their
+    /// respective base types are compatible; \n
+    /// @note If allowGenericSubtitution is false,
+    /// @param genericType The template version of the type in question which
+    /// may contain generic types, e.g.vec3<T>
+    /// @param actualType The concrete version of the type in question from
+    /// which type arguments are to be inferred, e.g. vec3<i32>
+    /// @param typeArgs Map of type parameter values
+    /// @param allowGenericSubstitution Treat @p actualType and @p genericType
+    /// as compatible if both are generic types
+    /// @return true if @p actualType is compatible with @p genericType
+    /// , otherwise false
     bool inferTypeArgsAndMatch(
         IRType* actualType,
         IRType* genericType,
-        std::unordered_map<IRGenericType*, IRType*>& typeArgs
+        std::unordered_map<IRGenericType*, IRType*>& typeArgs,
+        bool allowGenericSubstitution
     );
 
-    /// @brief Validate that @p actualType is either equal to @p genericType or
-    /// an instantiation of @p genericType. If @p actualType is an instantiation
-    /// of @p genericType also determine values for type parameters of. If the
-    /// validation fails, return a description of why it failed
-    /// @p genericType
-    /// @param actualType
-    /// @param genericType
-    /// @param typeArgs
-    /// @return std::nullopt if @p actualType is compatible with @p genericType,
-    /// otherwise a string describing why @p actualType is not compatible with
+    /// @brief Validate that @p actualType and @p genericType are compatible.
+    /// @note Compatible is defined as either: \n
+    /// @p actualType is equal to @p genericType; \n
+    /// @p genericType is a generic placeholder type (e.g. T) and @p actualType
+    /// is a concrete type (not a generic placeholder type) (e.g. i32) and @p
+    /// typeArgs either does not yet contain a value for @p genericType or the
+    /// the contained value is the same as @p actualType ; \n
+    /// If @p allowGenericSubstitution == true:
+    /// @p genericType is a generic placeholder type (e.g. T) and @p typeArgs
+    /// either does not yet contain a value for @p genericType or the the
+    /// contained value is the same as @p actualType ; \n
+    /// If @p allowGenericSubstitution == false:
+    /// @p genericType is a generic placeholder type (e.g. T) and @p actualType
+    /// is a concrete type (not a generic placeholder type) (e.g. i32) and
+    /// @p typeArgs either does not yet contain a value for @p genericType or
+    /// the the contained value is the same as @p actualType ; \n
+    /// @p actualType and @p genericType are both struct types and @p actualType
+    /// is a concrete instantiation of @p genericType; \n
+    /// @p actualType and @p genericType are both pointer/array types and their
+    /// respective base types are compatible; \n
+    /// @note If allowGenericSubtitution is false,
+    /// @param genericType The template version of the type in question which
+    /// may contain generic types, e.g.vec3<T>
+    /// @param actualType The concrete version of the type in question from
+    /// which type arguments are to be inferred, e.g. vec3<i32>
+    /// @param typeArgs Map of type parameter values
+    /// @param allowGenericSubstitution Treat @p actualType and @p genericType
+    /// as compatible if both are generic types
+    /// @return std::nullopt if @p actualType is compatible with @p genericType
+    /// , otherwise a string describing why @p actualType is not compatible with
     /// @p genericType
     std::optional<std::string> inferTypeArgsAndValidate(
         IRType* genericType,
         IRType* actualType,
-        std::unordered_map<IRGenericType*, IRType*>& typeArgs
+        std::unordered_map<IRGenericType*, IRType*>& typeArgs,
+        bool allowGenericSubstitution
     );
 };
