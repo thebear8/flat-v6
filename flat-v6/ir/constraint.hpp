@@ -6,33 +6,18 @@
 #include "ir_node.hpp"
 
 struct IRModule;
-
-struct IRConstraintCondition : IRNode
-{
-    std::string functionName;
-    std::vector<std::pair<std::string, IRType*>> params;
-    IRType* result;
-
-    IRConstraintCondition(
-        std::string const& functionName,
-        std::vector<std::pair<std::string, IRType*>> const& params,
-        IRType* result
-    )
-        : functionName(functionName), params(params), result(result)
-    {
-    }
-};
+struct IRFunction;
 
 struct IRConstraint : IRNode
 {
     std::string name;
     std::set<IRConstraintInstantiation*> requirements;
-    std::vector<IRConstraintCondition*> conditions;
+    std::vector<IRFunction*> conditions;
 
     IRConstraint(
         std::string const& name,
         std::set<IRConstraintInstantiation*> const& requirements,
-        std::vector<IRConstraintCondition*> const& conditions
+        std::vector<IRFunction*> const& conditions
     )
         : name(name), requirements(requirements), conditions(conditions)
     {
@@ -49,7 +34,7 @@ struct IRConstraintTemplate : IRConstraint
         std::string const& name,
         std::vector<IRGenericType*> const& typeParams,
         std::set<IRConstraintInstantiation*> const& requirements,
-        std::vector<IRConstraintCondition*> const& conditions
+        std::vector<IRFunction*> const& conditions
     )
         : IRConstraint(name, requirements, conditions), typeParams(typeParams)
     {
@@ -68,7 +53,7 @@ struct IRConstraintInstantiation : IRConstraint
         std::string const& name,
         std::vector<IRType*> const& typeArgs,
         std::set<IRConstraintInstantiation*> const& requirements,
-        std::vector<IRConstraintCondition*> const& conditions
+        std::vector<IRFunction*> const& conditions
     )
         : IRConstraint(name, requirements, conditions), typeArgs(typeArgs)
     {

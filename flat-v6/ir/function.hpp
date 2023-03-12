@@ -17,17 +17,19 @@ struct IRFunction : public IRNode
     std::string name;
     std::vector<std::pair<std::string, IRType*>> params;
     IRType* result;
-    IRStatement* body;
 
     IRFunction(
         std::string const& name,
         std::vector<std::pair<std::string, IRType*>> const& params,
-        IRType* result,
-        IRStatement* body
+        IRType* result
     )
-        : name(name), params(params), result(result), body(body)
+        : name(name), params(params), result(result)
     {
     }
+
+    virtual bool isBareFunction() { return true; }
+    virtual bool isFunctionTemplate() { return false; }
+    virtual bool isFunctionInstantiation() { return false; }
 
     IMPLEMENT_ACCEPT()
 
@@ -47,6 +49,7 @@ struct IRFunctionTemplate : IRFunction
 {
     std::vector<IRGenericType*> typeParams;
     std::set<IRConstraintInstantiation*> requirements;
+    IRStatement* body;
 
     IRFunctionTemplate(
         std::string const& name,
@@ -56,11 +59,14 @@ struct IRFunctionTemplate : IRFunction
         std::set<IRConstraintInstantiation*> const& requirements,
         IRStatement* body
     )
-        : IRFunction(name, params, result, body),
+        : IRFunction(name, params, result),
           typeParams(typeParams),
-          requirements(requirements)
+          requirements(requirements),
+          body(body)
     {
     }
+
+    virtual bool isFunctionTemplate() override { return true; }
 
     IMPLEMENT_ACCEPT()
 
@@ -71,6 +77,7 @@ struct IRFunctionInstantiation : IRFunction
 {
     std::vector<IRType*> typeArgs;
     std::set<IRConstraintInstantiation*> requirements;
+    IRStatement* body;
 
     IRFunctionInstantiation(
         std::string const& name,
@@ -80,11 +87,14 @@ struct IRFunctionInstantiation : IRFunction
         std::set<IRConstraintInstantiation*> const& requirements,
         IRStatement* body
     )
-        : IRFunction(name, params, result, body),
+        : IRFunction(name, params, result),
           typeArgs(typeArgs),
-          requirements(requirements)
+          requirements(requirements),
+          body(body)
     {
     }
+
+    virtual bool isFunctionInstantiation() override { return true; }
 
     IMPLEMENT_ACCEPT()
 

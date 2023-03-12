@@ -87,7 +87,7 @@ private:
     IRNode* visit(IRWhileStatement* node) override;
     IRNode* visit(IRIfStatement* node) override;
 
-    IRNode* visit(IRConstraintCondition* node) override;
+    IRNode* visit(IRFunction* node) override;
     IRNode* visit(IRConstraintInstantiation* node) override;
     IRNode* visit(IRStructInstantiation* node) override;
     IRNode* visit(IRFunctionInstantiation* node) override;

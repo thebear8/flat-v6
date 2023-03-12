@@ -77,8 +77,7 @@ IRNode* ConstraintPopulationPass::visit(ASTConstraintCondition* node)
         return m_logger.error(node->location, error, nullptr);
 
     auto condition =
-        m_irCtx->make(IRConstraintCondition(node->functionName, params, result)
-        );
+        m_irCtx->make(IRFunction(node->functionName, params, result));
 
     condition->setLocation(node->location);
     return condition;
@@ -110,9 +109,9 @@ IRNode* ConstraintPopulationPass::visit(ASTConstraintDeclaration* node)
         constraint->requirements.emplace(instantiation);
     }
 
-    std::vector<IRConstraintCondition*> conditions;
+    std::vector<IRFunction*> conditions;
     for (auto condition : node->conditions)
-        conditions.push_back((IRConstraintCondition*)dispatch(condition));
+        conditions.push_back((IRFunction*)dispatch(condition));
 
     m_env = nullptr;
 }
