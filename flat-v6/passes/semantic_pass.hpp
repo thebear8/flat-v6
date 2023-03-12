@@ -62,6 +62,10 @@ private:
     virtual IRType* visit(IRModule* node) override;
 
 private:
-    std::tuple<IRFunctionTemplate*, IRType*, std::vector<IRType*>, std::string>
-    findCallTarget(std::string const& name, std::vector<IRType*> args);
+    IRFunctionInstantiation* findCallTarget(
+        std::string const& name,
+        std::unordered_map<IRGenericType*, IRType*>& typeArgs,
+        std::vector<IRType*> const& args,
+        std::string& error
+    );
 };

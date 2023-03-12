@@ -118,6 +118,7 @@ IRType* SemanticPass::visit(IRStructExpression* node)
         auto error = m_env->inferTypeArgsAndValidate(
             fieldType, value->getType(), typeArgs
         );
+
         if (error.has_value())
         {
             return m_logger.error(
@@ -149,14 +150,11 @@ IRType* SemanticPass::visit(IRStructExpression* node)
 
     auto instantiation =
         m_module->getEnv()->getStructInstantiation(structTemplate, typeArgList);
+
     if (!instantiation)
     {
-        instantiation = m_module->getEnv()->addStructInstantiation(
-            structTemplate,
-            m_instantiator.makeStructInstantiation(
-                m_module, structTemplate, typeArgList
-            )
-        );
+        instantiation =
+            m_instantiator.makeStructInstantiation(structTemplate, typeArgList);
     }
 
     node->setType(instantiation);
@@ -192,10 +190,14 @@ IRType* SemanticPass::visit(IRUnaryExpression* node)
     else
     {
         auto args = std::vector({ value });
-        auto [function, result, typeArgs, error] =
-            findCallTarget(unaryOperators.at(node->operation).name, args);
+        auto typeArgs = std::unordered_map<IRGenericType*, IRType*>();
 
-        if (!function)
+        std::string error;
+        auto target = findCallTarget(
+            unaryOperators.at(node->operation).name, typeArgs, args, error
+        );
+
+        if (!target)
         {
             return m_logger.error(
                 node->getLocation(SourceRef()),
@@ -204,9 +206,8 @@ IRType* SemanticPass::visit(IRUnaryExpression* node)
             );
         }
 
-        node->setTarget(function);
-        node->setTargetTypeArgs(typeArgs);
-        node->setType(result);
+        node->setTarget(target);
+        node->setType(target->result);
         return node->getType();
     }
 }
@@ -290,10 +291,14 @@ IRType* SemanticPass::visit(IRBinaryExpression* node)
     else
     {
         auto args = std::vector({ left, right });
-        auto [function, result, typeArgs, error] =
-            findCallTarget(binaryOperators.at(node->operation).name, args);
+        auto typeArgs = std::unordered_map<IRGenericType*, IRType*>();
 
-        if (!function)
+        std::string error;
+        auto target = findCallTarget(
+            binaryOperators.at(node->operation).name, typeArgs, args, error
+        );
+
+        if (!target)
         {
             return m_logger.error(
                 node->getLocation(SourceRef()),
@@ -302,9 +307,8 @@ IRType* SemanticPass::visit(IRBinaryExpression* node)
             );
         }
 
-        node->setTarget(function);
-        node->setTargetTypeArgs(typeArgs);
-        node->setType(result);
+        node->setTarget(target);
+        node->setType(target->result);
         return node->getType();
     }
 }
@@ -318,10 +322,13 @@ IRType* SemanticPass::visit(IRCallExpression* node)
     if (auto identifierExpression =
             dynamic_cast<IRIdentifierExpression*>(node->expression))
     {
-        auto [function, result, typeArgs, error] =
-            findCallTarget(identifierExpression->value, args);
+        auto typeArgs = std::unordered_map<IRGenericType*, IRType*>();
 
-        if (!function)
+        std::string error;
+        auto target =
+            findCallTarget(identifierExpression->value, typeArgs, args, error);
+
+        if (!target)
         {
             return m_logger.error(
                 node->getLocation(SourceRef()),
@@ -330,18 +337,19 @@ IRType* SemanticPass::visit(IRCallExpression* node)
             );
         }
 
-        node->setTarget(function);
-        node->setTargetTypeArgs(typeArgs);
-        node->setType(result);
+        node->setTarget(target);
+        node->setType(target->result);
         return node->getType();
     }
     else
     {
         args.insert(args.begin(), dispatch(node->expression));
-        auto [function, result, typeArgs, error] =
-            findCallTarget("__call__", args);
+        auto typeArgs = std::unordered_map<IRGenericType*, IRType*>();
 
-        if (!function)
+        std::string error;
+        auto target = findCallTarget("__call__", typeArgs, args, error);
+
+        if (!target)
         {
             return m_logger.error(
                 node->getLocation(SourceRef()),
@@ -350,9 +358,8 @@ IRType* SemanticPass::visit(IRCallExpression* node)
             );
         }
 
-        node->setTarget(function);
-        node->setTargetTypeArgs(typeArgs);
-        node->setType(result);
+        node->setTarget(target);
+        node->setType(target->result);
         return node->getType();
     }
 }
@@ -379,10 +386,12 @@ IRType* SemanticPass::visit(IRIndexExpression* node)
     else
     {
         args.insert(args.begin(), value);
-        auto [function, result, typeArgs, error] =
-            findCallTarget("__index__", args);
+        auto typeArgs = std::unordered_map<IRGenericType*, IRType*>();
 
-        if (!function)
+        std::string error;
+        auto target = findCallTarget("__call__", typeArgs, args, error);
+
+        if (!target)
         {
             return m_logger.error(
                 node->getLocation(SourceRef()),
@@ -391,9 +400,8 @@ IRType* SemanticPass::visit(IRIndexExpression* node)
             );
         }
 
-        node->setTarget(function);
-        node->setTargetTypeArgs(typeArgs);
-        node->setType(result);
+        node->setTarget(target);
+        node->setType(target->result);
         return node->getType();
     }
 }
@@ -532,7 +540,7 @@ IRType* SemanticPass::visit(IRIfStatement* node)
     return nullptr;
 }
 
-IRType* SemanticPass::visit(IRFunction* node)
+IRType* SemanticPass::visit(IRFunctionTemplate* node)
 {
     if (!node->body)
         return nullptr;
@@ -632,58 +640,44 @@ IRType* SemanticPass::visit(IRModule* node)
     return nullptr;
 }
 
-std::tuple<IRFunctionTemplate*, IRType*, std::vector<IRType*>, std::string>
-SemanticPass::findCallTarget(std::string const& name, std::vector<IRType*> args)
+IRFunctionInstantiation* SemanticPass::findCallTarget(
+    std::string const& name,
+    std::unordered_map<IRGenericType*, IRType*>& typeArgMap,
+    std::vector<IRType*> const& args,
+    std::string& error
+)
 {
-    std::unordered_map<IRGenericType*, IRType*> typeArgs;
-    auto function = m_env->findCallTargetAndInferTypeArgs(name, args, typeArgs);
+    auto function =
+        m_env->findCallTargetAndInferTypeArgs(name, args, typeArgMap);
     if (!function)
     {
-        std::string stringArgs;
+        std::string argsString;
         for (auto arg : args)
-            stringArgs += (stringArgs.empty() ? "" : ", ") + arg->toString();
+            argsString += (argsString.empty() ? "" : ", ") + arg->toString();
 
-        return std::make_tuple(
-            nullptr,
-            nullptr,
-            std::vector<IRType*>(),
-            "No matching function for call to " + name + "(" + stringArgs + ")"
-        );
+        error = "No target for call to " + name + "(" + argsString + ")";
+        return nullptr;
     }
 
-    for (auto tp : function->typeParams)
+    std::vector<IRType*> typeArgList;
+    for (auto typeParam : function->typeParams)
     {
-        if (!typeArgs.contains(tp))
+        if (!typeArgMap.contains(typeParam))
         {
-            std::string stringArgs;
+            std::string argsString;
             for (auto arg : args)
-                stringArgs +=
-                    (stringArgs.empty() ? "" : ", ") + arg->toString();
+            {
+                argsString +=
+                    (argsString.empty() ? "" : ", ") + arg->toString();
+            }
 
-            return std::make_tuple(
-                nullptr,
-                nullptr,
-                std::vector<IRType*>(),
-                "Could not infer type argument " + tp->toString()
-                    + " for call to function " + name + "(" + stringArgs + ")"
-            );
+            error = "Could not infer type argument " + typeParam->toString()
+                + " for call to function " + name + "(" + argsString + ")";
+            return nullptr;
         }
+
+        typeArgList.push_back(typeParam);
     }
 
-    auto result = (function->result->isGenericType()
-                   && typeArgs.contains((IRGenericType*)function->result))
-        ? typeArgs.at((IRGenericType*)function->result)
-        : function->result;
-
-    auto typeArgList =
-        function->typeParams | std::views::transform([&](auto p) {
-            typeArgs.at(p);
-        });
-
-    return std::make_tuple(
-        function,
-        result,
-        std::vector(typeArgList.begin(), typeArgList.end()),
-        ""
-    );
+    return m_instantiator.makeFunctionInstantiation(function, typeArgList);
 }
