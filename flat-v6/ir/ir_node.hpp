@@ -30,7 +30,7 @@ using IRTripleDispatchVisitor = triple_dispatch_visitor::TripleDispatchVisitor<
     struct IRConstraint,
     struct IRConstraintTemplate,
     struct IRConstraintInstantiation,
-    struct IRFunction,
+    struct IRFunctionHead,
     struct IRFunctionTemplate,
     struct IRFunctionInstantiation,
     struct IRModule,

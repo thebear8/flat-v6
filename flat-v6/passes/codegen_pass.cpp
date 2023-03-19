@@ -467,7 +467,7 @@ llvm::Value* LLVMCodegenPass::visit(IRIfStatement* node)
     return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRFunction* node)
+llvm::Value* LLVMCodegenPass::visit(IRFunctionHead* node)
 {
     auto function = node->getLLVMFunction();
     assert(

@@ -12,13 +12,13 @@ class Function;
 struct IRModule;
 struct IRType;
 
-struct IRFunction : public IRNode
+struct IRFunctionHead : public IRNode
 {
     std::string name;
     std::vector<std::pair<std::string, IRType*>> params;
     IRType* result;
 
-    IRFunction(
+    IRFunctionHead(
         std::string const& name,
         std::vector<std::pair<std::string, IRType*>> const& params,
         IRType* result
@@ -27,7 +27,7 @@ struct IRFunction : public IRNode
     {
     }
 
-    virtual bool isBareFunction() { return true; }
+    virtual bool isFunctionHead() { return true; }
     virtual bool isFunctionTemplate() { return false; }
     virtual bool isFunctionInstantiation() { return false; }
 
@@ -45,7 +45,7 @@ struct IRFunction : public IRNode
     )
 };
 
-struct IRFunctionTemplate : IRFunction
+struct IRFunctionTemplate : IRFunctionHead
 {
     std::vector<IRGenericType*> typeParams;
     std::set<IRConstraintInstantiation*> requirements;
@@ -59,7 +59,7 @@ struct IRFunctionTemplate : IRFunction
         std::set<IRConstraintInstantiation*> const& requirements,
         IRStatement* body
     )
-        : IRFunction(name, params, result),
+        : IRFunctionHead(name, params, result),
           typeParams(typeParams),
           requirements(requirements),
           body(body)
@@ -73,7 +73,7 @@ struct IRFunctionTemplate : IRFunction
     METADATA_PROP(parent, IRModule*, getParent, setParent)
 };
 
-struct IRFunctionInstantiation : IRFunction
+struct IRFunctionInstantiation : IRFunctionHead
 {
     std::vector<IRType*> typeArgs;
     std::set<IRConstraintInstantiation*> requirements;
@@ -87,7 +87,7 @@ struct IRFunctionInstantiation : IRFunction
         std::set<IRConstraintInstantiation*> const& requirements,
         IRStatement* body
     )
-        : IRFunction(name, params, result),
+        : IRFunctionHead(name, params, result),
           typeArgs(typeArgs),
           requirements(requirements),
           body(body)

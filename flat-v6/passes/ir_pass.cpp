@@ -232,9 +232,9 @@ IRNode* IRPass::visit(ASTConstraintDeclaration* node)
     for (auto p : typeParams)
         m_env->addTypeParam(p);
 
-    std::vector<IRFunction*> conditions;
+    std::vector<IRFunctionHead*> conditions;
     for (auto condition : node->conditions)
-        conditions.push_back((IRFunction*)dispatch(condition));
+        conditions.push_back((IRFunctionHead*)dispatch(condition));
 
     auto irNode = m_irCtx->make(IRConstraint(
         node->name,

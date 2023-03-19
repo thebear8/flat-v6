@@ -261,7 +261,7 @@ IRNode* OperatorLoweringPass::visit(IRIfStatement* node)
     return node;
 }
 
-IRNode* OperatorLoweringPass::visit(IRFunction* node)
+IRNode* OperatorLoweringPass::visit(IRFunctionHead* node)
 {
     node->body = ((node->body) ? (IRStatement*)dispatch(node->body) : nullptr);
     return node;
@@ -270,6 +270,6 @@ IRNode* OperatorLoweringPass::visit(IRFunction* node)
 IRNode* OperatorLoweringPass::visit(IRModule* node)
 {
     for (auto& function : node->functions)
-        function = (IRFunction*)dispatch(function);
+        function = (IRFunctionHead*)dispatch(function);
     return node;
 }

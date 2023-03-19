@@ -219,7 +219,7 @@ IRConstraintInstantiation* Instantiator::updateConstraintInstantiation(
 
     auto conditions =
         constraintTemplate->conditions | std::views::transform([&](auto c) {
-            return (IRFunction*)dispatch(c);
+            return (IRFunctionHead*)dispatch(c);
         });
 
     constraintInstantiation->requirements =
@@ -407,7 +407,7 @@ IRNode* Instantiator::visit(IRIfStatement* node)
         ->setLocation(node->getLocation(SourceRef()));
 }
 
-IRNode* Instantiator::visit(IRFunction* node)
+IRNode* Instantiator::visit(IRFunctionHead* node)
 {
     auto params =
         node->params | std::views::transform([&](auto p) {
@@ -417,10 +417,8 @@ IRNode* Instantiator::visit(IRFunction* node)
     auto result = (IRType*)dispatch(node->result);
 
     return m_irCtx
-        ->make(IRFunction(
-            node->name,
-            std::vector(params.begin(), params.end()),
-            result
+        ->make(IRFunctionHead(
+            node->name, std::vector(params.begin(), params.end()), result
         ))
         ->setLocation(node->getLocation(SourceRef()));
 }

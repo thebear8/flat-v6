@@ -14,7 +14,7 @@ class IRType;
 class IRConstraint;
 class IRStructType;
 class IRStructInstantiation;
-class IRFunction;
+class IRFunctionHead;
 class IRFunctionInstantiation;
 
 struct IRModule : IRNode

@@ -578,7 +578,7 @@ IRType* SemanticPass::visit(IRFunctionTemplate* node)
         for (auto condition : constraint->conditions)
         {
             assert(condition && "Condition cannot be nullptr");
-            auto function = dynamic_cast<IRFunction*>(condition);
+            auto function = dynamic_cast<IRFunctionHead*>(condition);
             if (!function)
             {
                 return m_logger.error(
@@ -594,7 +594,7 @@ IRType* SemanticPass::visit(IRFunctionTemplate* node)
                               return p;
                           });
 
-            m_env->addFunctionTemplate(m_irCtx->make(IRFunction(
+            m_env->addFunctionTemplate(m_irCtx->make(IRFunctionHead(
                 function->name,
                 function->typeParams,
                 std::vector<std::pair<std::string, std::vector<IRType*>>>(),

@@ -6,18 +6,18 @@
 #include "ir_node.hpp"
 
 struct IRModule;
-struct IRFunction;
+struct IRFunctionHead;
 
 struct IRConstraint : IRNode
 {
     std::string name;
     std::set<IRConstraintInstantiation*> requirements;
-    std::vector<IRFunction*> conditions;
+    std::vector<IRFunctionHead*> conditions;
 
     IRConstraint(
         std::string const& name,
         std::set<IRConstraintInstantiation*> const& requirements,
-        std::vector<IRFunction*> const& conditions
+        std::vector<IRFunctionHead*> const& conditions
     )
         : name(name), requirements(requirements), conditions(conditions)
     {
@@ -34,7 +34,7 @@ struct IRConstraintTemplate : IRConstraint
         std::string const& name,
         std::vector<IRGenericType*> const& typeParams,
         std::set<IRConstraintInstantiation*> const& requirements,
-        std::vector<IRFunction*> const& conditions
+        std::vector<IRFunctionHead*> const& conditions
     )
         : IRConstraint(name, requirements, conditions), typeParams(typeParams)
     {
@@ -53,7 +53,7 @@ struct IRConstraintInstantiation : IRConstraint
         std::string const& name,
         std::vector<IRType*> const& typeArgs,
         std::set<IRConstraintInstantiation*> const& requirements,
-        std::vector<IRFunction*> const& conditions
+        std::vector<IRFunctionHead*> const& conditions
     )
         : IRConstraint(name, requirements, conditions), typeArgs(typeArgs)
     {

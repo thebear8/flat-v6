@@ -6,7 +6,7 @@
 #include "../data/operator.hpp"
 #include "ir_node.hpp"
 
-struct IRFunction;
+struct IRFunctionHead;
 
 struct IRExpression : public IRNode
 {

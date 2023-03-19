@@ -63,7 +63,7 @@ private:
     virtual llvm::Value* visit(IRWhileStatement* node) override;
     virtual llvm::Value* visit(IRIfStatement* node) override;
 
-    virtual llvm::Value* visit(IRFunction* node) override;
+    virtual llvm::Value* visit(IRFunctionHead* node) override;
     virtual llvm::Value* visit(IRModule* node) override;
 
 private:
