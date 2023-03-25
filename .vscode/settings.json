@@ -144,6 +144,7 @@
         "__memory": "cpp",
         "*.def": "cpp",
         "__std_stream": "cpp",
-        "simd": "cpp"
+        "simd": "cpp",
+        "resumable": "cpp"
     }
 }

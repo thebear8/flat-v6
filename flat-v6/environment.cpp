@@ -11,7 +11,7 @@ IRType* Environment::addBuiltinType(
     std::string const& name, IRType* builtinType
 )
 {
-    if (m_builtinTypes.contains(name))
+    if (getBuiltinType(name))
         return nullptr;
 
     m_builtinTypes.try_emplace(name, builtinType);
@@ -36,7 +36,7 @@ IRType* Environment::findBuiltinType(std::string const& name)
 
 IRGenericType* Environment::addTypeParam(IRGenericType* typeParam)
 {
-    if (m_typeParams.contains(typeParam->name))
+    if (getTypeParam(typeParam->name))
         return nullptr;
 
     m_typeParams.try_emplace(typeParam->name, typeParam);
@@ -62,7 +62,7 @@ IRGenericType* Environment::findTypeParam(std::string const& name)
 
 IRType* Environment::addTypeParamValue(IRGenericType* typeParam, IRType* value)
 {
-    if (m_typeParamValues.contains(typeParam))
+    if (getTypeParamValue(typeParam))
         return nullptr;
 
     m_typeParamValues.try_emplace(typeParam, value);
@@ -90,7 +90,7 @@ IRConstraintTemplate* Environment::addConstraint(
     IRConstraintTemplate* constraint
 )
 {
-    if (m_constraints.contains(constraint->name))
+    if (getConstraint(constraint->name))
         return nullptr;
 
     m_constraints.try_emplace(constraint->name, constraint);
@@ -138,7 +138,7 @@ IRConstraintInstantiation* Environment::addConstraintInstantiation(
 
 IRConstraintInstantiation* Environment::getConstraintInstantiation(
     IRConstraintTemplate* constraintTemplate,
-    std::vector<IRType*> const& typeArgs
+    Iterable<IRType*> auto const& typeArgs
 )
 {
     for (auto [it, end] =
@@ -155,7 +155,7 @@ IRConstraintInstantiation* Environment::getConstraintInstantiation(
 
 IRConstraintInstantiation* Environment::findConstraintInstantiation(
     IRConstraintTemplate* constraintTemplate,
-    std::vector<IRType*> const& typeArgs
+    Iterable<IRType*> auto const& typeArgs
 )
 {
     if (auto i = getConstraintInstantiation(constraintTemplate, typeArgs))
@@ -174,7 +174,7 @@ IRConstraintInstantiation* Environment::findConstraintInstantiation(
 
 IRStructTemplate* Environment::addStruct(IRStructTemplate* structType)
 {
-    if (m_structs.contains(structType->name))
+    if (getStruct(structType->name))
         return nullptr;
 
     m_structs.try_emplace(structType->name, structType);
@@ -210,7 +210,7 @@ IRStructInstantiation* Environment::addStructInstantiation(
 }
 
 IRStructInstantiation* Environment::getStructInstantiation(
-    IRStructTemplate* structTemplate, std::vector<IRType*> const& typeArgs
+    IRStructTemplate* structTemplate, Iterable<IRType*> auto const& typeArgs
 )
 {
     for (auto [it, end] = m_structInstantiations.equal_range(structTemplate);
@@ -225,7 +225,7 @@ IRStructInstantiation* Environment::getStructInstantiation(
 }
 
 IRStructInstantiation* Environment::findStructInstantiation(
-    IRStructTemplate* structTemplate, std::vector<IRType*> const& typeArgs
+    IRStructTemplate* structTemplate, Iterable<IRType*> auto const& typeArgs
 )
 {
     if (auto i = getStructInstantiation(structTemplate, typeArgs))
@@ -238,29 +238,19 @@ IRStructInstantiation* Environment::findStructInstantiation(
 
 IRFunctionHead* Environment::addConstraintCondition(IRFunctionHead* condition)
 {
-    for (auto [i, end] = m_constraintConditions.equal_range(condition->name);
-         i != end;
-         ++i)
-    {
-        auto t = [](std::pair<std::string, IRType*> p) {
-            return p.second;
-        };
+    auto params = condition->params | std::views::transform([](auto const& p) {
+                      return p.second;
+                  });
 
-        auto candidate = i->second;
-        auto conditionParams = condition->params | std::views::transform(t);
-        auto candidateParams = candidate->params | std::views::transform(t);
-
-        if (conditionParams.size() == candidateParams.size()
-            && std::ranges::equal(conditionParams, candidateParams))
-            return nullptr;
-    }
+    if (getConstraintCondition(condition->name, params))
+        return nullptr;
 
     m_constraintConditions.insert(std::pair(condition->name, condition));
     return condition;
 }
 
 IRFunctionHead* Environment::getConstraintCondition(
-    std::string const& name, std::vector<IRType*> const& params
+    std::string const& name, Iterable<IRType*> auto const& params
 )
 {
     for (auto [i, end] = m_constraintConditions.equal_range(name); i != end;
@@ -282,7 +272,7 @@ IRFunctionHead* Environment::getConstraintCondition(
 }
 
 IRFunctionHead* Environment::findConstraintCondition(
-    std::string const& name, std::vector<IRType*> const& params
+    std::string const& name, Iterable<IRType*> auto const& params
 )
 {
     if (auto c = getConstraintCondition(name, params))
@@ -297,29 +287,19 @@ IRFunctionTemplate* Environment::addFunctionTemplate(
     IRFunctionTemplate* function
 )
 {
-    for (auto [i, end] = m_functionTemplates.equal_range(function->name);
-         i != end;
-         ++i)
-    {
-        auto t = [](std::pair<std::string, IRType*> p) {
-            return p.second;
-        };
+    auto params = function->params | std::views::transform([](auto const& p) {
+                      return p.second;
+                  });
 
-        auto candidate = i->second;
-        auto functionParams = function->params | std::views::transform(t);
-        auto candidateParams = candidate->params | std::views::transform(t);
-
-        if (functionParams.size() == candidateParams.size()
-            && std::ranges::equal(functionParams, candidateParams))
-            return nullptr;
-    }
+    if (getFunctionTemplate(function->name, params))
+        return nullptr;
 
     m_functionTemplates.insert(std::pair(function->name, function));
     return function;
 }
 
 IRFunctionTemplate* Environment::getFunctionTemplate(
-    std::string const& functionName, std::vector<IRType*> const& params
+    std::string const& functionName, Iterable<IRType*> auto const& params
 )
 {
     for (auto [i, end] = m_functionTemplates.equal_range(functionName);
@@ -342,7 +322,7 @@ IRFunctionTemplate* Environment::getFunctionTemplate(
 }
 
 IRFunctionTemplate* Environment::findFunctionTemplate(
-    std::string const& functionName, std::vector<IRType*> const& params
+    std::string const& functionName, Iterable<IRType*> auto const& params
 )
 {
     if (auto f = getFunctionTemplate(functionName, params))
@@ -367,7 +347,7 @@ IRFunctionInstantiation* Environment::addFunctionInstantiation(
 }
 
 IRFunctionInstantiation* Environment::getFunctionInstantiation(
-    IRFunctionTemplate* functionTemplate, std::vector<IRType*> const& typeArgs
+    IRFunctionTemplate* functionTemplate, Iterable<IRType*> auto const& typeArgs
 )
 {
     for (auto [it, end] =
@@ -383,7 +363,7 @@ IRFunctionInstantiation* Environment::getFunctionInstantiation(
 }
 
 IRFunctionInstantiation* Environment::findFunctionInstantiation(
-    IRFunctionTemplate* functionTemplate, std::vector<IRType*> const& typeArgs
+    IRFunctionTemplate* functionTemplate, Iterable<IRType*> auto const& typeArgs
 )
 {
     if (auto i = getFunctionInstantiation(functionTemplate, typeArgs))
@@ -398,7 +378,7 @@ IRType* Environment::addVariableType(
     std::string const& variableName, IRType* variableType
 )
 {
-    if (m_variableTypes.contains(variableName))
+    if (getVariableType(variableName))
         return nullptr;
 
     m_variableTypes.try_emplace(variableName, variableType);
@@ -426,8 +406,7 @@ llvm::Value* Environment::setVariableValue(
     std::string const& name, llvm::Value* value
 )
 {
-    m_llvmVariableValues[name] = value;
-    return m_llvmVariableValues.at(name);
+    return (m_llvmVariableValues[name] = value);
 }
 
 llvm::Value* Environment::getVariableValue(std::string const& name)

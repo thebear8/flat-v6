@@ -2,6 +2,8 @@
 #include <string>
 #include <unordered_map>
 
+#include "util/iterable.hpp"
+
 namespace llvm
 {
 class Value;
@@ -158,7 +160,7 @@ public:
     /// @return The found instantiation or nullptr if no instantiation was found
     IRConstraintInstantiation* getConstraintInstantiation(
         IRConstraintTemplate* constraintTemplate,
-        std::vector<IRType*> const& typeArgs
+        Iterable<IRType*> auto const& typeArgs
     );
 
     /// @brief Search for a constraint instantiation by type args in the
@@ -169,7 +171,7 @@ public:
     /// @return The found instantiation or nullptr if no instantiation was found
     IRConstraintInstantiation* findConstraintInstantiation(
         IRConstraintTemplate* constraintTemplate,
-        std::vector<IRType*> const& typeArgs
+        Iterable<IRType*> auto const& typeArgs
     );
 
     /// @brief Get the std::unordered_multimap of constraint instantiations in
@@ -213,7 +215,7 @@ public:
     /// @return The found struct instantiation or nullptr if no instantiation
     /// was found
     IRStructInstantiation* getStructInstantiation(
-        IRStructTemplate* structTemplate, std::vector<IRType*> const& typeArgs
+        IRStructTemplate* structTemplate, Iterable<IRType*> auto const& typeArgs
     );
 
     /// @brief Search for a struct instantiation by type args in the environment
@@ -223,7 +225,7 @@ public:
     /// @return The found struct instantiation or nullptr if no instantiation
     /// was found
     IRStructInstantiation* findStructInstantiation(
-        IRStructTemplate* structTemplate, std::vector<IRType*> const& typeArgs
+        IRStructTemplate* structTemplate, Iterable<IRType*> auto const& typeArgs
     );
 
     /// @brief Get the std::unordered_multimap of struct instantiations in this
@@ -246,7 +248,7 @@ public:
     /// @return The found constraint condition or nullptr if the constraint
     /// condition was not found
     IRFunctionHead* getConstraintCondition(
-        std::string const& name, std::vector<IRType*> const& params
+        std::string const& name, Iterable<IRType*> auto const& params
     );
 
     /// @brief Search for a constraint condition by name and params in the
@@ -256,7 +258,7 @@ public:
     /// @return The found constraint condition or nullptr if the constraint
     /// condition was not found
     IRFunctionHead* findConstraintCondition(
-        std::string const& name, std::vector<IRType*> const& params
+        std::string const& name, Iterable<IRType*> auto const& params
     );
 
     /// @brief Get the std::unordered_multimap of constraint conditions in this
@@ -274,7 +276,7 @@ public:
     /// @param params Parameters of the function
     /// @return The found function or nullptr if the function was not found
     IRFunctionTemplate* getFunctionTemplate(
-        std::string const& name, std::vector<IRType*> const& params
+        std::string const& name, Iterable<IRType*> auto const& params
     );
 
     /// @brief Search for a function by name and params in the environment chain
@@ -282,7 +284,7 @@ public:
     /// @param params Parameters of the function
     /// @return The found function or nullptr if the function was not found
     IRFunctionTemplate* findFunctionTemplate(
-        std::string const& name, std::vector<IRType*> const& params
+        std::string const& name, Iterable<IRType*> auto const& params
     );
 
     /// @brief Get the std::unordered_multimap of function templates in this
@@ -307,7 +309,7 @@ public:
     /// instantiation was not found
     IRFunctionInstantiation* getFunctionInstantiation(
         IRFunctionTemplate* functionTemplate,
-        std::vector<IRType*> const& typeArgs
+        Iterable<IRType*> auto const& typeArgs
     );
 
     /// @brief Search for a function instantiation by type args in the
@@ -318,7 +320,7 @@ public:
     /// instantiation was not found
     IRFunctionInstantiation* findFunctionInstantiation(
         IRFunctionTemplate* functionTemplate,
-        std::vector<IRType*> const& typeArgs
+        Iterable<IRType*> auto const& typeArgs
     );
 
     /// @brief Get the std::unordered_multimap of function instantiations in
