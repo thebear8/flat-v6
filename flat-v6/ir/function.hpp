@@ -39,10 +39,6 @@ struct IRFunctionHead : public IRNode
         getLibraryNameForImport,
         setLibraryNameForImport
     )
-
-    METADATA_PROP(
-        llvmFunction, llvm::Function*, getLLVMFunction, setLLVMFunction
-    )
 };
 
 struct IRFunctionTemplate : IRFunctionHead
@@ -103,5 +99,9 @@ struct IRFunctionInstantiation : IRFunctionHead
         IRFunctionTemplate*,
         getInstantiatedFrom,
         setInstantiatedFrom
+    )
+
+    METADATA_PROP(
+        llvmFunction, llvm::Function*, getLLVMFunction, setLLVMFunction
     )
 };

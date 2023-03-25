@@ -103,7 +103,7 @@ struct IRUnaryExpression : public IRExpression
 
     IMPLEMENT_ACCEPT()
 
-    METADATA_PROP(target, IRFunctionInstantiation*, getTarget, setTarget)
+    METADATA_PROP(target, IRFunctionHead*, getTarget, setTarget)
 };
 
 struct IRBinaryExpression : public IRExpression
@@ -120,7 +120,7 @@ struct IRBinaryExpression : public IRExpression
 
     IMPLEMENT_ACCEPT()
 
-    METADATA_PROP(target, IRFunctionInstantiation*, getTarget, setTarget)
+    METADATA_PROP(target, IRFunctionHead*, getTarget, setTarget)
 };
 
 struct IRCallExpression : public IRExpression
@@ -137,7 +137,7 @@ struct IRCallExpression : public IRExpression
 
     IMPLEMENT_ACCEPT()
 
-    METADATA_PROP(target, IRFunctionInstantiation*, getTarget, setTarget)
+    METADATA_PROP(target, IRFunctionHead*, getTarget, setTarget)
 };
 
 struct IRIndexExpression : public IRExpression
@@ -154,7 +154,7 @@ struct IRIndexExpression : public IRExpression
 
     IMPLEMENT_ACCEPT()
 
-    METADATA_PROP(target, IRFunctionInstantiation*, getTarget, setTarget)
+    METADATA_PROP(target, IRFunctionHead*, getTarget, setTarget)
 };
 
 struct IRFieldExpression : public IRExpression

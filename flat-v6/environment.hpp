@@ -13,6 +13,7 @@ class IRConstraintTemplate;
 class IRConstraintInstantiation;
 class IRStructTemplate;
 class IRStructInstantiation;
+class IRFunctionHead;
 class IRFunctionTemplate;
 class IRFunctionInstantiation;
 
@@ -34,7 +35,10 @@ protected:
     std::unordered_multimap<IRStructTemplate*, IRStructInstantiation*>
         m_structInstantiations;
 
-    std::unordered_multimap<std::string, IRFunctionTemplate*> m_functions;
+    std::unordered_multimap<std::string, IRFunctionHead*>
+        m_constraintConditions;
+    std::unordered_multimap<std::string, IRFunctionTemplate*>
+        m_functionTemplates;
     std::unordered_multimap<IRFunctionTemplate*, IRFunctionInstantiation*>
         m_functionInstantiations;
 
@@ -228,6 +232,37 @@ public:
     /// module
     auto& getStructInstantiationMap() { return m_structInstantiations; }
 
+    /// @brief Add a constraint condition with specified name and params to this
+    /// environment
+    /// @param condition Condition to add
+    /// @return The added condition or nullptr if a condition with the same name
+    /// and parameters already exists
+    IRFunctionHead* addConstraintCondition(IRFunctionHead* condition);
+
+    /// @brief Search for a constraint condition by name and params in this
+    /// environment
+    /// @param name Name of the constraint condition
+    /// @param params Parameters of the constraint condition
+    /// @return The found constraint condition or nullptr if the constraint
+    /// condition was not found
+    IRFunctionHead* getConstraintCondition(
+        std::string const& name, std::vector<IRType*> const& params
+    );
+
+    /// @brief Search for a constraint condition by name and params in the
+    /// environment chain
+    /// @param name Name of the constraint condition
+    /// @param params Parameters of the constraint condition
+    /// @return The found constraint condition or nullptr if the constraint
+    /// condition was not found
+    IRFunctionHead* findConstraintCondition(
+        std::string const& name, std::vector<IRType*> const& params
+    );
+
+    /// @brief Get the std::unordered_multimap of constraint conditions in this
+    /// environment
+    auto& getConstraintConditionMap() { return m_constraintConditions; }
+
     /// @brief Add a function with specified name and params to this environment
     /// @param function Function to add
     /// @return The added function or nullptr if a function with the same name
@@ -252,7 +287,7 @@ public:
 
     /// @brief Get the std::unordered_multimap of function templates in this
     /// environment
-    auto& getFunctionTemplateMap() { return m_functions; }
+    auto& getFunctionTemplateMap() { return m_functionTemplates; }
 
     /// @brief Add a function instantiation with specified type args to this
     /// environment
@@ -329,6 +364,7 @@ public:
     /// found
     llvm::Value* findVariableValue(std::string const& name);
 
+public:
 public:
     /// @brief Determine if @p actualType and @p genericType are compatible.
     /// @note Compatible is defined as either: \n
