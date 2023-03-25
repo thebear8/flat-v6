@@ -545,63 +545,19 @@ IRType* SemanticPass::visit(IRFunctionTemplate* node)
     for (auto typeParam : node->typeParams)
         m_env->addTypeParam(typeParam);
 
-    for (auto& [name, args] : node->requirements)
+    for (auto requirement : node->requirements)
     {
-        auto constraint = m_env->getConstraint(name);
-        if (!constraint)
+        for (auto condition : requirement->conditions)
         {
-            return m_logger.error(
-                node->getLocation(SourceRef()),
-                "No constraint named " + name,
-                nullptr
-            );
-        }
-
-        if (args.size() != constraint->typeParams.size())
-        {
-            return m_logger.error(
-                node->getLocation(SourceRef()),
-                "Number of args does not match number of type parameters for constraint "
-                    + constraint->name,
-                nullptr
-            );
-        }
-
-        std::unordered_map<IRType*, IRType*> typeParamToArgLookup;
-        for (size_t i = 0; i < args.size(); i++)
-        {
-            typeParamToArgLookup.try_emplace(
-                constraint->typeParams[i], args[i]
-            );
-        }
-
-        for (auto condition : constraint->conditions)
-        {
-            assert(condition && "Condition cannot be nullptr");
-            auto function = dynamic_cast<IRFunctionHead*>(condition);
-            if (!function)
+            if (!m_env->addConstraintCondition(condition))
             {
                 return m_logger.error(
-                    condition->getLocation(SourceRef()),
-                    "Constraint condition has to be a function declaration",
+                    node->getLocation(SourceRef()),
+                    "Function " + formatFunctionHeadDescriptor(condition)
+                        + " is already defined",
                     nullptr
                 );
             }
-
-            auto params = function->params | std::views::transform([&](auto p) {
-                              if (typeParamToArgLookup.contains(p.second))
-                                  p.second = typeParamToArgLookup.at(p.second);
-                              return p;
-                          });
-
-            m_env->addFunctionTemplate(m_irCtx->make(IRFunctionHead(
-                function->name,
-                function->typeParams,
-                std::vector<std::pair<std::string, std::vector<IRType*>>>(),
-                std::vector(params.begin(), params.end()),
-                function->result,
-                nullptr
-            )));
         }
     }
 
@@ -758,6 +714,21 @@ IRFunctionInstantiation* SemanticPass::findCallTarget(
     }
 
     return nullptr;
+}
+
+std::string SemanticPass::formatFunctionHeadDescriptor(IRFunctionHead* value)
+{
+    std::stringstream descriptor;
+
+    std::string params;
+    for (auto param : value->params)
+    {
+        params += (params.empty() ? "" : ", ") + param.first + ": "
+            + param.second->toString();
+    }
+
+    descriptor << "(" << params << ")";
+    return descriptor.str();
 }
 
 std::string SemanticPass::formatFunctionTemplateDescriptor(

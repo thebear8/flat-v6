@@ -69,6 +69,7 @@ private:
         std::string& error
     );
 
+    std::string formatFunctionHeadDescriptor(IRFunctionHead* value);
     std::string formatFunctionTemplateDescriptor(IRFunctionTemplate* value);
     std::string formatFunctionInstantiationDescriptor(
         IRFunctionInstantiation* value
