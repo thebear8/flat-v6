@@ -367,7 +367,6 @@ public:
     llvm::Value* findVariableValue(std::string const& name);
 
 public:
-public:
     /// @brief Determine if @p actualType and @p genericType are compatible.
     /// @note Compatible is defined as either: \n
     /// @p actualType is equal to @p genericType; \n
