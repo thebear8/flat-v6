@@ -3,19 +3,17 @@
 ## IR Building
 - Module Extraction
 - Struct Extraction
-- Function Extraction
 - Constraint Extraction
+- Function Extraction
 
 - Module Import Population
 - Struct Population
 - Constraint Population
 - Function Population
+- Function Validation and Expression type checking
 - Update Struct Instantiations
 - Update Constraint Instantiations
 - Update Function Instantiations
-
-## IR Validation
-- Expression type checking
 
 ## IR Lowering
 - Operator Lowering
