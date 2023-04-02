@@ -1,3 +1,4 @@
+#include <llvm/MC/TargetRegistry.h>
 #include <llvm/Support/Host.h>
 #include <llvm/Support/TargetSelect.h>
 

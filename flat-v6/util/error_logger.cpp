@@ -2,8 +2,6 @@
 
 #include <sstream>
 
-#include "../data/ast.hpp"
-
 void ErrorLogger::fatal(std::string const& message)
 {
     std::stringstream text;
