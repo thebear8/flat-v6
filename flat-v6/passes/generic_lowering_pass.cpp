@@ -109,8 +109,8 @@ IRType* GenericLoweringPass::inferTypeArg(
             );
         }
 
-        auto genericStructType = (IRStructType*)genericType;
-        auto actualStructType = (IRStructType*)actualType;
+        auto genericStructType = (IRStruct*)genericType;
+        auto actualStructType = (IRStruct*)actualType;
 
         if (genericStructType->fields.size() != actualStructType->fields.size())
         {

@@ -12,7 +12,7 @@ class GraphContext;
 
 class IRType;
 class IRConstraint;
-class IRStructType;
+class IRStruct;
 class IRStructInstantiation;
 class IRFunctionHead;
 class IRFunctionInstantiation;

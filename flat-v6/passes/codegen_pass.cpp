@@ -82,7 +82,7 @@ llvm::Value* LLVMCodegenPass::visit(IRIdentifierExpression* node)
 
 llvm::Value* LLVMCodegenPass::visit(IRStructExpression* node)
 {
-    auto type = dynamic_cast<IRStructType*>(node->getType());
+    auto type = dynamic_cast<IRStruct*>(node->getType());
     auto structPtr =
         m_builder.CreateAlloca(getLLVMType(type), nullptr, type->name + "_");
 
@@ -338,7 +338,7 @@ llvm::Value* LLVMCodegenPass::visit(IRIndexExpression* node)
 
 llvm::Value* LLVMCodegenPass::visit(IRFieldExpression* node)
 {
-    auto structType = dynamic_cast<IRStructType*>(node->expression->getType());
+    auto structType = dynamic_cast<IRStruct*>(node->expression->getType());
     for (int i = 0; i < structType->fields.size(); i++)
     {
         if (structType->fields[i].first == node->fieldName)
@@ -592,7 +592,7 @@ llvm::Type* LLVMCodegenPass::getLLVMType(IRType* type)
     }
     else if (type->isStructType())
     {
-        auto structType = (IRStructType*)type;
+        auto structType = (IRStruct*)type;
 
         std::vector<llvm::Type*> fields;
         for (auto& [fieldName, fieldType] : structType->fields)
@@ -651,7 +651,7 @@ std::string LLVMCodegenPass::getMangledTypeName(IRType* type)
     }
     else if (type->isStructType())
     {
-        auto structType = (IRStructType*)type;
+        auto structType = (IRStruct*)type;
         auto output = "S_" + structType->name + "_";
 
         for (auto& [fieldName, fieldType] : structType->fields)
