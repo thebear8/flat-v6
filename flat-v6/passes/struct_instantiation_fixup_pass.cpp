@@ -12,6 +12,6 @@ void StructInstantiationFixupPass::visit(IRModule* node)
     for (auto [structTemplate, structInstantiation] :
          node->getEnv()->getStructInstantiationMap())
     {
-        m_instantiator.fixupStructInstantiationFields(structInstantiation);
+        m_instantiator.updateStructInstantiation(structInstantiation);
     }
 }

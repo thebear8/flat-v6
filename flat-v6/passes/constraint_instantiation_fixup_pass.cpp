@@ -12,6 +12,6 @@ void ConstraintInstantiationFixupPass::visit(IRModule* node)
     for (auto [constraintTemplate, constraintInstantiation] :
          node->getEnv()->getConstraintInstantiationMap())
     {
-        m_instantiator.fixupConstraintInstantiation(constraintInstantiation);
+        m_instantiator.updateConstraintInstantiation(constraintInstantiation);
     }
 }
