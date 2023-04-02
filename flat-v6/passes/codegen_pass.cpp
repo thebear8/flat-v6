@@ -622,7 +622,7 @@ llvm::Type* LLVMCodegenPass::getLLVMType(IRType* type)
     }
     else
     {
-        throw std::runtime_error();
+        throw std::exception();
     }
 }
 
@@ -672,7 +672,7 @@ std::string LLVMCodegenPass::getMangledTypeName(IRType* type)
     }
     else
     {
-        throw std::runtime_error();
+        throw std::exception();
     }
 }
 

@@ -20,6 +20,7 @@
         "cstdint": "cpp",
         "vector": "cpp",
         "exception": "cpp",
-        "stdexcept": "cpp"
+        "stdexcept": "cpp",
+        "unordered_map": "cpp"
     }
 }
