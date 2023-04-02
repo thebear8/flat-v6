@@ -49,7 +49,7 @@ public:
 public:
     virtual TReturn visit(TFirst* node)
     {
-        throw std::exception((std::string("visit(") + typeid(TFirst).name()
+        throw std::runtime_error((std::string("visit(") + typeid(TFirst).name()
                               + ") unimplemented")
                                  .c_str());
     }
@@ -66,7 +66,7 @@ struct VisitorBase<TVisitInvoker, void, TFirst> : public TVisitInvoker
 public:
     virtual void visit(TFirst* node)
     {
-        throw std::exception((std::string("visit(") + typeid(TFirst).name()
+        throw std::runtime_error((std::string("visit(") + typeid(TFirst).name()
                               + ") unimplemented")
                                  .c_str());
     }
@@ -85,7 +85,7 @@ public:
     using VisitorBase<TVisitInvoker, TReturn, TRest...>::visit;
     virtual TReturn visit(TFirst* node)
     {
-        throw std::exception((std::string("visit(") + typeid(TFirst).name()
+        throw std::runtime_error((std::string("visit(") + typeid(TFirst).name()
                               + ") unimplemented")
                                  .c_str());
     }
@@ -106,7 +106,7 @@ public:
     using VisitorBase<TVisitInvoker, void, TRest...>::visit;
     virtual void visit(TFirst* node)
     {
-        throw std::exception((std::string("visit(") + typeid(TFirst).name()
+        throw std::runtime_error((std::string("visit(") + typeid(TFirst).name()
                               + ") unimplemented")
                                  .c_str());
     }

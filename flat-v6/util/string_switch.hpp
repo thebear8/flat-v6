@@ -85,7 +85,7 @@ public:
     TValue OrThrow()
     {
         if (!result.has_value())
-            throw std::exception("StringSwitch with no matching case");
+            throw std::runtime_error("StringSwitch with no matching case");
         return std::move(*result);
     }
 };

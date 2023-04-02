@@ -11,7 +11,8 @@ struct IRType : public IRNode
 {
     virtual std::size_t getBitSize()
     {
-        throw std::exception("getBitSize() called on type that has no size");
+        throw std::runtime_error("getBitSize() called on type that has no size"
+        );
     };
 
     virtual std::string toString() = 0;

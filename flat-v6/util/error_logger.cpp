@@ -9,7 +9,7 @@ void ErrorLogger::fatal(std::string const& message)
     std::stringstream text;
     text << "Fatal error: " << message << "\n";
     output << text.str();
-    throw std::exception(text.str().c_str());
+    throw std::runtime_error(text.str().c_str());
 }
 
 void ErrorLogger::fatal(SourceRef const& location, std::string const& message)
@@ -35,7 +35,7 @@ void ErrorLogger::fatal(SourceRef const& location, std::string const& message)
     text << ": " << message << "\n";
 
     output << text.str();
-    throw std::exception(text.str().c_str());
+    throw std::runtime_error(text.str().c_str());
 }
 
 void ErrorLogger::error(std::string const& message)
@@ -44,7 +44,7 @@ void ErrorLogger::error(std::string const& message)
     text << "Error: " << message << "\n";
     output << text.str();
 #ifdef _DEBUG
-    throw std::exception(text.str().c_str());
+    throw std::runtime_error(text.str().c_str());
 #endif  // NDEBUG
 }
 
@@ -72,7 +72,7 @@ void ErrorLogger::error(SourceRef const& location, std::string const& message)
 
     output << text.str();
 #ifdef _DEBUG
-    throw std::exception(text.str().c_str());
+    throw std::runtime_error(text.str().c_str());
 #endif  // NDEBUG
 }
 
