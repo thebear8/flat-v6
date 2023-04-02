@@ -18,6 +18,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    # Installing prerequisites does not appear to be necessary
+    # - name: Install Prerequisites
+    #   run: sudo apt update -y && sudo apt install -y lsb-release wget software-properties-common gnupg
+
     - name: Install LLVM
       run: sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)" "" 15
 
