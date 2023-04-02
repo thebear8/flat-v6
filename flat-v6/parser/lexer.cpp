@@ -8,7 +8,7 @@ Token Lexer::advance()
         return Token::Eof;
     }
 
-    size_t length = 0;
+    std::size_t length = 0;
     Token type = (Token)(-1);
     for (auto& token : tokens)
     {
@@ -29,7 +29,7 @@ Token Lexer::advance()
 
     if (isDigit(input[position]))
     {
-        size_t start = position;
+        std::size_t start = position;
         if (input[position] == '0' && (position + 1) < input.length()
             && input[position + 1] == 'b')
         {
@@ -51,7 +51,7 @@ Token Lexer::advance()
 
         intValue = input.substr(start, position - start);
 
-        size_t suffixStart = position;
+        std::size_t suffixStart = position;
         if (position < input.length()
             && (input[position] == 'i' || input[position] == 'u'))
         {
@@ -67,7 +67,7 @@ Token Lexer::advance()
 
     if (isIdentifier(input[position]))
     {
-        size_t start = position;
+        std::size_t start = position;
         while (position < input.length() && isIdentifier(input[position]))
             position++;
         value = input.substr(start, position - start);
@@ -86,7 +86,7 @@ Token Lexer::advance()
     if (input[position] == '\'')
     {
         position++;
-        size_t start = position;
+        std::size_t start = position;
         if (input[position] == '\'')
             logger.error(SourceRef(id, position), "Empty char literal");
 
@@ -103,7 +103,7 @@ Token Lexer::advance()
     if (input[position] == '\"')
     {
         position++;
-        size_t start = position;
+        std::size_t start = position;
 
         while (position < input.length() && input[position] != '\"')
             advanceChar();
@@ -123,14 +123,14 @@ Token Lexer::advance()
 
 std::string_view Lexer::advanceChar()
 {
-    size_t start = position;
+    std::size_t start = position;
     if (position < input.length() && input[position] == '\\')
     {
         position++;
         if (position < input.length()
             && isDigit(input[position]))  // octal char literal
         {
-            size_t numStart = position;
+            std::size_t numStart = position;
             while (position < input.length() && isDigit(input[position]))
                 position++;
 
@@ -147,7 +147,7 @@ std::string_view Lexer::advanceChar()
                                                                        // literal
         {
             position++;
-            size_t numStart = position;
+            std::size_t numStart = position;
             while (position < input.length() && isDigit(input[position]))
                 position++;
 
@@ -165,7 +165,7 @@ std::string_view Lexer::advanceChar()
                                                                        // point
         {
             position++;
-            size_t numStart = position;
+            std::size_t numStart = position;
             while (position < input.length() && isDigit(input[position]))
                 position++;
 
@@ -183,7 +183,7 @@ std::string_view Lexer::advanceChar()
                                                                        // point
         {
             position++;
-            size_t numStart = position;
+            std::size_t numStart = position;
             while (position < input.length() && isDigit(input[position]))
                 position++;
 
@@ -226,7 +226,7 @@ std::string_view Lexer::advanceChar()
     }
 }
 
-size_t Lexer::trim()
+std::size_t Lexer::trim()
 {
     while (position < input.length() && isWhitespace(input[position]))
         position++;
@@ -247,7 +247,7 @@ size_t Lexer::trim()
 
 bool Lexer::match(Token expected)
 {
-    size_t before = position;
+    std::size_t before = position;
     Token token = advance();
     if (token == expected)
         return true;
@@ -266,7 +266,7 @@ bool Lexer::match(Token expected)
 
 bool Lexer::expect(Token expected)
 {
-    size_t before = position;
+    std::size_t before = position;
     Token token = advance();
     if (token == expected)
         return true;
@@ -283,7 +283,7 @@ bool Lexer::expect(Token expected)
     logger.error(
         SourceRef(id, position),
         "Unexpected Token " + std::string(value) + ", expected "
-            + TokenNames[(size_t)expected]
+            + TokenNames[(std::size_t)expected]
     );
     return false;
 }

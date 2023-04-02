@@ -18,8 +18,8 @@ void ErrorLogger::fatal(SourceRef const& location, std::string const& message)
         fatal(message);
 
     auto const& source = sources.at(location.id);
-    size_t line = 1, column = 1;
-    for (size_t i = 0; i < location.begin && i < source.length(); i++)
+    std::size_t line = 1, column = 1;
+    for (std::size_t i = 0; i < location.begin && i < source.length(); i++)
     {
         line = ((source[i] == '\n') ? ++line : line);
         column = ((source[i] == '\n') ? 1 : ++column);
@@ -54,8 +54,8 @@ void ErrorLogger::error(SourceRef const& location, std::string const& message)
         return error(message);
 
     auto const& source = sources.at(location.id);
-    size_t line = 1, column = 1;
-    for (size_t i = 0; i < location.begin && i < source.length(); i++)
+    std::size_t line = 1, column = 1;
+    for (std::size_t i = 0; i < location.begin && i < source.length(); i++)
     {
         line = ((source[i] == '\n') ? ++line : line);
         column = ((source[i] == '\n') ? 1 : ++column);
@@ -87,8 +87,8 @@ void ErrorLogger::warning(SourceRef const& location, std::string const& message)
         return warning(message);
 
     auto const& source = sources.at(location.id);
-    size_t line = 1, column = 1;
-    for (size_t i = 0; i < location.begin && i < source.length(); i++)
+    std::size_t line = 1, column = 1;
+    for (std::size_t i = 0; i < location.begin && i < source.length(); i++)
     {
         line = ((source[i] == '\n') ? ++line : line);
         column = ((source[i] == '\n') ? 1 : ++column);

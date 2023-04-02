@@ -463,7 +463,7 @@ bool Environment::inferTypeArgsAndMatch(
             != genericInstantiated->typeArgs.size())
             return false;
 
-        for (size_t i = 0; i < genericInstantiated->typeArgs.size(); i++)
+        for (std::size_t i = 0; i < genericInstantiated->typeArgs.size(); i++)
         {
             auto result = inferTypeArgsAndMatch(
                 genericInstantiated->typeArgs.at(i),
@@ -561,7 +561,7 @@ std::optional<std::string> Environment::inferTypeArgsAndValidate(
                 + genericInstantiated->toString();
         }
 
-        for (size_t i = 0; i < genericInstantiated->typeArgs.size(); i++)
+        for (std::size_t i = 0; i < genericInstantiated->typeArgs.size(); i++)
         {
             auto result = inferTypeArgsAndValidate(
                 genericInstantiated->typeArgs.at(i),

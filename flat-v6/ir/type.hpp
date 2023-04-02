@@ -9,7 +9,7 @@ struct IRModule;
 
 struct IRType : public IRNode
 {
-    virtual size_t getBitSize()
+    virtual std::size_t getBitSize()
     {
         throw std::exception("getBitSize() called on type that has no size");
     };
@@ -54,7 +54,7 @@ struct IRVoidType : public IRType
 
 struct IRBoolType : public IRType
 {
-    virtual size_t getBitSize() override { return 1; };
+    virtual std::size_t getBitSize() override { return 1; };
     virtual std::string toString() override { return "bool"; };
     virtual bool isBoolType() override { return true; }
 
@@ -64,14 +64,14 @@ struct IRBoolType : public IRType
 struct IRIntegerType : public IRType
 {
     bool signedness;
-    size_t bitSize;
+    std::size_t bitSize;
 
-    IRIntegerType(bool signedness, size_t bitSize)
+    IRIntegerType(bool signedness, std::size_t bitSize)
         : signedness(signedness), bitSize(bitSize)
     {
     }
 
-    virtual size_t getBitSize() override { return bitSize; };
+    virtual std::size_t getBitSize() override { return bitSize; };
 
     virtual std::string toString() override
     {
@@ -86,7 +86,7 @@ struct IRIntegerType : public IRType
 
 struct IRCharType : public IRType
 {
-    virtual size_t getBitSize() override { return 32; };
+    virtual std::size_t getBitSize() override { return 32; };
     virtual std::string toString() override { return "char"; };
     virtual bool isCharType() override { return true; }
 

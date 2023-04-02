@@ -222,7 +222,9 @@ IRModule* CompilationContext::getModule(std::string const& name)
     return m_modules.at(name);
 }
 
-IRIntegerType* CompilationContext::getIntegerType(size_t width, bool isSigned)
+IRIntegerType* CompilationContext::getIntegerType(
+    std::size_t width, bool isSigned
+)
 {
     if (isSigned)
     {

@@ -1,21 +1,31 @@
 #pragma once
+#include <cstdint>
 
 struct SourceRef
 {
-    size_t id;
-    size_t begin, wsBegin;
-    size_t end, wsEnd;
+    std::size_t id;
+    std::size_t begin, wsBegin;
+    std::size_t end, wsEnd;
 
     SourceRef() : SourceRef(0, 0) {}
 
-    SourceRef(size_t id, size_t position) : SourceRef(id, position, position) {}
+    SourceRef(std::size_t id, std::size_t position)
+        : SourceRef(id, position, position)
+    {
+    }
 
-    SourceRef(size_t id, size_t begin, size_t end)
+    SourceRef(std::size_t id, std::size_t begin, std::size_t end)
         : SourceRef(id, begin, end, begin, end)
     {
     }
 
-    SourceRef(size_t id, size_t begin, size_t end, size_t wsBegin, size_t wsEnd)
+    SourceRef(
+        std::size_t id,
+        std::size_t begin,
+        std::size_t end,
+        std::size_t wsBegin,
+        std::size_t wsEnd
+    )
         : id(id), begin(begin), end(end), wsBegin(wsBegin), wsEnd(wsEnd)
     {
     }

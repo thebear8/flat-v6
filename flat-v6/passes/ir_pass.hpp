@@ -71,7 +71,7 @@ private:
         std::string const& input, SourceRef const& location
     );
     uint32_t unescapeCodePoint(
-        std::string const& value, size_t& position, SourceRef const& location
+        std::string const& value, std::size_t& position, SourceRef const& location
     );
 
     bool isDigit(char c) { return (c >= '0' && c <= '9'); }

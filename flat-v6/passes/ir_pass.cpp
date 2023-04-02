@@ -12,7 +12,7 @@ IRModule* IRPass::process(ASTSourceFile* sourceFile)
 
 IRNode* IRPass::visit(ASTIntegerExpression* node)
 {
-    auto radix = StringSwitch<size_t>(node->value)
+    auto radix = StringSwitch<std::size_t>(node->value)
                      .StartsWith("0x", 16)
                      .StartsWith("0b", 2)
                      .Default(10);
@@ -21,15 +21,15 @@ IRNode* IRPass::visit(ASTIntegerExpression* node)
         StringSwitch<std::string>(node->value)
             .StartsWith(
                 "0x",
-                node->value.substr(std::min<size_t>(2, node->value.length()))
+                node->value.substr(std::min<std::size_t>(2, node->value.length()))
             )
             .StartsWith(
                 "0b",
-                node->value.substr(std::min<size_t>(2, node->value.length()))
+                node->value.substr(std::min<std::size_t>(2, node->value.length()))
             )
             .Default(node->value);
 
-    auto width = StringSwitch<size_t>(node->suffix)
+    auto width = StringSwitch<std::size_t>(node->suffix)
                      .EndsWith("8", 8)
                      .EndsWith("16", 16)
                      .EndsWith("32", 32)
@@ -59,7 +59,7 @@ IRNode* IRPass::visit(ASTBoolExpression* node)
 
 IRNode* IRPass::visit(ASTCharExpression* node)
 {
-    size_t position = 0;
+    std::size_t position = 0;
     return m_irCtx
         ->make(IRCharExpression(
             unescapeCodePoint(node->value, position, node->location)
@@ -456,7 +456,7 @@ std::vector<uint8_t> IRPass::unescapeStringUTF8(
 {
     std::vector<uint8_t> bytes;
 
-    size_t position = 0;
+    std::size_t position = 0;
     while (position < input.length())
     {
         uint32_t cp = unescapeCodePoint(input, position, location);
@@ -495,7 +495,7 @@ std::vector<uint8_t> IRPass::unescapeStringUTF8(
 }
 
 uint32_t IRPass::unescapeCodePoint(
-    std::string const& input, size_t& position, SourceRef const& location
+    std::string const& input, std::size_t& position, SourceRef const& location
 )
 {
     if (position < input.length() && input[position] == '\\')
@@ -505,7 +505,7 @@ uint32_t IRPass::unescapeCodePoint(
             && isDigit(input[position]))  // octal char
                                           // literal
         {
-            size_t start = position;
+            std::size_t start = position;
             while (position < input.length() && isDigit(input[position]))
                 position++;
 
@@ -525,7 +525,7 @@ uint32_t IRPass::unescapeCodePoint(
                                                                        // literal
         {
             position++;
-            size_t start = position;
+            std::size_t start = position;
             while (position < input.length() && isDigit(input[position]))
                 position++;
 
@@ -544,7 +544,7 @@ uint32_t IRPass::unescapeCodePoint(
                                                                        // point
         {
             position++;
-            size_t start = position;
+            std::size_t start = position;
             while (position < input.length() && isDigit(input[position]))
                 position++;
 
@@ -565,7 +565,7 @@ uint32_t IRPass::unescapeCodePoint(
                                                                        // point
         {
             position++;
-            size_t start = position;
+            std::size_t start = position;
             while (position < input.length() && isDigit(input[position]))
                 position++;
 

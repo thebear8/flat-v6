@@ -8,14 +8,14 @@ class Parser : protected Lexer
 private:
     ErrorLogger& logger;
     GraphContext& ctx;
-    size_t id;
+    std::size_t id;
 
 public:
     Parser(
         ErrorLogger& logger,
         GraphContext& ctx,
         std::string_view input,
-        size_t id
+        std::size_t id
     )
         : Lexer(logger, input, id), logger(logger), ctx(ctx), id(id)
     {
@@ -35,18 +35,18 @@ public:
     ASTExpression* l10();
     ASTExpression* expression();
 
-    ASTStatement* blockStatement(size_t begin);
-    ASTStatement* variableStatement(size_t begin);
-    ASTStatement* returnStatement(size_t begin);
-    ASTStatement* whileStatement(size_t begin);
-    ASTStatement* ifStatement(size_t begin);
+    ASTStatement* blockStatement(std::size_t begin);
+    ASTStatement* variableStatement(std::size_t begin);
+    ASTStatement* returnStatement(std::size_t begin);
+    ASTStatement* whileStatement(std::size_t begin);
+    ASTStatement* ifStatement(std::size_t begin);
     ASTStatement* statement();
 
-    ASTConstraintCondition* constraintCondition(size_t begin);
-    ASTConstraintDeclaration* constraintDeclaration(size_t begin);
-    ASTStructDeclaration* structDeclaration(size_t begin);
-    ASTFunctionDeclaration* functionDeclaration(size_t begin);
-    ASTFunctionDeclaration* externFunctionDeclaration(size_t begin);
+    ASTConstraintCondition* constraintCondition(std::size_t begin);
+    ASTConstraintDeclaration* constraintDeclaration(std::size_t begin);
+    ASTStructDeclaration* structDeclaration(std::size_t begin);
+    ASTFunctionDeclaration* functionDeclaration(std::size_t begin);
+    ASTFunctionDeclaration* externFunctionDeclaration(std::size_t begin);
 
     ASTSourceFile* sourceFile();
 

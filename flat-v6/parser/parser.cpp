@@ -408,7 +408,7 @@ ASTExpression* Parser::expression()
     return e;
 }
 
-ASTStatement* Parser::blockStatement(size_t begin)
+ASTStatement* Parser::blockStatement(std::size_t begin)
 {
     std::vector<ASTStatement*> statements;
     while (!match(Token::BraceClose) && !match(Token::Eof))
@@ -420,7 +420,7 @@ ASTStatement* Parser::blockStatement(size_t begin)
     );
 }
 
-ASTStatement* Parser::variableStatement(size_t begin)
+ASTStatement* Parser::variableStatement(std::size_t begin)
 {
     std::vector<std::pair<std::string, ASTExpression*>> items;
     while (!match(Token::NewLine) && match(Token::Identifier))
@@ -438,7 +438,7 @@ ASTStatement* Parser::variableStatement(size_t begin)
     );
 }
 
-ASTStatement* Parser::returnStatement(size_t begin)
+ASTStatement* Parser::returnStatement(std::size_t begin)
 {
     if (match(Token::NewLine))
     {
@@ -454,7 +454,7 @@ ASTStatement* Parser::returnStatement(size_t begin)
     }
 }
 
-ASTStatement* Parser::whileStatement(size_t begin)
+ASTStatement* Parser::whileStatement(std::size_t begin)
 {
     expect(Token::ParenOpen);
     auto condition = expression();
@@ -465,7 +465,7 @@ ASTStatement* Parser::whileStatement(size_t begin)
     );
 }
 
-ASTStatement* Parser::ifStatement(size_t begin)
+ASTStatement* Parser::ifStatement(std::size_t begin)
 {
     expect(Token::ParenOpen);
     auto condition = expression();
@@ -518,7 +518,7 @@ ASTStatement* Parser::statement()
     }
 }
 
-ASTConstraintCondition* Parser::constraintCondition(size_t begin)
+ASTConstraintCondition* Parser::constraintCondition(std::size_t begin)
 {
     expect(Token::Identifier);
     auto name = getTokenValue();
@@ -546,7 +546,7 @@ ASTConstraintCondition* Parser::constraintCondition(size_t begin)
     ));
 }
 
-ASTConstraintDeclaration* Parser::constraintDeclaration(size_t begin)
+ASTConstraintDeclaration* Parser::constraintDeclaration(std::size_t begin)
 {
     expect(Token::Identifier);
     auto constraintName = getTokenValue();
@@ -575,7 +575,7 @@ ASTConstraintDeclaration* Parser::constraintDeclaration(size_t begin)
     ));
 }
 
-ASTStructDeclaration* Parser::structDeclaration(size_t begin)
+ASTStructDeclaration* Parser::structDeclaration(std::size_t begin)
 {
     expect(Token::Identifier);
     auto structName = getTokenValue();
@@ -601,7 +601,7 @@ ASTStructDeclaration* Parser::structDeclaration(size_t begin)
     ));
 }
 
-ASTFunctionDeclaration* Parser::functionDeclaration(size_t begin)
+ASTFunctionDeclaration* Parser::functionDeclaration(std::size_t begin)
 {
     expect(Token::Identifier);
     auto name = getTokenValue();
@@ -642,7 +642,7 @@ ASTFunctionDeclaration* Parser::functionDeclaration(size_t begin)
     ));
 }
 
-ASTFunctionDeclaration* Parser::externFunctionDeclaration(size_t begin)
+ASTFunctionDeclaration* Parser::externFunctionDeclaration(std::size_t begin)
 {
     expect(Token::ParenOpen);
     expect(Token::Identifier);

@@ -18,11 +18,11 @@ struct IRExpression : public IRNode
 struct IRIntegerExpression : public IRExpression
 {
     bool isSigned;
-    size_t width, radix;
+    std::size_t width, radix;
     std::string value;
 
     IRIntegerExpression(
-        bool isSigned, size_t width, size_t radix, std::string const& value
+        bool isSigned, std::size_t width, std::size_t radix, std::string const& value
     )
         : isSigned(isSigned), width(width), radix(radix), value(value)
     {

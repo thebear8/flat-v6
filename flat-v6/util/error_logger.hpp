@@ -10,12 +10,12 @@ class ErrorLogger
 {
 private:
     std::ostream& output;
-    std::unordered_map<size_t, std::string> const& sources;
+    std::unordered_map<std::size_t, std::string> const& sources;
 
 public:
     ErrorLogger(
         std::ostream& output,
-        std::unordered_map<size_t, std::string> const& sources
+        std::unordered_map<std::size_t, std::string> const& sources
     )
         : output(output), sources(sources)
     {

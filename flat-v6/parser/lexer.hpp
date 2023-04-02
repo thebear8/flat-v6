@@ -44,15 +44,15 @@ private:
 
 protected:
     ErrorLogger& logger;
-    size_t position;
+    std::size_t position;
     std::string_view input;
     std::string_view value;
     std::string_view intValue;
     std::string_view intSuffixValue;
-    size_t id;
+    std::size_t id;
 
 public:
-    Lexer(ErrorLogger& logger, std::string_view input, size_t id)
+    Lexer(ErrorLogger& logger, std::string_view input, std::size_t id)
         : logger(logger), input(input), id(id), position(0), value("")
     {
     }
@@ -62,7 +62,7 @@ private:
     std::string_view advanceChar();
 
 public:
-    size_t trim();
+    std::size_t trim();
     bool match(Token expected);
     bool expect(Token expected);
 
