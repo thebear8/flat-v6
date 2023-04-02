@@ -1,9 +1,11 @@
 #include "semantic_pass.hpp"
 
+#include <algorithm>
 #include <cassert>
 #include <ranges>
 #include <sstream>
 
+#include "../util/to_vector.hpp"
 #include "../util/zip_view.hpp"
 
 void SemanticPass::process(IRModule* mod)
@@ -591,129 +593,124 @@ IRType* SemanticPass::visit(IRModule* node)
     return nullptr;
 }
 
-IRFunctionInstantiation* SemanticPass::findCallTarget(
+IRFunctionHead* SemanticPass::findCallTarget(
     std::string const& name,
     std::vector<IRType*> const& typeArgs,
     std::vector<IRType*> const& args,
     std::string& error
 )
 {
-    std::unordered_multimap<IRFunctionTemplate*, std::string> candidates;
+    auto constraintConditions = [&]() {
+        auto [it, end] = m_env->getConstraintConditionMap().equal_range(name);
+        auto conditions = std::ranges::subrange(it, end) | std::views::values;
 
-    for (auto [i, iEnd] =
-             m_module->getEnv()->getFunctionTemplateMap().equal_range(name);
-         i != iEnd;
-         ++i)
+        return conditions | std::views::filter([&](auto c) {
+                   auto candidateParams = c->params | std::views::values;
+                   return candidateParams.size() == args.size()
+                       && std::ranges::equal(candidateParams, args);
+               })
+            | range_utils::to_vector;
+    }();
+
+    auto nameMatchingFunctionTemplates = [&]() {
+        auto [it, end] = m_env->getFunctionTemplateMap().equal_range(name);
+        return std::ranges::subrange(it, end) | std::views::values;
+    }();
+
+    auto paramCompatibleFunctionTemplates = [&]() {
+        return nameMatchingFunctionTemplates | std::views::filter([&](auto f) {
+                   zip_view zippedTypesArgs(f->typeParams, typeArgs);
+
+                   std::unordered_map typeArgMap(
+                       zippedTypesArgs.begin(), zippedTypesArgs.end()
+                   );
+
+                   zip_view zippedArgs(f->params | std::views::values, args);
+                   for (auto [param, arg] : zippedArgs)
+                   {
+                       if (param != arg
+                           || !m_env->inferTypeArgsAndMatch(
+                               param, arg, typeArgMap, true
+                           ))
+                       {
+                           return false;
+                       }
+                   }
+
+                   for (auto typeParam : f->typeParams)
+                   {
+                       if (!typeArgMap.contains(typeParam))
+                           return false;
+                   }
+
+                   return true;
+               });
+    }();
+
+    auto requirementCompatibleFunctionTemplates = [&]() {
+        return paramCompatibleFunctionTemplates | range_utils::to_vector
+            | std::views::filter([&](auto f) {
+                   // TODO: filter by fulfilled requirements
+                   return true;
+               });
+    }();
+
+    auto functionTemplates = [&]() {
+        auto candidates =
+            requirementCompatibleFunctionTemplates | range_utils::to_vector
+            | std::views::transform([&](auto f) {
+                  std::unordered_map<IRGenericType*, IRType*> typeArgMap;
+                  zip_view zippedArgs(f->params | std::views::values, args);
+                  for (auto [param, arg] : zippedArgs)
+                      m_env->inferTypeArgsAndMatch(
+                          param, arg, typeArgMap, true
+                      );
+                  return std::pair(f, typeArgMap.size() - typeArgs.size());
+              })
+            | range_utils::to_vector;
+
+        std::ranges::sort(candidates, [](auto const& a, auto const& b) {
+            return a.second > b.second;
+        });
+
+        return candidates | std::views::transform([](auto const& f) {
+                   return f.first;
+               });
+    }();
+
+    if (constraintConditions.size() == 1 && (functionTemplates.size() == 0))
     {
-        auto functionTemplate = i->second;
-        auto const& functionTemplateTypeParams = i->second->typeParams;
-        auto const& functionTemplateParams = i->second->params;
-
-        if (args.size() != functionTemplateParams.size()
-            || typeArgs.size() > functionTemplateTypeParams.size())
-        {
-            continue;
-        }
-
-        for (auto [j, jEnd] =
-                 m_module->getEnv()->getFunctionInstantiationMap().equal_range(
-                     i->second
-                 );
-             j != jEnd;
-             ++j)
-        {
-            auto functionInstantiation = j->second;
-            auto const& functionInstantiationTypeArgs = j->second->typeArgs;
-            auto const& functionInstantiationParams = j->second->params;
-
-            auto zippedTypeArgs = zip_view(
-                std::views::all(functionInstantiationTypeArgs),
-                std::views::all(typeArgs)
-            );
-
-            bool differingTypeArgs = false;
-            for (auto [a, b] : zippedTypeArgs)
-                differingTypeArgs = differingTypeArgs || (a != b);
-
-            if (differingTypeArgs)
-                continue;
-
-            auto zippedArgs = zip_view(
-                functionInstantiationParams | std::views::values,
-                std::views::all(args)
-            );
-
-            bool differingArgs;
-            for (auto [a, b] : zippedArgs)
-                differingArgs = differingArgs || (a != b);
-
-            if (differingArgs)
-                continue;
-
-            return functionInstantiation;
-        }
-
-        auto zippedTypeArgs = zip_view(
-            std::views::all(functionTemplate->typeParams),
-            std::views::all(typeArgs)
-        );
-
-        std::unordered_map typeArgMap(
-            zippedTypeArgs.begin(), zippedTypeArgs.end()
-        );
-
-        auto zippedArgs = zip_view(
-            functionTemplate->params | std::views::values, std::views::all(args)
-        );
-
-        bool incompatibleArgs = false;
-        for (auto [param, arg] : zippedArgs)
-        {
-            incompatibleArgs = incompatibleArgs
-                || !m_env->inferTypeArgsAndMatch(param, arg, typeArgMap, false);
-        }
-
-        if (incompatibleArgs)
-            continue;
-
-        std::vector<IRType*> typeArgList;
-        for (auto typeParam : functionTemplate->typeParams)
-        {
-            if (!typeArgMap.contains(typeParam))
-            {
-                candidates.emplace(
-                    functionTemplate,
-                    "Could not infer value for type parameter "
-                        + typeParam->toString() + " for call to "
-                        + formatCallDescriptor(name, typeArgs, args)
-                );
-            }
-
-            typeArgList.push_back(typeArgMap.at(typeParam));
-        }
-
-        if (!candidates.contains(functionTemplate))
-        {
-            return m_instantiator.makeFunctionInstantiation(
-                functionTemplate, typeArgList
-            );
-        }
+        return constraintConditions.front();
     }
-
-    error =
-        "No target for call to " + formatCallDescriptor(name, typeArgs, args);
-
-    for (auto i = candidates.begin(), iEnd = candidates.end(); i != iEnd; ++i)
+    else if (constraintConditions.size() == 0 && (functionTemplates.size() > 0))
     {
-        auto candidate = i->first;
-        error +=
-            "\n  Candidate: " + formatFunctionTemplateDescriptor(candidate);
-
-        for (auto [j, jEnd] = candidates.equal_range(candidate); j != jEnd; ++j)
-            error += "\n    " + j->second;
+        return functionTemplates.front();
     }
+    else if (constraintConditions.size() == 0 && !functionTemplates.size() == 0)
+    {
+        error = "No matching target for function call "
+            + formatCallDescriptor(name, typeArgs, args);
+        return nullptr;
+    }
+    else
+    {
+        error = "Ambiguous function call "
+            + formatCallDescriptor(name, typeArgs, args);
 
-    return nullptr;
+        for (auto c : constraintConditions)
+        {
+            error += "\n  Candidate: Constraint condition "
+                + formatFunctionHeadDescriptor(c);
+        }
+
+        for (auto f : functionTemplates)
+        {
+            error += "\n  Candidate: Function template "
+                + formatFunctionTemplateDescriptor(f);
+        }
+
+        return nullptr;
+    }
 }
 
 std::string SemanticPass::formatFunctionHeadDescriptor(IRFunctionHead* value)

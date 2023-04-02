@@ -62,7 +62,7 @@ private:
     virtual IRType* visit(IRModule* node) override;
 
 private:
-    IRFunctionInstantiation* findCallTarget(
+    IRFunctionHead* findCallTarget(
         std::string const& name,
         std::vector<IRType*> const& typeArgs,
         std::vector<IRType*> const& args,
