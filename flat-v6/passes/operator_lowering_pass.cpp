@@ -64,7 +64,7 @@ IRNode* OperatorLoweringPass::visit(IRUnaryExpression* node)
     {
         auto args = std::vector({ node->expression });
         auto identifier = m_irCtx->make(
-            IRIdentifierExpression(unaryOperators.at(node->operation).name)
+            IRIdentifierExpression(unaryOperators.at(node->operation).name, {})
         );
         identifier->setLocation(node->getLocation(SourceRef()));
         auto call = m_irCtx->make(IRCallExpression(identifier, args));
@@ -133,7 +133,7 @@ IRNode* OperatorLoweringPass::visit(IRBinaryExpression* node)
         {
             auto args = std::vector({ node->left, node->right });
             auto identifier = m_irCtx->make(IRIdentifierExpression(
-                binaryOperators.at(BinaryOperator::Assign).name
+                binaryOperators.at(BinaryOperator::Assign).name, {}
             ));
             identifier->setLocation(node->getLocation(SourceRef()));
 
@@ -152,9 +152,9 @@ IRNode* OperatorLoweringPass::visit(IRBinaryExpression* node)
         else
         {
             auto args = std::vector({ node->left, node->right });
-            auto identifier = m_irCtx->make(
-                IRIdentifierExpression(binaryOperators.at(node->operation).name)
-            );
+            auto identifier = m_irCtx->make(IRIdentifierExpression(
+                binaryOperators.at(node->operation).name, {}
+            ));
             identifier->setLocation(node->getLocation(SourceRef()));
 
             auto call = m_irCtx->make(IRCallExpression(identifier, args));
@@ -178,7 +178,7 @@ IRNode* OperatorLoweringPass::visit(IRCallExpression* node)
     auto args = node->args;
     args.insert(args.begin(), node->expression);
 
-    auto identifier = m_irCtx->make(IRIdentifierExpression("__call__"));
+    auto identifier = m_irCtx->make(IRIdentifierExpression("__call__", {}));
     identifier->setLocation(node->getLocation(SourceRef()));
 
     auto call = m_irCtx->make(IRCallExpression(identifier, args));
@@ -203,7 +203,7 @@ IRNode* OperatorLoweringPass::visit(IRIndexExpression* node)
     auto args = node->args;
     args.insert(args.begin(), node->expression);
 
-    auto identifier = m_irCtx->make(IRIdentifierExpression("__index__"));
+    auto identifier = m_irCtx->make(IRIdentifierExpression("__index__", {}));
     identifier->setLocation(node->getLocation(SourceRef()));
 
     auto call = m_irCtx->make(IRCallExpression(identifier, args));
@@ -261,7 +261,7 @@ IRNode* OperatorLoweringPass::visit(IRIfStatement* node)
     return node;
 }
 
-IRNode* OperatorLoweringPass::visit(IRFunctionHead* node)
+IRNode* OperatorLoweringPass::visit(IRFunctionTemplate* node)
 {
     node->body = ((node->body) ? (IRStatement*)dispatch(node->body) : nullptr);
     return node;
@@ -270,6 +270,6 @@ IRNode* OperatorLoweringPass::visit(IRFunctionHead* node)
 IRNode* OperatorLoweringPass::visit(IRModule* node)
 {
     for (auto& function : node->functions)
-        function = (IRFunctionHead*)dispatch(function);
+        function = (IRFunctionTemplate*)dispatch(function);
     return node;
 }
