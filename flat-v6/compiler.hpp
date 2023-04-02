@@ -1,5 +1,7 @@
 #pragma once
 
+#include <llvm/Support/raw_ostream.h>
+
 #include <iostream>
 
 #include "ast/ast.hpp"
