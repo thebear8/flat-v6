@@ -1,5 +1,6 @@
 #pragma once
 #include <algorithm>
+#include <cctype>
 #include <optional>
 #include <ranges>
 #include <string>
@@ -51,8 +52,12 @@ public:
     StringSwitch& StartsWithLower(std::string_view s, TValue r)
     {
         std::string left(s), right(str);
-        std::transform(left.begin(), left.end(), left.begin(), std::tolower);
-        std::transform(right.begin(), right.end(), right.begin(), std::tolower);
+        std::transform(left.begin(), left.end(), left.begin(), [](char c) {
+            return std::tolower(c);
+        });
+        std::transform(right.begin(), right.end(), right.begin(), [](char c) {
+            return std::tolower(c);
+        });
 
         result = ((right.starts_with(left)) ? std::move(r) : result);
         return *this;
@@ -67,8 +72,12 @@ public:
     StringSwitch& EndsWithLower(std::string_view s, TValue r)
     {
         std::string left(s), right(str);
-        std::transform(left.begin(), left.end(), left.begin(), std::tolower);
-        std::transform(right.begin(), right.end(), right.begin(), std::tolower);
+        std::transform(left.begin(), left.end(), left.begin(), [](char c) {
+            return std::tolower(c);
+        });
+        std::transform(right.begin(), right.end(), right.begin(), [](char c) {
+            return std::tolower(c);
+        });
 
         result = ((right.ends_with(left)) ? std::move(r) : result);
         return *this;
