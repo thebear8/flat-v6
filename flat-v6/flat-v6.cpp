@@ -7,7 +7,6 @@
 
 #include "compiler.hpp"
 #include "parser/parser.hpp"
-#include "passes/no_op_pass.hpp"
 #include "util/string_switch.hpp"
 
 int main(int argc, char* argv[])
