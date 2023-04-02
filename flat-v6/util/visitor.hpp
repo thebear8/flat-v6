@@ -1,5 +1,6 @@
 #pragma once
 #include <new>
+#include <stdexcept>
 #include <type_traits>
 #include <typeinfo>
 
@@ -50,8 +51,8 @@ public:
     virtual TReturn visit(TFirst* node)
     {
         throw std::runtime_error((std::string("visit(") + typeid(TFirst).name()
-                              + ") unimplemented")
-                                 .c_str());
+                                  + ") unimplemented")
+                                     .c_str());
     }
     virtual void invoke(TFirst* node)
     {
@@ -67,8 +68,8 @@ public:
     virtual void visit(TFirst* node)
     {
         throw std::runtime_error((std::string("visit(") + typeid(TFirst).name()
-                              + ") unimplemented")
-                                 .c_str());
+                                  + ") unimplemented")
+                                     .c_str());
     }
     virtual void invoke(TFirst* node) { return visit(node); }
 };
@@ -86,8 +87,8 @@ public:
     virtual TReturn visit(TFirst* node)
     {
         throw std::runtime_error((std::string("visit(") + typeid(TFirst).name()
-                              + ") unimplemented")
-                                 .c_str());
+                                  + ") unimplemented")
+                                     .c_str());
     }
 
     using VisitorBase<TVisitInvoker, TReturn, TRest...>::invoke;
@@ -107,8 +108,8 @@ public:
     virtual void visit(TFirst* node)
     {
         throw std::runtime_error((std::string("visit(") + typeid(TFirst).name()
-                              + ") unimplemented")
-                                 .c_str());
+                                  + ") unimplemented")
+                                     .c_str());
     }
 
     using VisitorBase<TVisitInvoker, void, TRest...>::invoke;
