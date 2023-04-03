@@ -122,7 +122,7 @@ IRNode* FunctionPopulationPass::visit(ASTStructExpression* node)
             );
         }
 
-        fields.try_emplace(name, value);
+        fields.try_emplace(name, (IRExpression*)dispatch(value));
     }
 
     return m_irCtx->make(IRStructExpression(node->structName, typeArgs, fields))
