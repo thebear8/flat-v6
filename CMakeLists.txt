@@ -46,7 +46,6 @@ target_sources(flc PRIVATE
     flat-v6/passes/function_extraction_pass.cpp
     flat-v6/passes/function_population_pass.cpp
     flat-v6/passes/generic_lowering_pass.cpp
-    flat-v6/passes/ir_pass.cpp
     flat-v6/passes/module_extraction_pass.cpp
     flat-v6/passes/module_import_population_pass.cpp
     flat-v6/passes/operator_lowering_pass.cpp

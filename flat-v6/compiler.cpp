@@ -18,7 +18,6 @@
 #include "ast/ast.hpp"
 #include "parser/parser.hpp"
 #include "passes/codegen_pass.hpp"
-#include "passes/ir_pass.hpp"
 #include "passes/module_extraction_pass.hpp"
 #include "passes/operator_lowering_pass.hpp"
 #include "passes/semantic_pass.hpp"
@@ -121,7 +120,6 @@ void CompilationContext::runPasses()
 {
     ModuleExtractionPass mep(m_logger, *this, m_irCtx);
     StructExtractionPass sep(m_logger, *this);
-    IRPass ip(m_logger, *this);
     SemanticPass sp(m_logger, *this);
     OperatorLoweringPass olp(m_logger, *this);
 
@@ -130,9 +128,6 @@ void CompilationContext::runPasses()
 
     for (auto sf : m_parsedSourceFiles)
         sep.process(sf);
-
-    for (auto sf : m_parsedSourceFiles)
-        ip.process(sf);
 
     for (auto [moduleName, irModule] : m_modules)
         sp.process(irModule);
