@@ -311,6 +311,7 @@ IRNode* FunctionPopulationPass::visit(ASTFunctionDeclaration* node)
     function->body = node->body ? (IRStatement*)dispatch(node->body) : nullptr;
 
     m_env = nullptr;
+    return function;
 }
 
 IRNode* FunctionPopulationPass::visit(ASTSourceFile* node)

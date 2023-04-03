@@ -145,6 +145,7 @@ IRStructInstantiation* Instantiator::updateStructInstantiation(
 
     m_env = nullptr;
     m_irCtx = nullptr;
+    return structInstantiation;
 }
 
 IRFunctionInstantiation* Instantiator::updateFunctionInstantiation(
@@ -186,6 +187,7 @@ IRFunctionInstantiation* Instantiator::updateFunctionInstantiation(
 
     m_env = nullptr;
     m_irCtx = nullptr;
+    return functionInstantiation;
 }
 
 IRConstraintInstantiation* Instantiator::updateConstraintInstantiation(

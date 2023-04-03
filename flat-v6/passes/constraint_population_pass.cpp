@@ -114,6 +114,7 @@ IRNode* ConstraintPopulationPass::visit(ASTConstraintDeclaration* node)
         conditions.push_back((IRFunctionHead*)dispatch(condition));
 
     m_env = nullptr;
+    return constraint;
 }
 
 IRNode* ConstraintPopulationPass::visit(ASTSourceFile* node)
@@ -123,4 +124,6 @@ IRNode* ConstraintPopulationPass::visit(ASTSourceFile* node)
 
     for (auto declaration : node->declarations)
         dispatch(declaration);
+
+    return m_module;
 }

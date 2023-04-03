@@ -36,8 +36,8 @@ public:
 private:
     IRNode* visit(ASTRequirement* node) override;
     IRNode* visit(ASTConstraintCondition* node) override;
-    IRNode* visit(ASTStructDeclaration* node) override {}
+    IRNode* visit(ASTStructDeclaration* node) override { return nullptr; }
     IRNode* visit(ASTConstraintDeclaration* node) override;
-    IRNode* visit(ASTFunctionDeclaration* node) override {}
+    IRNode* visit(ASTFunctionDeclaration* node) override { return nullptr; }
     IRNode* visit(ASTSourceFile* node) override;
 };

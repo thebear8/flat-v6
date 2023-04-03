@@ -29,62 +29,77 @@ IRNode* GenericLoweringPass::visit(IRStringExpression* node)
 
 IRNode* GenericLoweringPass::visit(IRIdentifierExpression* node)
 {
+    return node;
 }
 
 IRNode* GenericLoweringPass::visit(IRStructExpression* node)
 {
+    return node;
 }
 
 IRNode* GenericLoweringPass::visit(IRUnaryExpression* node)
 {
+    return node;
 }
 
 IRNode* GenericLoweringPass::visit(IRBinaryExpression* node)
 {
+    return node;
 }
 
 IRNode* GenericLoweringPass::visit(IRCallExpression* node)
 {
+    return node;
 }
 
 IRNode* GenericLoweringPass::visit(IRIndexExpression* node)
 {
+    return node;
 }
 
 IRNode* GenericLoweringPass::visit(IRFieldExpression* node)
 {
+    return node;
 }
 
 IRNode* GenericLoweringPass::visit(IRBlockStatement* node)
 {
+    return node;
 }
 
 IRNode* GenericLoweringPass::visit(IRExpressionStatement* node)
 {
+    return node;
 }
 
 IRNode* GenericLoweringPass::visit(IRVariableStatement* node)
 {
+    return node;
 }
 
 IRNode* GenericLoweringPass::visit(IRReturnStatement* node)
 {
+    return node;
 }
 
 IRNode* GenericLoweringPass::visit(IRWhileStatement* node)
 {
+    return node;
 }
 
 IRNode* GenericLoweringPass::visit(IRIfStatement* node)
 {
+    return node;
 }
 
 IRNode* GenericLoweringPass::visit(IRFunctionHead* node)
 {
+    return node;
 }
 
 IRNode* GenericLoweringPass::visit(IRModule* node)
 {
+    return node;
 }
 
 IRType* GenericLoweringPass::inferTypeArg(
