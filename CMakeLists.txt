@@ -6,15 +6,8 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Setup CLI11
-include(FetchContent)
-FetchContent_Declare(
-  cli11
-  GIT_REPOSITORY https://github.com/CLIUtils/CLI11
-  GIT_TAG        v2.2.0
-)
-
-FetchContent_MakeAvailable(cli11)
+# Add CLIUtils/CLI11 subdirectory
+add_subdirectory(CLI11)
 
 # Add tessil/ordered-map subdirectory
 add_subdirectory(ordered-map)
