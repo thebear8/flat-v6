@@ -9,6 +9,7 @@
 #include "../../ir/ir.hpp"
 #include "../../util/error_logger.hpp"
 #include "../../util/graph_context.hpp"
+#include "../../util/to_vector.hpp"
 #include "../../util/zip_view.hpp"
 
 IRStructInstantiation* Instantiator::makeStructInstantiation(
@@ -140,7 +141,7 @@ IRStructInstantiation* Instantiator::updateStructInstantiation(
                   });
 
     structInstantiation->fields =
-        std::unordered_map(fields.begin(), fields.end());
+        tsl::ordered_map<std::string, IRType*>(fields.begin(), fields.end());
 
     m_env = nullptr;
     m_irCtx = nullptr;

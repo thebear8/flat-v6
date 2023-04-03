@@ -82,6 +82,9 @@ int main(int argc, char* argv[])
 
     std::error_code ec;
     llvm::raw_fd_ostream outStream(outputName, ec);
-    CompilationContext ctx(targetDesc, std::cout);
-    ctx.compile(sourceDir, outStream);
+    CompilationContext ctx(std::cout);
+    ctx.readSourceFiles(sourceDir);
+    ctx.parseSourceFiles();
+    ctx.runPasses();
+    ctx.generateCode(targetDesc, outStream);
 }
