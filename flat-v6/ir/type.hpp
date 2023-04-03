@@ -1,4 +1,6 @@
 #pragma once
+#include <tsl/ordered_map.h>
+
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -128,11 +130,11 @@ struct IRArrayType : public IRType
 struct IRStruct : public IRType
 {
     std::string name;
-    std::unordered_map<std::string, IRType*> fields;
+    tsl::ordered_map<std::string, IRType*> fields;
 
     IRStruct(
         std::string const& name,
-        std::unordered_map<std::string, IRType*> const& fields
+        tsl::ordered_map<std::string, IRType*> const& fields
     )
         : name(name), fields(fields)
     {
@@ -151,7 +153,7 @@ struct IRStructTemplate : public IRStruct
     IRStructTemplate(
         std::string name,
         std::vector<IRGenericType*> const& typeParams,
-        std::unordered_map<std::string, IRType*> const& fields
+        tsl::ordered_map<std::string, IRType*> const& fields
     )
         : IRStruct(name, fields), typeParams(typeParams)
     {
@@ -179,7 +181,7 @@ struct IRStructInstantiation : public IRStruct
     IRStructInstantiation(
         std::string name,
         std::vector<IRType*> const& typeArgs,
-        std::unordered_map<std::string, IRType*> const& fields
+        tsl::ordered_map<std::string, IRType*> const& fields
     )
         : IRStruct(name, fields), typeArgs(typeArgs)
     {

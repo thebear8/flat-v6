@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.0.0)
 project(flat-v6 VERSION 0.1.0)
 
+# Set C++ Standard
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 # Setup CLI11
 include(FetchContent)
 FetchContent_Declare(
@@ -11,15 +16,13 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(cli11)
 
+# Add tessil/ordered-map subdirectory
+add_subdirectory(ordered-map)
+
 # Find LLVM Package
 find_package(LLVM 15 REQUIRED CONFIG)
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
-
-# Set C++ Standard
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Setup LLVM
 include_directories(${LLVM_INCLUDE_DIRS})
@@ -29,9 +32,11 @@ add_definitions(${LLVM_DEFINITIONS_LIST})
 # Configure FLC Target
 add_executable(flc)
 target_include_directories(flc PRIVATE flat-v6)
-llvm_map_components_to_libnames(llvm_libs support core)
-target_link_libraries(flc ${llvm_libs})
+
+llvm_map_components_to_libnames(llvm_libraries support core)
+target_link_libraries(flc ${llvm_libraries})
 target_link_libraries(flc CLI11::CLI11)
+target_link_libraries(flc tsl::ordered_map)
 
 target_sources(flc PRIVATE
     flat-v6/compiler.cpp

@@ -86,27 +86,24 @@ llvm::Value* LLVMCodegenPass::visit(IRStructExpression* node)
     auto structPtr =
         m_builder.CreateAlloca(getLLVMType(type), nullptr, type->name + "_");
 
-    for (int i = 0; i < type->fields.size(); i++)
+    size_t idx = 0;
+    for (auto [fieldName, fieldType] : type->fields)
     {
-        for (int j = 0; j < node->fields.size(); j++)
+        if (!node->fields.contains(fieldName))
         {
-            if (node->fields.at(j).first == type->fields.at(i).first)
-            {
-                auto const& fieldName = node->fields.at(j).first;
-                auto fieldValue = dispatch(node->fields.at(j).second);
-                auto fieldPtr = m_builder.CreateStructGEP(
-                    getLLVMType(type),
-                    structPtr,
-                    i,
-                    type->name + "." + fieldName + "_"
-                );
-                m_builder.CreateStore(fieldValue, fieldPtr);
-                break;
-            }
-
-            if (j == node->fields.size())
-                assert(0 && "No initializer for field in struct expression");
+            assert(0 && "No initializer for field in struct expression");
+            throw std::exception();
         }
+
+        auto fieldValue = dispatch(node->fields.at(fieldName));
+        auto fieldPtr = m_builder.CreateStructGEP(
+            getLLVMType(type),
+            structPtr,
+            idx++,
+            type->name + "." + fieldName + "_"
+        );
+        m_builder.CreateStore(fieldValue, fieldPtr);
+        break;
     }
 
     return m_builder.CreateLoad(getLLVMType(type), structPtr);
@@ -342,26 +339,27 @@ llvm::Value* LLVMCodegenPass::visit(IRIndexExpression* node)
 llvm::Value* LLVMCodegenPass::visit(IRFieldExpression* node)
 {
     auto structType = dynamic_cast<IRStruct*>(node->expression->getType());
-    for (int i = 0; i < structType->fields.size(); i++)
-    {
-        if (structType->fields[i].first == node->fieldName)
-        {
-            auto value = m_builder.CreateAlloca(
-                getLLVMType(structType), nullptr, structType->name + "_"
-            );
-            m_builder.CreateStore(dispatch(node->expression), value);
-            auto ptr =
-                m_builder.CreateStructGEP(getLLVMType(structType), value, i);
-            return m_builder.CreateLoad(
-                getLLVMType(node->getType()),
-                ptr,
-                structType->toString() + "." + node->fieldName + "_"
-            );
-        }
-    }
 
-    assert(0 && "Unknown struct field in field expression");
-    return nullptr;
+    assert(
+        structType->fields.contains(node->fieldName)
+        && "Unknown struct field in field expression"
+    );
+
+    auto value = m_builder.CreateAlloca(
+        getLLVMType(structType), nullptr, structType->name + "_"
+    );
+    m_builder.CreateStore(dispatch(node->expression), value);
+
+    auto idx = std::distance(
+        structType->fields.find(node->fieldName), structType->fields.begin()
+    );
+    auto ptr = m_builder.CreateStructGEP(getLLVMType(structType), value, idx);
+
+    return m_builder.CreateLoad(
+        getLLVMType(node->getType()),
+        ptr,
+        structType->toString() + "." + node->fieldName + "_"
+    );
 }
 
 llvm::Value* LLVMCodegenPass::visit(IRBlockStatement* node)
