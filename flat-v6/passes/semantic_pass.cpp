@@ -648,7 +648,7 @@ IRFunctionHead* SemanticPass::findCallTarget(
     }();
 
     auto requirementCompatibleFunctionTemplates = [&]() {
-        return paramCompatibleFunctionTemplates | range_utils::to_vector
+        return paramCompatibleFunctionTemplates
             | std::views::filter([&](auto f) {
                    // TODO: filter by fulfilled requirements
                    return true;
@@ -657,7 +657,7 @@ IRFunctionHead* SemanticPass::findCallTarget(
 
     auto functionTemplates = [&]() {
         auto candidates =
-            requirementCompatibleFunctionTemplates | range_utils::to_vector
+            requirementCompatibleFunctionTemplates
             | std::views::transform([&](auto f) {
                   std::unordered_map<IRGenericType*, IRType*> typeArgMap;
                   zip_view zippedArgs(f->params | std::views::values, args);
