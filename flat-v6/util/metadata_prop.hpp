@@ -18,14 +18,14 @@ public:                                                           \
     type const& get(type&& default_) const                        \
     {                                                             \
         return (metadata_##name.has_value())                      \
-            ? (metadata_##name.value())                           \
+            ? (std::forward<type const>(metadata_##name.value())) \
             : (std::forward<type const>(default_));               \
     }                                                             \
                                                                   \
     type const& get(type const& default_) const                   \
     {                                                             \
         return (metadata_##name.has_value())                      \
-            ? (metadata_##name.value())                           \
+            ? (std::forward<type const>(metadata_##name.value())) \
             : (std::forward<type const>(default_));               \
     }                                                             \
                                                                   \
