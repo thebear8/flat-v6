@@ -5,6 +5,7 @@
 #include <ranges>
 
 #include "ir/ir.hpp"
+#include "util/to_vector.hpp"
 #include "util/zip_view.hpp"
 
 IRType* Environment::addBuiltinType(
@@ -138,7 +139,7 @@ IRConstraintInstantiation* Environment::addConstraintInstantiation(
 
 IRConstraintInstantiation* Environment::getConstraintInstantiation(
     IRConstraintTemplate* constraintTemplate,
-    Iterable<IRType*> auto const& typeArgs
+    std::vector<IRType*> const& typeArgs
 )
 {
     for (auto [it, end] =
@@ -155,7 +156,7 @@ IRConstraintInstantiation* Environment::getConstraintInstantiation(
 
 IRConstraintInstantiation* Environment::findConstraintInstantiation(
     IRConstraintTemplate* constraintTemplate,
-    Iterable<IRType*> auto const& typeArgs
+    std::vector<IRType*> const& typeArgs
 )
 {
     if (auto i = getConstraintInstantiation(constraintTemplate, typeArgs))
@@ -210,7 +211,7 @@ IRStructInstantiation* Environment::addStructInstantiation(
 }
 
 IRStructInstantiation* Environment::getStructInstantiation(
-    IRStructTemplate* structTemplate, Iterable<IRType*> auto const& typeArgs
+    IRStructTemplate* structTemplate, std::vector<IRType*> const& typeArgs
 )
 {
     for (auto [it, end] = m_structInstantiations.equal_range(structTemplate);
@@ -225,7 +226,7 @@ IRStructInstantiation* Environment::getStructInstantiation(
 }
 
 IRStructInstantiation* Environment::findStructInstantiation(
-    IRStructTemplate* structTemplate, Iterable<IRType*> auto const& typeArgs
+    IRStructTemplate* structTemplate, std::vector<IRType*> const& typeArgs
 )
 {
     if (auto i = getStructInstantiation(structTemplate, typeArgs))
@@ -240,7 +241,8 @@ IRFunctionHead* Environment::addConstraintCondition(IRFunctionHead* condition)
 {
     auto params = condition->params | std::views::transform([](auto const& p) {
                       return p.second;
-                  });
+                  })
+        | range_utils::to_vector;
 
     if (getConstraintCondition(condition->name, params))
         return nullptr;
@@ -250,7 +252,7 @@ IRFunctionHead* Environment::addConstraintCondition(IRFunctionHead* condition)
 }
 
 IRFunctionHead* Environment::getConstraintCondition(
-    std::string const& name, Iterable<IRType*> auto const& params
+    std::string const& name, std::vector<IRType*> const& params
 )
 {
     for (auto [i, end] = m_constraintConditions.equal_range(name); i != end;
@@ -272,7 +274,7 @@ IRFunctionHead* Environment::getConstraintCondition(
 }
 
 IRFunctionHead* Environment::findConstraintCondition(
-    std::string const& name, Iterable<IRType*> auto const& params
+    std::string const& name, std::vector<IRType*> const& params
 )
 {
     if (auto c = getConstraintCondition(name, params))
@@ -289,7 +291,8 @@ IRFunctionTemplate* Environment::addFunctionTemplate(
 {
     auto params = function->params | std::views::transform([](auto const& p) {
                       return p.second;
-                  });
+                  })
+        | range_utils::to_vector;
 
     if (getFunctionTemplate(function->name, params))
         return nullptr;
@@ -299,7 +302,7 @@ IRFunctionTemplate* Environment::addFunctionTemplate(
 }
 
 IRFunctionTemplate* Environment::getFunctionTemplate(
-    std::string const& functionName, Iterable<IRType*> auto const& params
+    std::string const& functionName, std::vector<IRType*> const& params
 )
 {
     for (auto [i, end] = m_functionTemplates.equal_range(functionName);
@@ -322,7 +325,7 @@ IRFunctionTemplate* Environment::getFunctionTemplate(
 }
 
 IRFunctionTemplate* Environment::findFunctionTemplate(
-    std::string const& functionName, Iterable<IRType*> auto const& params
+    std::string const& functionName, std::vector<IRType*> const& params
 )
 {
     if (auto f = getFunctionTemplate(functionName, params))
@@ -347,7 +350,7 @@ IRFunctionInstantiation* Environment::addFunctionInstantiation(
 }
 
 IRFunctionInstantiation* Environment::getFunctionInstantiation(
-    IRFunctionTemplate* functionTemplate, Iterable<IRType*> auto const& typeArgs
+    IRFunctionTemplate* functionTemplate, std::vector<IRType*> const& typeArgs
 )
 {
     for (auto [it, end] =
@@ -363,7 +366,7 @@ IRFunctionInstantiation* Environment::getFunctionInstantiation(
 }
 
 IRFunctionInstantiation* Environment::findFunctionInstantiation(
-    IRFunctionTemplate* functionTemplate, Iterable<IRType*> auto const& typeArgs
+    IRFunctionTemplate* functionTemplate, std::vector<IRType*> const& typeArgs
 )
 {
     if (auto i = getFunctionInstantiation(functionTemplate, typeArgs))

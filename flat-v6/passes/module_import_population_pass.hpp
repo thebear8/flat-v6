@@ -6,14 +6,14 @@ class CompilationContext;
 class GraphContext;
 class Environment;
 
-class ModuleExtractionPass : ASTVisitor<void>
+class ModuleImportPopulationPass : ASTVisitor<void>
 {
 private:
     ErrorLogger& m_logger;
     CompilationContext& m_compCtx;
 
 public:
-    ModuleExtractionPass(ErrorLogger& logger, CompilationContext& compCtx)
+    ModuleImportPopulationPass(ErrorLogger& logger, CompilationContext& compCtx)
         : m_logger(logger), m_compCtx(compCtx)
     {
     }

@@ -26,7 +26,11 @@ add_definitions(${LLVM_DEFINITIONS_LIST})
 add_executable(flc)
 target_include_directories(flc PRIVATE flat-v6)
 
-llvm_map_components_to_libnames(llvm_libraries support core)
+# Get LLVM Libs
+execute_process(COMMAND ${LLVM_TOOLS_BINARY_DIR}/llvm-config --libnames OUTPUT_VARIABLE llvm_libraries)
+string(STRIP ${llvm_libraries} llvm_libraries)
+message(STATUS "Using LLVM Libraries: ${llvm_libs}")
+
 target_link_libraries(flc ${llvm_libraries})
 target_link_libraries(flc CLI11::CLI11)
 target_link_libraries(flc tsl::ordered_map)

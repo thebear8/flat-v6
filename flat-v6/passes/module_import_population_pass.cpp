@@ -4,12 +4,12 @@
 
 #include "../compiler.hpp"
 
-void ModuleExtractionPass::process(ASTSourceFile* node)
+void ModuleImportPopulationPass::process(ASTSourceFile* node)
 {
     return dispatch(node);
 }
 
-void ModuleExtractionPass::visit(ASTSourceFile* node)
+void ModuleImportPopulationPass::visit(ASTSourceFile* node)
 {
     auto irModule = node->getIRModule();
     for (auto const& importPath : node->importPaths)
