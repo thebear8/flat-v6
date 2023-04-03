@@ -2,7 +2,7 @@
 #include <llvm/Support/Host.h>
 #include <llvm/Support/TargetSelect.h>
 
-#include <cli/CLI.hpp>
+#include <CLI/CLI.hpp>
 #include <filesystem>
 #include <iostream>
 
