@@ -555,7 +555,8 @@ IRType* SemanticPass::visit(IRFunctionTemplate* node)
             {
                 return m_logger.error(
                     node->getLocation(SourceRef()),
-                    "Function " + formatFunctionHeadDescriptor(condition)
+                    "Function "
+                        + m_formatter.formatFunctionHeadDescriptor(condition)
                         + " is already defined",
                     nullptr
                 );
@@ -689,126 +690,26 @@ IRFunctionHead* SemanticPass::findCallTarget(
     else if (constraintConditions.size() == 0 && !functionTemplates.size() == 0)
     {
         error = "No matching target for function call "
-            + formatCallDescriptor(name, typeArgs, args);
+            + m_formatter.formatCallDescriptor(name, typeArgs, args);
         return nullptr;
     }
     else
     {
         error = "Ambiguous function call "
-            + formatCallDescriptor(name, typeArgs, args);
+            + m_formatter.formatCallDescriptor(name, typeArgs, args);
 
         for (auto c : constraintConditions)
         {
             error += "\n  Candidate: Constraint condition "
-                + formatFunctionHeadDescriptor(c);
+                + m_formatter.formatFunctionHeadDescriptor(c);
         }
 
         for (auto f : functionTemplates)
         {
             error += "\n  Candidate: Function template "
-                + formatFunctionTemplateDescriptor(f);
+                + m_formatter.formatFunctionTemplateDescriptor(f);
         }
 
         return nullptr;
     }
-}
-
-std::string SemanticPass::formatFunctionHeadDescriptor(IRFunctionHead* value)
-{
-    std::stringstream descriptor;
-
-    std::string params;
-    for (auto param : value->params)
-    {
-        params += (params.empty() ? "" : ", ") + param.first + ": "
-            + param.second->toString();
-    }
-
-    descriptor << "(" << params << ")";
-    return descriptor.str();
-}
-
-std::string SemanticPass::formatFunctionTemplateDescriptor(
-    IRFunctionTemplate* value
-)
-{
-    std::stringstream descriptor;
-
-    std::string typeParams;
-    for (auto typeParam : value->typeParams)
-    {
-        typeParams += (typeParams.empty() ? "" : ", ") + typeParam->toString();
-    }
-
-    if (!typeParams.empty())
-        descriptor << "<" << typeParams << ">";
-
-    std::string params;
-    for (auto param : value->params)
-    {
-        params += (params.empty() ? "" : ", ") + param.first + ": "
-            + param.second->toString();
-    }
-
-    descriptor << "(" << params << ")";
-    return descriptor.str();
-}
-
-std::string SemanticPass::formatFunctionInstantiationDescriptor(
-    IRFunctionInstantiation* value
-)
-{
-    std::stringstream descriptor;
-
-    std::string typeArgs;
-    auto zippedTypeArgs = zip_view(
-        std::views::all(value->getInstantiatedFrom()->typeParams),
-        std::views::all(value->typeArgs)
-    );
-    for (auto [typeParam, typeArg] : zippedTypeArgs)
-    {
-        typeArgs += (typeArgs.empty() ? "" : ", ") + typeParam->toString()
-            + " = " + typeArg->toString();
-    }
-
-    if (!typeArgs.empty())
-        descriptor << "<" << typeArgs << ">";
-
-    std::string params;
-    for (auto param : value->params)
-    {
-        params += (params.empty() ? "" : ", ") + param.first + ": "
-            + param.second->toString();
-    }
-
-    descriptor << "(" << params << ")";
-    return descriptor.str();
-}
-
-std::string SemanticPass::formatCallDescriptor(
-    std::string targetName,
-    std::vector<IRType*> const& typeArgs,
-    std::vector<IRType*> const& args
-)
-{
-    std::stringstream descriptor;
-
-    std::string typeArgString;
-    for (auto typeArg : typeArgs)
-    {
-        typeArgString +=
-            (typeArgString.empty() ? "" : ", ") + typeArg->toString();
-    }
-
-    if (!typeArgString.empty())
-        descriptor << "<" << typeArgString << ">";
-
-    std::string argString;
-    for (auto arg : args)
-    {
-        argString += (argString.empty() ? "" : ", ") + arg->toString();
-    }
-
-    descriptor << "(" << argString << ")";
-    return descriptor.str();
 }

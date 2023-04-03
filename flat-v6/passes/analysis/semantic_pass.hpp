@@ -8,6 +8,7 @@
 #include "../../data/operator.hpp"
 #include "../../ir/ir.hpp"
 #include "../../util/error_logger.hpp"
+#include "../support/formatter.hpp"
 #include "../support/instantiator.hpp"
 
 class SemanticPass : IRVisitor<IRType*>
@@ -16,6 +17,7 @@ private:
     ErrorLogger& m_logger;
     CompilationContext& m_compCtx;
     Instantiator m_instantiator;
+    Formatter m_formatter;
 
     IRModule* m_module;
     GraphContext* m_irCtx;
@@ -67,16 +69,5 @@ private:
         std::vector<IRType*> const& typeArgs,
         std::vector<IRType*> const& args,
         std::string& error
-    );
-
-    std::string formatFunctionHeadDescriptor(IRFunctionHead* value);
-    std::string formatFunctionTemplateDescriptor(IRFunctionTemplate* value);
-    std::string formatFunctionInstantiationDescriptor(
-        IRFunctionInstantiation* value
-    );
-    std::string formatCallDescriptor(
-        std::string targetName,
-        std::vector<IRType*> const& typeArgs,
-        std::vector<IRType*> const& args
     );
 };
