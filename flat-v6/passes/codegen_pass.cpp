@@ -518,7 +518,8 @@ llvm::Value* LLVMCodegenPass::visit(IRFunctionInstantiation* node)
 
 llvm::Value* LLVMCodegenPass::visit(IRModule* node)
 {
-    for (auto function : node->functions)
+    for (auto [functionTemplate, function] :
+         node->getEnv()->getFunctionInstantiationMap())
     {
         std::vector<IRType*> params;
         for (auto& [name, type] : function->params)
@@ -551,8 +552,11 @@ llvm::Value* LLVMCodegenPass::visit(IRModule* node)
         }
     }
 
-    for (auto function : node->functions)
+    for (auto [functionTemplate, function] :
+         node->getEnv()->getFunctionInstantiationMap())
+    {
         dispatch(function);
+    }
 
     return nullptr;
 }
