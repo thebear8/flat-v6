@@ -1,6 +1,6 @@
 #pragma once
-#include "../ir/ir.hpp"
-#include "support/instantiator.hpp"
+#include "../../ir/ir.hpp"
+#include "../support/instantiator.hpp"
 
 class ErrorLogger;
 class CompilationContext;

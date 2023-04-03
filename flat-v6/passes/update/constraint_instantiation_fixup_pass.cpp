@@ -1,6 +1,6 @@
 #include "constraint_instantiation_fixup_pass.hpp"
 
-#include "../environment.hpp"
+#include "../../environment.hpp"
 
 void ConstraintInstantiationFixupPass::process(IRModule* node)
 {

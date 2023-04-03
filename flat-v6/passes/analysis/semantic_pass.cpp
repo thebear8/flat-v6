@@ -5,8 +5,8 @@
 #include <ranges>
 #include <sstream>
 
-#include "../util/to_vector.hpp"
-#include "../util/zip_view.hpp"
+#include "../../util/to_vector.hpp"
+#include "../../util/zip_view.hpp"
 
 void SemanticPass::process(IRModule* mod)
 {

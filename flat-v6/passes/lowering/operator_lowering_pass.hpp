@@ -1,12 +1,14 @@
 #pragma once
 #include <ostream>
+#include <string>
+#include <string_view>
 
-#include "../compiler.hpp"
-#include "../data/operator.hpp"
-#include "../ir/ir.hpp"
-#include "../util/error_logger.hpp"
+#include "../../compiler.hpp"
+#include "../../data/operator.hpp"
+#include "../../ir/ir.hpp"
+#include "../../util/error_logger.hpp"
 
-class GenericLoweringPass : IRVisitor<IRNode*>
+class OperatorLoweringPass : protected IRVisitor<IRNode*>
 {
 private:
     ErrorLogger& m_logger;
@@ -17,7 +19,7 @@ private:
     Environment* m_env;
 
 public:
-    GenericLoweringPass(ErrorLogger& logger, CompilationContext& compCtx)
+    OperatorLoweringPass(ErrorLogger& logger, CompilationContext& compCtx)
         : m_logger(logger),
           m_compCtx(compCtx),
           m_module(nullptr),
@@ -26,7 +28,7 @@ public:
     }
 
 public:
-    void process(IRModule* node);
+    void process(IRModule* mod);
 
 private:
     virtual IRNode* visit(IRIntegerExpression* node) override;
@@ -48,14 +50,6 @@ private:
     virtual IRNode* visit(IRWhileStatement* node) override;
     virtual IRNode* visit(IRIfStatement* node) override;
 
-    virtual IRNode* visit(IRFunctionHead* node) override;
+    virtual IRNode* visit(IRFunctionTemplate* node) override;
     virtual IRNode* visit(IRModule* node) override;
-
-private:
-    IRType* inferTypeArg(
-        IRGenericType* typeParam,
-        IRType* genericType,
-        IRType* actualType,
-        SourceRef const& errorLocation
-    );
 };

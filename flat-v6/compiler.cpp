@@ -17,11 +17,11 @@
 
 #include "ast/ast.hpp"
 #include "parser/parser.hpp"
-#include "passes/codegen_pass.hpp"
-#include "passes/module_extraction_pass.hpp"
-#include "passes/operator_lowering_pass.hpp"
-#include "passes/semantic_pass.hpp"
-#include "passes/struct_extraction_pass.hpp"
+#include "passes/analysis/semantic_pass.hpp"
+#include "passes/codegen/codegen_pass.hpp"
+#include "passes/extraction/module_extraction_pass.hpp"
+#include "passes/extraction/struct_extraction_pass.hpp"
+#include "passes/lowering/operator_lowering_pass.hpp"
 #include "util/string_switch.hpp"
 
 CompilationContext::CompilationContext(std::ostream& logStream)

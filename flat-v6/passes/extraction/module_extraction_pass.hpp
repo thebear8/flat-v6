@@ -1,6 +1,6 @@
 #pragma once
-#include "../ast/ast.hpp"
-#include "../compiler.hpp"
+#include "../../ast/ast.hpp"
+#include "../../compiler.hpp"
 
 class ModuleExtractionPass : ASTVisitor<void>
 {

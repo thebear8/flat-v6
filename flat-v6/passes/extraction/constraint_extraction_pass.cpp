@@ -1,7 +1,7 @@
 #include "constraint_extraction_pass.hpp"
 
-#include "../compiler.hpp"
-#include "../ir/ir.hpp"
+#include "../../compiler.hpp"
+#include "../../ir/ir.hpp"
 
 void ConstraintExtractionPass::process(ASTSourceFile* sourceFile)
 {

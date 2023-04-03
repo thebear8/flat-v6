@@ -3,11 +3,11 @@
 #include <cassert>
 #include <ranges>
 
-#include "../compiler.hpp"
-#include "../environment.hpp"
-#include "../util/error_logger.hpp"
-#include "../util/graph_context.hpp"
-#include "../util/string_switch.hpp"
+#include "../../compiler.hpp"
+#include "../../environment.hpp"
+#include "../../util/error_logger.hpp"
+#include "../../util/graph_context.hpp"
+#include "../../util/string_switch.hpp"
 
 IRModule* FunctionPopulationPass::process(ASTSourceFile* sourceFile)
 {

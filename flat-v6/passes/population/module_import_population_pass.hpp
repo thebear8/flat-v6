@@ -1,5 +1,5 @@
 #pragma once
-#include "../ast/ast.hpp"
+#include "../../ast/ast.hpp"
 
 class ErrorLogger;
 class CompilationContext;

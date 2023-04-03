@@ -1,7 +1,7 @@
 #pragma once
-#include "../ast/ast.hpp"
-#include "support/ast_type_resolver.hpp"
-#include "support/instantiator.hpp"
+#include "../../ast/ast.hpp"
+#include "../support/ast_type_resolver.hpp"
+#include "../support/instantiator.hpp"
 
 class IRNode;
 class ErrorLogger;

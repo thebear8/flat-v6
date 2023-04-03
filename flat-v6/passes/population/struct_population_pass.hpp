@@ -1,6 +1,6 @@
 #pragma once
-#include "../ast/ast.hpp"
-#include "support/ast_type_resolver.hpp"
+#include "../../ast/ast.hpp"
+#include "../support/ast_type_resolver.hpp"
 
 class ErrorLogger;
 class CompilationContext;

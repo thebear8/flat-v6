@@ -8,10 +8,10 @@
 #include <string_view>
 #include <unordered_map>
 
-#include "../compiler.hpp"
-#include "../data/operator.hpp"
-#include "../ir/ir.hpp"
-#include "../util/error_logger.hpp"
+#include "../../compiler.hpp"
+#include "../../data/operator.hpp"
+#include "../../ir/ir.hpp"
+#include "../../util/error_logger.hpp"
 
 class LLVMCodegenPass : protected IRVisitor<llvm::Value*>
 {

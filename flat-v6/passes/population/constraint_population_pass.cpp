@@ -1,10 +1,10 @@
 #include "constraint_population_pass.hpp"
 
-#include "../compiler.hpp"
-#include "../environment.hpp"
-#include "../ir/ir.hpp"
-#include "../util/error_logger.hpp"
-#include "../util/graph_context.hpp"
+#include "../../compiler.hpp"
+#include "../../environment.hpp"
+#include "../../ir/ir.hpp"
+#include "../../util/error_logger.hpp"
+#include "../../util/graph_context.hpp"
 
 void ConstraintPopulationPass::process(ASTSourceFile* node)
 {

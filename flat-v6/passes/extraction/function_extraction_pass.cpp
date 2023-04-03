@@ -1,7 +1,7 @@
 #include "function_extraction_pass.hpp"
 
-#include "../compiler.hpp"
-#include "../ir/ir.hpp"
+#include "../../compiler.hpp"
+#include "../../ir/ir.hpp"
 
 void FunctionExtractionPass::process(ASTSourceFile* sourceFile)
 {

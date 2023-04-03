@@ -2,7 +2,7 @@
 
 #include <set>
 
-#include "../compiler.hpp"
+#include "../../compiler.hpp"
 
 void ModuleImportPopulationPass::process(ASTSourceFile* node)
 {

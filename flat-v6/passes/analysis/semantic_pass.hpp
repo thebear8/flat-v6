@@ -4,11 +4,11 @@
 #include <string_view>
 #include <unordered_map>
 
-#include "../compiler.hpp"
-#include "../data/operator.hpp"
-#include "../ir/ir.hpp"
-#include "../util/error_logger.hpp"
-#include "support/instantiator.hpp"
+#include "../../compiler.hpp"
+#include "../../data/operator.hpp"
+#include "../../ir/ir.hpp"
+#include "../../util/error_logger.hpp"
+#include "../support/instantiator.hpp"
 
 class SemanticPass : IRVisitor<IRType*>
 {

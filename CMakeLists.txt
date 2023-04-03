@@ -41,21 +41,21 @@ target_sources(flc PRIVATE
     flat-v6/flat-v6.cpp
     flat-v6/parser/lexer.cpp
     flat-v6/parser/parser.cpp
-    flat-v6/passes/codegen_pass.cpp
-    flat-v6/passes/constraint_extraction_pass.cpp
-    flat-v6/passes/constraint_instantiation_fixup_pass.cpp
-    flat-v6/passes/constraint_population_pass.cpp
-    flat-v6/passes/function_extraction_pass.cpp
-    flat-v6/passes/function_population_pass.cpp
-    flat-v6/passes/generic_lowering_pass.cpp
-    flat-v6/passes/module_extraction_pass.cpp
-    flat-v6/passes/module_import_population_pass.cpp
-    flat-v6/passes/operator_lowering_pass.cpp
-    flat-v6/passes/semantic_pass.cpp
-    flat-v6/passes/struct_extraction_pass.cpp
-    flat-v6/passes/struct_instantiation_fixup_pass.cpp
-    flat-v6/passes/struct_population_pass.cpp
+    flat-v6/passes/analysis/semantic_pass.cpp
+    flat-v6/passes/codegen/codegen_pass.cpp
+    flat-v6/passes/extraction/constraint_extraction_pass.cpp
+    flat-v6/passes/extraction/function_extraction_pass.cpp
+    flat-v6/passes/extraction/module_extraction_pass.cpp
+    flat-v6/passes/extraction/struct_extraction_pass.cpp
+    flat-v6/passes/lowering/generic_lowering_pass.cpp
+    flat-v6/passes/lowering/operator_lowering_pass.cpp
+    flat-v6/passes/population/constraint_population_pass.cpp
+    flat-v6/passes/population/function_population_pass.cpp
+    flat-v6/passes/population/module_import_population_pass.cpp
+    flat-v6/passes/population/struct_population_pass.cpp
     flat-v6/passes/support/ast_type_resolver.cpp
     flat-v6/passes/support/instantiator.cpp
+    flat-v6/passes/update/constraint_instantiation_fixup_pass.cpp
+    flat-v6/passes/update/struct_instantiation_fixup_pass.cpp
     flat-v6/util/error_logger.cpp
 )

@@ -1,6 +1,6 @@
 #include "struct_instantiation_fixup_pass.hpp"
 
-#include "../environment.hpp"
+#include "../../environment.hpp"
 
 void StructInstantiationFixupPass::process(IRModule* node)
 {
