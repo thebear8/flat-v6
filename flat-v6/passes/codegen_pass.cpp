@@ -288,9 +288,12 @@ llvm::Value* LLVMCodegenPass::visit(IRBinaryExpression* node)
 llvm::Value* LLVMCodegenPass::visit(IRCallExpression* node)
 {
     auto target = node->getTarget();
-    assert(target && "Target of call expression is undefined");
+    assert(
+        target && target->isFunctionInstantiation()
+        && "Target of call expression is undefined"
+    );
 
-    auto function = target->getLLVMFunction();
+    auto function = ((IRFunctionInstantiation*)target)->getLLVMFunction();
     assert(
         function
         && "LLVM Function object for target of call expression is undefined"
@@ -467,7 +470,7 @@ llvm::Value* LLVMCodegenPass::visit(IRIfStatement* node)
     return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRFunctionHead* node)
+llvm::Value* LLVMCodegenPass::visit(IRFunctionInstantiation* node)
 {
     auto function = node->getLLVMFunction();
     assert(
