@@ -21,17 +21,20 @@ IRNode* FunctionPopulationPass::visit(ASTIntegerExpression* node)
                      .StartsWith("0b", 2)
                      .Default(10);
 
-    auto value =
-        StringSwitch<std::string>(node->value)
-            .StartsWith(
-                "0x",
-                node->value.substr(std::min<std::size_t>(2, node->value.length()))
-            )
-            .StartsWith(
-                "0b",
-                node->value.substr(std::min<std::size_t>(2, node->value.length()))
-            )
-            .Default(node->value);
+    auto value = StringSwitch<std::string>(node->value)
+                     .StartsWith(
+                         "0x",
+                         node->value.substr(
+                             std::min<std::size_t>(2, node->value.length())
+                         )
+                     )
+                     .StartsWith(
+                         "0b",
+                         node->value.substr(
+                             std::min<std::size_t>(2, node->value.length())
+                         )
+                     )
+                     .Default(node->value);
 
     auto width = StringSwitch<std::size_t>(node->suffix)
                      .EndsWith("8", 8)
@@ -283,7 +286,7 @@ IRNode* FunctionPopulationPass::visit(ASTRequirement* node)
 
 IRNode* FunctionPopulationPass::visit(ASTFunctionDeclaration* node)
 {
-    m_env = &Environment(node->name, m_module->getEnv());
+    m_env = m_irCtx->make(Environment(node->name, m_module->getEnv()));
 
     auto function = node->getIRFunction();
     for (auto typeParam : function->typeParams)

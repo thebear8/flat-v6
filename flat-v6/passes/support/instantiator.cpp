@@ -194,9 +194,9 @@ IRConstraintInstantiation* Instantiator::updateConstraintInstantiation(
     auto constraintTemplate = constraintInstantiation->getInstantiatedFrom();
 
     m_irCtx = constraintTemplate->getParent()->getIrCtx();
-    m_env = &Environment(
+    m_env = m_irCtx->make(Environment(
         constraintTemplate->name, constraintTemplate->getParent()->getEnv()
-    );
+    ));
 
     assert(
         constraintInstantiation->typeArgs.size()
