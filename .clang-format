@@ -1,5 +1,3 @@
-# https://zed0.co.uk/clang-format-configurator/
-
 ---
 BasedOnStyle: Chromium
 AccessModifierOffset: '-4'
@@ -45,7 +43,6 @@ BraceWrapping:
   SplitEmptyFunction: true
   SplitEmptyRecord: true
   SplitEmptyNamespace: true
-
 BreakBeforeTernaryOperators: 'true'
 BreakConstructorInitializers: BeforeColon
 BreakInheritanceList: BeforeColon
