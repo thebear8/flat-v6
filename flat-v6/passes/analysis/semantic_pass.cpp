@@ -118,18 +118,18 @@ IRType* SemanticPass::visit(IRStructExpression* node)
     for (auto const& [name, value] : node->fields)
     {
         auto fieldType = structTemplate->fields.at(name);
-        auto error = m_env->inferTypeArgsAndValidate(
-            fieldType, value->getType(), typeArgs, true
-        );
 
-        if (error.has_value())
+        std::string error;
+        if (!m_env->inferTypeArgsAndMatch(
+                fieldType, value->getType(), typeArgs, true, error
+            ))
         {
             return m_logger.error(
                 node->getLocation(SourceRef()),
                 "Value type for field " + name + " ("
                     + value->getType()->toString()
                     + ") is incompatible with struct field type ("
-                    + fieldType->toString() + "): " + error.value(),
+                    + fieldType->toString() + "): " + error,
                 nullptr
             );
         }
@@ -598,7 +598,7 @@ IRFunctionHead* SemanticPass::findCallTarget(
     std::string const& name,
     std::vector<IRType*> const& typeArgs,
     std::vector<IRType*> const& args,
-    std::string& error
+    optional_ref<std::string> reason
 )
 {
     auto constraintConditions = [&]() {
@@ -687,29 +687,77 @@ IRFunctionHead* SemanticPass::findCallTarget(
     {
         return functionTemplates.front();
     }
-    else if (constraintConditions.size() == 0 && !functionTemplates.size() == 0)
+    else if (constraintConditions.size() == 0 && functionTemplates.size() == 0)
     {
-        error = "No matching target for function call "
-            + m_formatter.formatCallDescriptor(name, typeArgs, args);
+        if (reason.has_value())
+        {
+            reason = "No matching target for function call "
+                + m_formatter.formatCallDescriptor(name, typeArgs, args);
+        }
+
         return nullptr;
     }
     else
     {
-        error = "Ambiguous function call "
-            + m_formatter.formatCallDescriptor(name, typeArgs, args);
-
-        for (auto c : constraintConditions)
+        if (reason.has_value())
         {
-            error += "\n  Candidate: Constraint condition "
-                + m_formatter.formatFunctionHeadDescriptor(c);
-        }
+            reason = "Ambiguous function call "
+                + m_formatter.formatCallDescriptor(name, typeArgs, args);
 
-        for (auto f : functionTemplates)
-        {
-            error += "\n  Candidate: Function template "
-                + m_formatter.formatFunctionTemplateDescriptor(f);
+            for (auto c : constraintConditions)
+            {
+                reason = reason.get() + "\n  Candidate: Constraint condition "
+                    + m_formatter.formatFunctionHeadDescriptor(c);
+            }
+
+            for (auto f : functionTemplates)
+            {
+                reason = reason.get() + "\n  Candidate: Function template "
+                    + m_formatter.formatFunctionTemplateDescriptor(f);
+            }
         }
 
         return nullptr;
     }
+}
+
+bool SemanticPass::isConstraintSatisfied(
+    IRConstraintInstantiation* constraint, optional_ref<std::string> reason
+)
+{
+    for (auto requirement : constraint->requirements)
+    {
+        if (!isConstraintSatisfied(requirement, reason))
+        {
+            if (reason.has_value())
+            {
+                reason = "Requirement "
+                    + m_formatter.formatConstraintInstantiationDescriptor(
+                        requirement
+                    )
+                    + " is not satisfied: " + reason.get();
+            }
+
+            return false;
+        }
+    }
+
+    for (auto condition : constraint->conditions)
+    {
+        auto args =
+            condition->params | std::views::values | range_utils::to_vector;
+        if (!findCallTarget(condition->name, {}, args, reason))
+        {
+            if (reason.has_value())
+            {
+                reason = "No matching target for condition "
+                    + m_formatter.formatConstraintCondition(condition) + ": "
+                    + reason.get();
+            }
+
+            return false;
+        }
+    }
+
+    return true;
 }

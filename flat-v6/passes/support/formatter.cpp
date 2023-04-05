@@ -7,6 +7,7 @@
 std::string Formatter::formatFunctionHeadDescriptor(IRFunctionHead* value)
 {
     std::stringstream descriptor;
+    descriptor << value->name;
 
     std::string params;
     for (auto param : value->params)
@@ -24,6 +25,7 @@ std::string Formatter::formatFunctionTemplateDescriptor(
 )
 {
     std::stringstream descriptor;
+    descriptor << value->name;
 
     std::string typeParams;
     for (auto typeParam : value->typeParams)
@@ -50,6 +52,7 @@ std::string Formatter::formatFunctionInstantiationDescriptor(
 )
 {
     std::stringstream descriptor;
+    descriptor << value->name;
 
     std::string typeArgs;
     auto zippedTypeArgs = zip_view(
@@ -83,6 +86,7 @@ std::string Formatter::formatCallDescriptor(
 )
 {
     std::stringstream descriptor;
+    descriptor << targetName;
 
     std::string typeArgString;
     for (auto typeArg : typeArgs)
@@ -101,5 +105,45 @@ std::string Formatter::formatCallDescriptor(
     }
 
     descriptor << "(" << argString << ")";
+    return descriptor.str();
+}
+
+std::string Formatter::formatConstraintInstantiationDescriptor(
+    IRConstraintInstantiation* value
+)
+{
+    std::stringstream descriptor;
+    descriptor << value->name;
+
+    std::string typeArgs;
+    auto zippedTypeArgs = zip_view(
+        std::views::all(value->getInstantiatedFrom()->typeParams),
+        std::views::all(value->typeArgs)
+    );
+    for (auto [typeParam, typeArg] : zippedTypeArgs)
+    {
+        typeArgs += (typeArgs.empty() ? "" : ", ") + typeParam->toString()
+            + " = " + typeArg->toString();
+    }
+
+    if (!typeArgs.empty())
+        descriptor << "<" << typeArgs << ">";
+
+    return descriptor.str();
+}
+
+std::string Formatter::formatConstraintCondition(IRFunctionHead* value)
+{
+    std::stringstream descriptor;
+    descriptor << value->name;
+
+    std::string params;
+    for (auto param : value->params)
+    {
+        params += (params.empty() ? "" : ", ") + param.first + ": "
+            + param.second->toString();
+    }
+
+    descriptor << "(" << params << ")";
     return descriptor.str();
 }

@@ -4,6 +4,7 @@
 #include <unordered_map>
 
 #include "util/iterable.hpp"
+#include "util/optional_ref.hpp"
 
 namespace llvm
 {
@@ -388,58 +389,22 @@ public:
     /// is a concrete instantiation of @p genericType; \n
     /// @p actualType and @p genericType are both pointer/array types and their
     /// respective base types are compatible; \n
-    /// @note If allowGenericSubtitution is false,
     /// @param genericType The template version of the type in question which
     /// may contain generic types, e.g.vec3<T>
     /// @param actualType The concrete version of the type in question from
     /// which type arguments are to be inferred, e.g. vec3<i32>
     /// @param typeArgs Map of type parameter values
     /// @param allowGenericSubstitution Treat @p actualType and @p genericType
-    /// as compatible if both are generic types
+    /// @param reason Optional ref to reason string. If not nullopt, will be set
+    /// to a description of why the types are incompatible as compatible if both
+    /// are generic types
     /// @return true if @p actualType is compatible with @p genericType
     /// , otherwise false
     bool inferTypeArgsAndMatch(
         IRType* actualType,
         IRType* genericType,
         std::unordered_map<IRGenericType*, IRType*>& typeArgs,
-        bool allowGenericSubstitution
-    );
-
-    /// @brief Validate that @p actualType and @p genericType are compatible.
-    /// @note Compatible is defined as either: \n
-    /// @p actualType is equal to @p genericType; \n
-    /// @p genericType is a generic placeholder type (e.g. T) and @p actualType
-    /// is a concrete type (not a generic placeholder type) (e.g. i32) and @p
-    /// typeArgs either does not yet contain a value for @p genericType or the
-    /// the contained value is the same as @p actualType ; \n
-    /// If @p allowGenericSubstitution == true:
-    /// @p genericType is a generic placeholder type (e.g. T) and @p typeArgs
-    /// either does not yet contain a value for @p genericType or the the
-    /// contained value is the same as @p actualType ; \n
-    /// If @p allowGenericSubstitution == false:
-    /// @p genericType is a generic placeholder type (e.g. T) and @p actualType
-    /// is a concrete type (not a generic placeholder type) (e.g. i32) and
-    /// @p typeArgs either does not yet contain a value for @p genericType or
-    /// the the contained value is the same as @p actualType ; \n
-    /// @p actualType and @p genericType are both struct types and @p actualType
-    /// is a concrete instantiation of @p genericType; \n
-    /// @p actualType and @p genericType are both pointer/array types and their
-    /// respective base types are compatible; \n
-    /// @note If allowGenericSubtitution is false,
-    /// @param genericType The template version of the type in question which
-    /// may contain generic types, e.g.vec3<T>
-    /// @param actualType The concrete version of the type in question from
-    /// which type arguments are to be inferred, e.g. vec3<i32>
-    /// @param typeArgs Map of type parameter values
-    /// @param allowGenericSubstitution Treat @p actualType and @p genericType
-    /// as compatible if both are generic types
-    /// @return std::nullopt if @p actualType is compatible with @p genericType
-    /// , otherwise a string describing why @p actualType is not compatible with
-    /// @p genericType
-    std::optional<std::string> inferTypeArgsAndValidate(
-        IRType* genericType,
-        IRType* actualType,
-        std::unordered_map<IRGenericType*, IRType*>& typeArgs,
-        bool allowGenericSubstitution
+        bool allowGenericSubstitution,
+        optional_ref<std::string> reason = std::nullopt
     );
 };

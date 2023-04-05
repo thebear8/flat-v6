@@ -16,4 +16,9 @@ public:
         std::vector<IRType*> const& typeArgs,
         std::vector<IRType*> const& args
     );
+
+    std::string formatConstraintInstantiationDescriptor(
+        IRConstraintInstantiation* value
+    );
+    std::string formatConstraintCondition(IRFunctionHead* value);
 };

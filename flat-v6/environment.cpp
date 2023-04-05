@@ -433,7 +433,8 @@ bool Environment::inferTypeArgsAndMatch(
     IRType* genericType,
     IRType* actualType,
     std::unordered_map<IRGenericType*, IRType*>& typeArgs,
-    bool allowGenericSubstitution
+    bool allowGenericSubstitution,
+    optional_ref<std::string> reason
 )
 {
     if (actualType == genericType)
@@ -446,37 +447,75 @@ bool Environment::inferTypeArgsAndMatch(
             typeArgs.try_emplace((IRGenericType*)genericType, actualType);
 
         if (typeArgs.at((IRGenericType*)genericType) != actualType)
+        {
+            if (reason.has_value())
+            {
+                reason = "Inconsistent value for type parameter "
+                    + genericType->toString() + ": was "
+                    + typeArgs.at((IRGenericType*)genericType)->toString()
+                    + ", now " + actualType->toString();
+            }
+
             return false;
+        }
 
         return true;
     }
     else if (genericType->isStructInstantiation())
     {
         if (!actualType->isStructInstantiation())
+        {
+            if (reason.has_value())
+            {
+                reason = "Type " + actualType->toString()
+                    + " is not an instantiated struct type";
+            }
+
             return false;
+        }
 
         auto genericInstantiated = (IRStructInstantiation*)genericType;
         auto actualInstantiated = (IRStructInstantiation*)actualType;
 
         if (actualInstantiated->getInstantiatedFrom()
             != genericInstantiated->getInstantiatedFrom())
+        {
+            if (reason.has_value())
+            {
+                reason = "Type " + actualInstantiated->toString()
+                    + " is not an instantiation of "
+                    + genericInstantiated->toString();
+            }
+
             return false;
+        }
 
         if (actualInstantiated->typeArgs.size()
             != genericInstantiated->typeArgs.size())
+        {
+            if (reason.has_value())
+            {
+                reason = "Number of type args of "
+                    + actualInstantiated->toString()
+                    + " does not match number of type args of "
+                    + genericInstantiated->toString();
+            }
+
             return false;
+        }
 
         for (std::size_t i = 0; i < genericInstantiated->typeArgs.size(); i++)
         {
-            auto result = inferTypeArgsAndMatch(
-                genericInstantiated->typeArgs.at(i),
-                actualInstantiated->typeArgs.at(i),
-                typeArgs,
-                allowGenericSubstitution
-            );
-
-            if (!result)
+            if (!inferTypeArgsAndMatch(
+                    genericInstantiated->typeArgs.at(i),
+                    actualInstantiated->typeArgs.at(i),
+                    typeArgs,
+                    allowGenericSubstitution,
+                    reason
+                ))
+            {
                 return false;
+            }
         }
 
         return true;
@@ -484,132 +523,53 @@ bool Environment::inferTypeArgsAndMatch(
     else if (genericType->isPointerType())
     {
         if (!actualType->isPointerType())
+        {
+            if (reason.has_value())
+            {
+                reason =
+                    "Type " + actualType->toString() + " is not a pointer type";
+            }
+
             return false;
+        }
 
         return inferTypeArgsAndMatch(
             ((IRPointerType*)genericType)->base,
             ((IRPointerType*)actualType)->base,
             typeArgs,
-            allowGenericSubstitution
+            allowGenericSubstitution,
+            reason
         );
     }
     else if (genericType->isArrayType())
     {
         if (!actualType->isArrayType())
+        {
+            if (reason.has_value())
+            {
+                reason =
+                    "Type " + actualType->toString() + " is not an array type";
+            }
+
             return false;
+        }
 
         return inferTypeArgsAndMatch(
             ((IRArrayType*)genericType)->base,
             ((IRArrayType*)actualType)->base,
             typeArgs,
-            allowGenericSubstitution
+            allowGenericSubstitution,
+            reason
         );
     }
     else
     {
+        if (reason.has_value())
+        {
+            reason = "Types " + genericType->toString() + " and "
+                + actualType->toString() + " do not match";
+        }
+
         return false;
-    }
-}
-
-std::optional<std::string> Environment::inferTypeArgsAndValidate(
-    IRType* genericType,
-    IRType* actualType,
-    std::unordered_map<IRGenericType*, IRType*>& typeArgs,
-    bool allowGenericSubstitution
-)
-{
-    if (actualType == genericType)
-    {
-        return std::nullopt;
-    }
-    else if (genericType->isGenericType() && (!actualType->isGenericType() || allowGenericSubstitution))
-    {
-        if (!typeArgs.contains((IRGenericType*)genericType))
-            typeArgs.try_emplace((IRGenericType*)genericType, actualType);
-
-        if (typeArgs.at((IRGenericType*)genericType) != actualType)
-        {
-            return "Inconsistent value for type parameter "
-                + genericType->toString() + ": was "
-                + typeArgs.at((IRGenericType*)genericType)->toString()
-                + ", now " + actualType->toString();
-        }
-
-        return std::nullopt;
-    }
-    else if (genericType->isStructInstantiation())
-    {
-        if (!actualType->isStructInstantiation())
-        {
-            return "Type " + actualType->toString()
-                + " is not an instantiated struct type";
-        }
-
-        auto genericInstantiated = (IRStructInstantiation*)genericType;
-        auto actualInstantiated = (IRStructInstantiation*)actualType;
-
-        if (actualInstantiated->getInstantiatedFrom()
-            != genericInstantiated->getInstantiatedFrom())
-        {
-            return "Type " + actualInstantiated->toString()
-                + " is not an instantiation of "
-                + genericInstantiated->toString();
-        }
-
-        if (actualInstantiated->typeArgs.size()
-            != genericInstantiated->typeArgs.size())
-        {
-            return "Number of type args of " + actualInstantiated->toString()
-                + " does not match number of type args of "
-                + genericInstantiated->toString();
-        }
-
-        for (std::size_t i = 0; i < genericInstantiated->typeArgs.size(); i++)
-        {
-            auto result = inferTypeArgsAndValidate(
-                genericInstantiated->typeArgs.at(i),
-                actualInstantiated->typeArgs.at(i),
-                typeArgs,
-                allowGenericSubstitution
-            );
-
-            if (result.has_value())
-                return result;
-        }
-
-        return std::nullopt;
-    }
-    else if (genericType->isPointerType())
-    {
-        if (!actualType->isPointerType())
-        {
-            return "Type " + actualType->toString() + " is not a pointer type";
-        }
-
-        return inferTypeArgsAndValidate(
-            ((IRPointerType*)genericType)->base,
-            ((IRPointerType*)actualType)->base,
-            typeArgs,
-            allowGenericSubstitution
-        );
-    }
-    else if (genericType->isArrayType())
-    {
-        if (!actualType->isArrayType())
-        {
-            return "Type " + actualType->toString() + " is not an array type";
-        }
-
-        return inferTypeArgsAndValidate(
-            ((IRArrayType*)genericType)->base,
-            ((IRArrayType*)actualType)->base,
-            typeArgs,
-            allowGenericSubstitution
-        );
-    }
-    else
-    {
-        return "Types " + genericType->toString() + " and "
-            + actualType->toString() + " do not match";
     }
 }

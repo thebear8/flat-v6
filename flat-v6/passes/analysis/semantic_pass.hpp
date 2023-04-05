@@ -8,6 +8,7 @@
 #include "../../data/operator.hpp"
 #include "../../ir/ir.hpp"
 #include "../../util/error_logger.hpp"
+#include "../../util/optional_ref.hpp"
 #include "../support/formatter.hpp"
 #include "../support/instantiator.hpp"
 
@@ -68,6 +69,11 @@ private:
         std::string const& name,
         std::vector<IRType*> const& typeArgs,
         std::vector<IRType*> const& args,
-        std::string& error
+        optional_ref<std::string> reason = std::nullopt
+    );
+
+    bool isConstraintSatisfied(
+        IRConstraintInstantiation* constraint,
+        optional_ref<std::string> reason = std::nullopt
     );
 };
