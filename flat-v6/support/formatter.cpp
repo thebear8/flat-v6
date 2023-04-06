@@ -2,7 +2,7 @@
 
 #include <sstream>
 
-#include "../../util/zip_view.hpp"
+#include "../util/zip_view.hpp"
 
 std::string Formatter::formatFunctionHeadDescriptor(IRFunctionHead* value)
 {

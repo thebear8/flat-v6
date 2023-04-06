@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 
-#include "../../ir/ir.hpp"
+#include "../ir/ir.hpp"
 
 class Formatter
 {
