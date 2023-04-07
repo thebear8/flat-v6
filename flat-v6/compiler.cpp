@@ -19,9 +19,20 @@
 #include "parser/parser.hpp"
 #include "passes/analysis/semantic_pass.hpp"
 #include "passes/codegen/codegen_pass.hpp"
+#include "passes/extraction/constraint_extraction_pass.hpp"
+#include "passes/extraction/function_extraction_pass.hpp"
 #include "passes/extraction/module_extraction_pass.hpp"
 #include "passes/extraction/struct_extraction_pass.hpp"
 #include "passes/lowering/operator_lowering_pass.hpp"
+#include "passes/population/constraint_population_pass.hpp"
+#include "passes/population/function_population_pass.hpp"
+#include "passes/population/module_import_population_pass.hpp"
+#include "passes/population/struct_population_pass.hpp"
+#include "passes/support/ast_type_resolver.hpp"
+#include "passes/support/instantiator.hpp"
+#include "passes/update/constraint_instantiation_fixup_pass.hpp"
+#include "passes/update/struct_instantiation_fixup_pass.hpp"
+#include "support/formatter.hpp"
 #include "util/string_switch.hpp"
 
 CompilationContext::CompilationContext(std::ostream& logStream)
@@ -118,22 +129,42 @@ void CompilationContext::parseSourceFiles()
 
 void CompilationContext::runPasses()
 {
-    ModuleExtractionPass mep(m_logger, *this, m_irCtx);
-    StructExtractionPass sep(m_logger, *this);
-    SemanticPass sp(m_logger, *this);
-    OperatorLoweringPass olp(m_logger, *this);
+    GraphContext envCtx;
+    Instantiator instantiator(envCtx);
+    ASTTypeResolver resolver(instantiator);
+    Formatter formatter;
 
-    for (auto sf : m_parsedSourceFiles)
-        mep.process(sf);
+    ModuleExtractionPass moduleExtractionPass(m_logger, *this, m_irCtx);
+    ModuleImportPopulationPass moduleImportPopulationPass(m_logger, *this);
 
-    for (auto sf : m_parsedSourceFiles)
-        sep.process(sf);
+    ConstraintExtractionPass constraintExtractionPass(
+        m_logger, *this, resolver
+    );
+    StructExtractionPass structExtractionPass(m_logger, *this);
+    FunctionExtractionPass functionExtractionPass(
+        m_logger, *this, envCtx, resolver
+    );
 
-    for (auto [moduleName, irModule] : m_modules)
-        sp.process(irModule);
+    ConstraintPopulationPass constraintPopulationPass(
+        m_logger, *this, envCtx, resolver, instantiator
+    );
+    StructPopulationPass structPopulationPass(
+        m_logger, *this, envCtx, resolver
+    );
+    FunctionPopulationPass functionPopulationPass(
+        m_logger, *this, envCtx, resolver, instantiator
+    );
 
-    for (auto [moduleName, irModule] : m_modules)
-        olp.process(irModule);
+    SemanticPass semanticPass(m_logger, *this, envCtx, instantiator, formatter);
+
+    ConstraintInstantiationFixupPass constraintInstantiationFixupPass(
+        m_logger, *this, instantiator
+    );
+    StructInstantiationFixupPass structInstantiationFixupPass(
+        m_logger, *this, instantiator
+    );
+
+    OperatorLoweringPass operatorLoweringPass(m_logger, *this);
 }
 
 void CompilationContext::generateCode(
@@ -170,7 +201,12 @@ void CompilationContext::generateCode(
     llvmModule.setDataLayout(targetMachine->createDataLayout());
     llvmModule.setTargetTriple(targetDesc.targetTriple);
 
-    LLVMCodegenPass lcp(m_logger, *this, llvmContext, llvmModule);
+    GraphContext envCtx;
+    llvm::IRBuilder<> llvmBuilder(llvmContext);
+    LLVMCodegenPass lcp(
+        m_logger, *this, envCtx, llvmContext, llvmModule, llvmBuilder
+    );
+
     for (auto [moduleName, irModule] : m_modules)
         lcp.process(irModule);
 
