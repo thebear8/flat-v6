@@ -12,6 +12,10 @@
         "**/.DS_Store": true,
         "**/Thumbs.db": true,
     },
+    "git.ignoredRepositories": [
+        "CLI11",
+        "ordered-map",
+    ],
     "files.associations": {
         "cstdint": "cpp",
         "vector": "cpp",
