@@ -1,0 +1,64 @@
+module vec3
+
+constraint Scalar<T> {
+    fn __add__(a: T, b: T): T,
+    fn __sub__(a: T, b: T): T,
+    fn __mul__(a: T, b: T): T,
+    fn __div__(a: T, b: T): T,
+}
+
+struct vec3<T> {
+    x: T,
+    y: T,
+    z: T,
+}
+
+fn __add__<T>(a: vec3<T>, b: vec3<T>): vec3<T> [Scalar<T>] {
+    return vec3<T> {
+        x: a.x + b.x,
+        y: a.y + b.y,
+        z: a.z + b.z,
+    }
+}
+
+fn __sub__<T>(a: vec3<T>, b: vec3<T>): vec3<T> [Scalar<T>] {
+    return vec3<T> {
+        x: a.x - b.x,
+        y: a.y - b.y,
+        z: a.z - b.z,
+    }
+}
+
+fn dotProduct<T>(a: vec3<T>, b: vec3<T>): T [Scalar<T>] {
+    return (a.x * b.x) + (a.y * b.y) + (a.z * b.z)
+}
+
+fn crossProduct<T>(a: vec3<T>, b: vec3<T>): vec3<T> [Scalar<T>] {
+    return vec3<T> {
+        x: (a.y * b.z) - (a.z * b.y),
+        y: (a.z * b.x) - (a.x * b.z),
+        z: (a.x * b.y) - (a.y * b.x),
+    }
+}
+
+fn main(argc: i32, argv: str[]): i32 {
+    let v1 = vec3<i32> {
+        x: 8,
+        y: 3,
+        z: 9,
+    }
+
+    let v2 = vec3<i32> {
+        x: 2,
+        y: 5,
+        z: 1,
+    }
+    
+    let v3 = v1 + v2
+    let v4 = v1 - v2
+
+    let v5 = dotProduct(v3, v4)
+    let v6 = crossProduct(v3, v4)
+
+    return 0
+}
