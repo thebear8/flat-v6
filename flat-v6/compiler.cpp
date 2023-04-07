@@ -138,19 +138,19 @@ void CompilationContext::runPasses()
     ModuleExtractionPass moduleExtractionPass(m_logger, *this, m_irCtx);
     ModuleImportPopulationPass moduleImportPopulationPass(m_logger, *this);
 
+    StructExtractionPass structExtractionPass(m_logger, *this);
     ConstraintExtractionPass constraintExtractionPass(
         m_logger, *this, resolver
     );
-    StructExtractionPass structExtractionPass(m_logger, *this);
     FunctionExtractionPass functionExtractionPass(
         m_logger, *this, envCtx, resolver
     );
 
-    ConstraintPopulationPass constraintPopulationPass(
-        m_logger, *this, envCtx, resolver, instantiator
-    );
     StructPopulationPass structPopulationPass(
         m_logger, *this, envCtx, resolver
+    );
+    ConstraintPopulationPass constraintPopulationPass(
+        m_logger, *this, envCtx, resolver, instantiator
     );
     FunctionPopulationPass functionPopulationPass(
         m_logger, *this, envCtx, resolver, instantiator
@@ -158,10 +158,10 @@ void CompilationContext::runPasses()
 
     SemanticPass semanticPass(m_logger, *this, envCtx, instantiator, formatter);
 
-    ConstraintInstantiationUpdatePass constraintInstantiationFixupPass(
+    StructInstantiationUpdatePass structInstantiationUpdatePass(
         m_logger, *this, instantiator
     );
-    StructInstantiationUpdatePass structInstantiationFixupPass(
+    ConstraintInstantiationUpdatePass constraintInstantiationUpdatePass(
         m_logger, *this, instantiator
     );
     FunctionInstantiationUpdatePass functionInstantiationUpdatePass(
@@ -169,6 +169,45 @@ void CompilationContext::runPasses()
     );
 
     OperatorLoweringPass operatorLoweringPass(m_logger, *this);
+
+    for (auto sf : m_parsedSourceFiles)
+        moduleExtractionPass.process(sf);
+
+    for (auto sf : m_parsedSourceFiles)
+        moduleImportPopulationPass.process(sf);
+
+    for (auto sf : m_parsedSourceFiles)
+        structExtractionPass.process(sf);
+
+    for (auto sf : m_parsedSourceFiles)
+        constraintExtractionPass.process(sf);
+
+    for (auto sf : m_parsedSourceFiles)
+        functionExtractionPass.process(sf);
+
+    for (auto sf : m_parsedSourceFiles)
+        structPopulationPass.process(sf);
+
+    for (auto sf : m_parsedSourceFiles)
+        constraintPopulationPass.process(sf);
+
+    for (auto sf : m_parsedSourceFiles)
+        functionPopulationPass.process(sf);
+
+    for (auto const& [name, module] : m_modules)
+        semanticPass.process(module);
+
+    for (auto const& [name, module] : m_modules)
+        structInstantiationUpdatePass.process(module);
+
+    for (auto const& [name, module] : m_modules)
+        constraintInstantiationUpdatePass.process(module);
+
+    for (auto const& [name, module] : m_modules)
+        functionInstantiationUpdatePass.process(module);
+
+    for (auto const& [name, module] : m_modules)
+        operatorLoweringPass.process(module);
 }
 
 void CompilationContext::generateCode(
