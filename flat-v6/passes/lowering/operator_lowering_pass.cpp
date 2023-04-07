@@ -269,6 +269,9 @@ IRNode* OperatorLoweringPass::visit(IRFunctionTemplate* node)
 
 IRNode* OperatorLoweringPass::visit(IRModule* node)
 {
+    m_module = node;
+    m_irCtx = node->getIrCtx();
+
     for (auto& function : node->functions)
         function = (IRFunctionTemplate*)dispatch(function);
     return node;
