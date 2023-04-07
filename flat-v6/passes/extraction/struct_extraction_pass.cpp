@@ -18,7 +18,7 @@ void StructExtractionPass::visit(ASTStructDeclaration* node)
     structType->setLocation(node->location);
     m_module->structs.push_back(structType);
 
-    if (!m_env->addStruct(structType))
+    if (!m_module->getEnv()->addStruct(structType))
     {
         return m_logger.error(
             node->location,
@@ -34,7 +34,6 @@ void StructExtractionPass::visit(ASTSourceFile* node)
 {
     m_module = node->getIRModule();
     m_irCtx = m_module->getIrCtx();
-    m_env = m_module->getEnv();
 
     for (auto declaration : node->declarations)
         dispatch(declaration);
