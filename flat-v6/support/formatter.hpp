@@ -14,11 +14,11 @@ public:
     std::string formatCallDescriptor(
         std::string targetName,
         std::vector<IRType*> const& typeArgs,
-        std::vector<IRType*> const& args
+        std::vector<IRType*> const& args,
+        IRType* result = nullptr
     );
 
     std::string formatConstraintInstantiationDescriptor(
         IRConstraintInstantiation* value
     );
-    std::string formatConstraintCondition(IRFunctionHead* value);
 };

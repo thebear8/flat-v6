@@ -69,11 +69,7 @@ private:
         std::string const& name,
         std::vector<IRType*> const& typeArgs,
         std::vector<IRType*> const& args,
-        optional_ref<std::string> reason = std::nullopt
-    );
-
-    bool isConstraintSatisfied(
-        IRConstraintInstantiation* constraint,
+        IRType* result = nullptr,
         optional_ref<std::string> reason = std::nullopt
     );
 };

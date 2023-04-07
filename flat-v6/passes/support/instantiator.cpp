@@ -412,18 +412,19 @@ IRNode* Instantiator::visit(IRIfStatement* node)
 
 IRNode* Instantiator::visit(IRFunctionHead* node)
 {
-    auto params =
-        node->params | std::views::transform([&](auto p) {
-            return std::make_pair(p.first, (IRType*)dispatch(p.second));
-        });
-
+    auto args = node->params | std::views::transform([&](auto const& p) {
+                    return (IRType*)dispatch(p.second);
+                })
+        | range_utils::to_vector;
     auto result = (IRType*)dispatch(node->result);
 
-    return m_irCtx
-        ->make(IRFunctionHead(
-            node->name, std::vector(params.begin(), params.end()), result
-        ))
-        ->setLocation(node->getLocation(SourceRef()));
+    std::vector<IRType*> typeArgs;
+    auto target = m_env->findMatchingFunctionTemplate(
+        node->name, {}, args, result, typeArgs
+    );
+    assert(target && "Target for constraint condition has to exist.");
+
+    return makeFunctionInstantiation(target, typeArgs);
 }
 
 IRNode* Instantiator::visit(IRConstraintInstantiation* node)

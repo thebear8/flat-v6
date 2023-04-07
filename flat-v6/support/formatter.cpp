@@ -17,6 +17,9 @@ std::string Formatter::formatFunctionHeadDescriptor(IRFunctionHead* value)
     }
 
     descriptor << "(" << params << ")";
+    if (value->result)
+        descriptor << ": " << value->result->toString();
+
     return descriptor.str();
 }
 
@@ -44,6 +47,9 @@ std::string Formatter::formatFunctionTemplateDescriptor(
     }
 
     descriptor << "(" << params << ")";
+    if (value->result)
+        descriptor << ": " << value->result->toString();
+
     return descriptor.str();
 }
 
@@ -76,13 +82,17 @@ std::string Formatter::formatFunctionInstantiationDescriptor(
     }
 
     descriptor << "(" << params << ")";
+    if (value->result)
+        descriptor << ": " << value->result->toString();
+
     return descriptor.str();
 }
 
 std::string Formatter::formatCallDescriptor(
     std::string targetName,
     std::vector<IRType*> const& typeArgs,
-    std::vector<IRType*> const& args
+    std::vector<IRType*> const& args,
+    IRType* result
 )
 {
     std::stringstream descriptor;
@@ -105,6 +115,9 @@ std::string Formatter::formatCallDescriptor(
     }
 
     descriptor << "(" << argString << ")";
+    if (result)
+        descriptor << ": " << result->toString();
+
     return descriptor.str();
 }
 
@@ -129,21 +142,5 @@ std::string Formatter::formatConstraintInstantiationDescriptor(
     if (!typeArgs.empty())
         descriptor << "<" << typeArgs << ">";
 
-    return descriptor.str();
-}
-
-std::string Formatter::formatConstraintCondition(IRFunctionHead* value)
-{
-    std::stringstream descriptor;
-    descriptor << value->name;
-
-    std::string params;
-    for (auto param : value->params)
-    {
-        params += (params.empty() ? "" : ", ") + param.first + ": "
-            + param.second->toString();
-    }
-
-    descriptor << "(" << params << ")";
     return descriptor.str();
 }

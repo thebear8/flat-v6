@@ -196,7 +196,7 @@ IRType* SemanticPass::visit(IRUnaryExpression* node)
 
         std::string error;
         auto target = findCallTarget(
-            unaryOperators.at(node->operation).name, {}, args, error
+            unaryOperators.at(node->operation).name, {}, args, nullptr, error
         );
 
         if (!target)
@@ -296,7 +296,7 @@ IRType* SemanticPass::visit(IRBinaryExpression* node)
 
         std::string error;
         auto target = findCallTarget(
-            binaryOperators.at(node->operation).name, {}, args, error
+            binaryOperators.at(node->operation).name, {}, args, nullptr, error
         );
 
         if (!target)
@@ -324,8 +324,9 @@ IRType* SemanticPass::visit(IRCallExpression* node)
             dynamic_cast<IRIdentifierExpression*>(node->expression))
     {
         std::string error;
-        auto target =
-            findCallTarget(identifierExpression->value, {}, args, error);
+        auto target = findCallTarget(
+            identifierExpression->value, {}, args, nullptr, error
+        );
 
         if (!target)
         {
@@ -345,7 +346,7 @@ IRType* SemanticPass::visit(IRCallExpression* node)
         args.insert(args.begin(), dispatch(node->expression));
 
         std::string error;
-        auto target = findCallTarget("__call__", {}, args, error);
+        auto target = findCallTarget("__call__", {}, args, nullptr, error);
 
         if (!target)
         {
@@ -386,7 +387,7 @@ IRType* SemanticPass::visit(IRIndexExpression* node)
         args.insert(args.begin(), value);
 
         std::string error;
-        auto target = findCallTarget("__call__", {}, args, error);
+        auto target = findCallTarget("__call__", {}, args, nullptr, error);
 
         if (!target)
         {
@@ -598,166 +599,43 @@ IRFunctionHead* SemanticPass::findCallTarget(
     std::string const& name,
     std::vector<IRType*> const& typeArgs,
     std::vector<IRType*> const& args,
+    IRType* result,
     optional_ref<std::string> reason
 )
 {
-    auto constraintConditions = [&]() {
-        auto [it, end] = m_env->getConstraintConditionMap().equal_range(name);
-        auto conditions = std::ranges::subrange(it, end) | std::views::values;
+    std::string constraintConditionReason;
+    auto constraintCondition = m_env->findMatchingConstraintCondition(
+        name, args, result, constraintConditionReason
+    );
 
-        return conditions | std::views::filter([&](auto c) {
-                   auto candidateParams = c->params | std::views::values;
-                   return candidateParams.size() == args.size()
-                       && std::ranges::equal(candidateParams, args);
-               })
-            | range_utils::to_vector;
-    }();
+    std::string functionTemplateReason;
+    std::vector<IRType*> functionTemplateTypeArgs;
+    auto functionTemplate = m_env->findMatchingFunctionTemplate(
+        name,
+        typeArgs,
+        args,
+        result,
+        functionTemplateTypeArgs,
+        functionTemplateReason
+    );
 
-    auto nameMatchingFunctionTemplates = [&]() {
-        auto [it, end] = m_env->getFunctionTemplateMap().equal_range(name);
-        return std::ranges::subrange(it, end) | std::views::values;
-    }();
-
-    auto paramCompatibleFunctionTemplates = [&]() {
-        return nameMatchingFunctionTemplates | std::views::filter([&](auto f) {
-                   zip_view zippedTypesArgs(f->typeParams, typeArgs);
-
-                   std::unordered_map typeArgMap(
-                       zippedTypesArgs.begin(), zippedTypesArgs.end()
-                   );
-
-                   zip_view zippedArgs(f->params | std::views::values, args);
-                   for (auto [param, arg] : zippedArgs)
-                   {
-                       if (param != arg
-                           || !m_env->inferTypeArgsAndMatch(
-                               param, arg, typeArgMap, true
-                           ))
-                       {
-                           return false;
-                       }
-                   }
-
-                   for (auto typeParam : f->typeParams)
-                   {
-                       if (!typeArgMap.contains(typeParam))
-                           return false;
-                   }
-
-                   return true;
-               });
-    }();
-
-    auto requirementCompatibleFunctionTemplates = [&]() {
-        return paramCompatibleFunctionTemplates
-            | std::views::filter([&](auto f) {
-                   // TODO: filter by fulfilled requirements
-                   return true;
-               });
-    }();
-
-    auto functionTemplates = [&]() {
-        auto candidates =
-            requirementCompatibleFunctionTemplates
-            | std::views::transform([&](auto f) {
-                  std::unordered_map<IRGenericType*, IRType*> typeArgMap;
-                  zip_view zippedArgs(f->params | std::views::values, args);
-                  for (auto [param, arg] : zippedArgs)
-                      m_env->inferTypeArgsAndMatch(
-                          param, arg, typeArgMap, true
-                      );
-                  return std::pair(f, typeArgMap.size() - typeArgs.size());
-              })
-            | range_utils::to_vector;
-
-        std::ranges::sort(candidates, [](auto const& a, auto const& b) {
-            return a.second > b.second;
-        });
-
-        return candidates | std::views::transform([](auto const& f) {
-                   return f.first;
-               });
-    }();
-
-    if (constraintConditions.size() == 1 && (functionTemplates.size() == 0))
+    if (constraintCondition)
     {
-        return constraintConditions.front();
+        return constraintCondition;
     }
-    else if (constraintConditions.size() == 0 && (functionTemplates.size() > 0))
+    else if (functionTemplate)
     {
-        return functionTemplates.front();
-    }
-    else if (constraintConditions.size() == 0 && functionTemplates.size() == 0)
-    {
-        if (reason.has_value())
-        {
-            reason = "No matching target for function call "
-                + m_formatter.formatCallDescriptor(name, typeArgs, args);
-        }
-
-        return nullptr;
+        return m_instantiator.makeFunctionInstantiation(
+            functionTemplate, typeArgs
+        );
     }
     else
     {
-        if (reason.has_value())
-        {
-            reason = "Ambiguous function call "
-                + m_formatter.formatCallDescriptor(name, typeArgs, args);
-
-            for (auto c : constraintConditions)
-            {
-                reason = reason.get() + "\n  Candidate: Constraint condition "
-                    + m_formatter.formatFunctionHeadDescriptor(c);
-            }
-
-            for (auto f : functionTemplates)
-            {
-                reason = reason.get() + "\n  Candidate: Function template "
-                    + m_formatter.formatFunctionTemplateDescriptor(f);
-            }
-        }
+        reason = "No matching target for function call "
+            + m_formatter.formatCallDescriptor(name, typeArgs, args, result)
+            + ("\n  " + constraintConditionReason)
+            + ("\n  " + functionTemplateReason);
 
         return nullptr;
     }
-}
-
-bool SemanticPass::isConstraintSatisfied(
-    IRConstraintInstantiation* constraint, optional_ref<std::string> reason
-)
-{
-    for (auto requirement : constraint->requirements)
-    {
-        if (!isConstraintSatisfied(requirement, reason))
-        {
-            if (reason.has_value())
-            {
-                reason = "Requirement "
-                    + m_formatter.formatConstraintInstantiationDescriptor(
-                        requirement
-                    )
-                    + " is not satisfied: " + reason.get();
-            }
-
-            return false;
-        }
-    }
-
-    for (auto condition : constraint->conditions)
-    {
-        auto args =
-            condition->params | std::views::values | range_utils::to_vector;
-        if (!findCallTarget(condition->name, {}, args, reason))
-        {
-            if (reason.has_value())
-            {
-                reason = "No matching target for condition "
-                    + m_formatter.formatConstraintCondition(condition) + ": "
-                    + reason.get();
-            }
-
-            return false;
-        }
-    }
-
-    return true;
 }
