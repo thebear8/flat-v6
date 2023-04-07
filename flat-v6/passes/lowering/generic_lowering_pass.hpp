@@ -12,16 +12,13 @@ private:
     ErrorLogger& m_logger;
     CompilationContext& m_compCtx;
 
-    IRModule* m_module;
-    GraphContext* m_irCtx;
-    Environment* m_env;
+    IRModule* m_module = nullptr;
+    GraphContext* m_irCtx = nullptr;
+    Environment* m_env = nullptr;
 
 public:
     GenericLoweringPass(ErrorLogger& logger, CompilationContext& compCtx)
-        : m_logger(logger),
-          m_compCtx(compCtx),
-          m_module(nullptr),
-          m_irCtx(nullptr)
+        : m_logger(logger), m_compCtx(compCtx)
     {
     }
 

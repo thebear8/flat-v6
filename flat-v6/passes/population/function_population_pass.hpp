@@ -11,20 +11,27 @@ class FunctionPopulationPass : ASTVisitor<IRNode*>
 private:
     ErrorLogger& m_logger;
     CompilationContext& m_compCtx;
-    ASTTypeResolver m_resolver;
-    Instantiator m_instantiator;
+    GraphContext& m_envCtx;
+    ASTTypeResolver& m_resolver;
+    Instantiator& m_instantiator;
 
-    IRModule* m_module;
-    GraphContext* m_irCtx;
-    Environment* m_env;
+    IRModule* m_module = nullptr;
+    GraphContext* m_irCtx = nullptr;
+    Environment* m_env = nullptr;
 
 public:
-    FunctionPopulationPass(ErrorLogger& logger, CompilationContext& compCtx)
+    FunctionPopulationPass(
+        ErrorLogger& logger,
+        CompilationContext& compCtx,
+        GraphContext& envCtx,
+        ASTTypeResolver& resolver,
+        Instantiator& instantiator
+    )
         : m_logger(logger),
           m_compCtx(compCtx),
-          m_module(nullptr),
-          m_irCtx(nullptr),
-          m_env(nullptr)
+          m_envCtx(envCtx),
+          m_resolver(resolver),
+          m_instantiator(instantiator)
     {
     }
 

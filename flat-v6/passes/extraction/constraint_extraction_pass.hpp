@@ -12,14 +12,18 @@ class ConstraintExtractionPass : ASTVisitor<void>
 private:
     ErrorLogger& m_logger;
     CompilationContext& m_compCtx;
-    ASTTypeResolver m_resolver;
+    ASTTypeResolver& m_resolver;
 
-    IRModule* m_module;
-    GraphContext* m_irCtx;
+    IRModule* m_module = nullptr;
+    GraphContext* m_irCtx = nullptr;
 
 public:
-    ConstraintExtractionPass(ErrorLogger& logger, CompilationContext& compCtx)
-        : m_logger(logger), m_compCtx(compCtx), m_module(nullptr)
+    ConstraintExtractionPass(
+        ErrorLogger& logger,
+        CompilationContext& compCtx,
+        ASTTypeResolver& resolver
+    )
+        : m_logger(logger), m_compCtx(compCtx), m_resolver(resolver)
     {
     }
 

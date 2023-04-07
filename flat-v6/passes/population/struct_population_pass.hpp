@@ -12,18 +12,24 @@ class StructPopulationPass : ASTVisitor<void>
 private:
     ErrorLogger& m_logger;
     CompilationContext& m_compCtx;
-    ASTTypeResolver m_resolver;
+    GraphContext& m_envCtx;
+    ASTTypeResolver& m_resolver;
 
-    IRModule* m_module;
-    GraphContext* m_irCtx;
-    Environment* m_env;
+    IRModule* m_module = nullptr;
+    GraphContext* m_irCtx = nullptr;
+    Environment* m_env = nullptr;
 
 public:
-    StructPopulationPass(ErrorLogger& logger, CompilationContext& compCtx)
+    StructPopulationPass(
+        ErrorLogger& logger,
+        CompilationContext& compCtx,
+        GraphContext& envCtx,
+        ASTTypeResolver& resolver
+    )
         : m_logger(logger),
           m_compCtx(compCtx),
-          m_module(nullptr),
-          m_env(nullptr)
+          m_envCtx(envCtx),
+          m_resolver(resolver)
     {
     }
 

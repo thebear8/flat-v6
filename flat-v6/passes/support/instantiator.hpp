@@ -7,11 +7,13 @@ class GraphContext;
 class Instantiator : IRVisitor<IRNode*>
 {
 private:
-    Environment* m_env;
-    GraphContext* m_irCtx;
+    GraphContext& m_envCtx;
+
+    Environment* m_env = nullptr;
+    GraphContext* m_irCtx = nullptr;
 
 public:
-    Instantiator() : m_env(nullptr), m_irCtx(nullptr) {}
+    Instantiator(GraphContext& envCtx) : m_envCtx(envCtx) {}
 
     /// @brief Create an empty struct instantiation with only name and typeArgs
     /// set. Add this instantiation to the parent module of the template

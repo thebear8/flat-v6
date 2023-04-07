@@ -17,24 +17,30 @@ class SemanticPass : IRVisitor<IRType*>
 private:
     ErrorLogger& m_logger;
     CompilationContext& m_compCtx;
-    Instantiator m_instantiator;
-    Formatter m_formatter;
+    GraphContext& m_envCtx;
+    Instantiator& m_instantiator;
+    Formatter& m_formatter;
 
-    IRModule* m_module;
-    GraphContext* m_irCtx;
-    Environment* m_env;
+    IRModule* m_module = nullptr;
+    GraphContext* m_irCtx = nullptr;
+    Environment* m_env = nullptr;
 
-    IRType* m_result;
-    IRType* m_expectedResult;
+    IRType* m_result = nullptr;
+    IRType* m_expectedResult = nullptr;
 
 public:
-    SemanticPass(ErrorLogger& logger, CompilationContext& compCtx)
+    SemanticPass(
+        ErrorLogger& logger,
+        CompilationContext& compCtx,
+        GraphContext& envCtx,
+        Instantiator& instantiator,
+        Formatter& formatter
+    )
         : m_logger(logger),
           m_compCtx(compCtx),
-          m_module(nullptr),
-          m_env(nullptr),
-          m_result(nullptr),
-          m_expectedResult(nullptr)
+          m_envCtx(envCtx),
+          m_instantiator(instantiator),
+          m_formatter(formatter)
     {
     }
 

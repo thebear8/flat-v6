@@ -11,9 +11,9 @@ private:
 
 public:
     ModuleExtractionPass(
-        ErrorLogger& logger, CompilationContext& compCtx, GraphContext& memCtx
+        ErrorLogger& logger, CompilationContext& compCtx, GraphContext& irCtx
     )
-        : m_logger(logger), m_compCtx(compCtx), m_irCtx(memCtx)
+        : m_logger(logger), m_compCtx(compCtx), m_irCtx(irCtx)
     {
     }
 

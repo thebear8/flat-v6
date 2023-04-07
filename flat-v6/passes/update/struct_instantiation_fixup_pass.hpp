@@ -12,20 +12,19 @@ class StructInstantiationFixupPass : IRVisitor<void>
 private:
     ErrorLogger& m_logger;
     CompilationContext& m_compCtx;
-    Instantiator m_instantiator;
+    Instantiator& m_instantiator;
 
-    IRModule* m_module;
-    GraphContext* m_irCtx;
-    Environment* m_env;
+    IRModule* m_module = nullptr;
+    GraphContext* m_irCtx = nullptr;
+    Environment* m_env = nullptr;
 
 public:
     StructInstantiationFixupPass(
-        ErrorLogger& logger, CompilationContext& compCtx
+        ErrorLogger& logger,
+        CompilationContext& compCtx,
+        Instantiator& instantiator
     )
-        : m_logger(logger),
-          m_compCtx(compCtx),
-          m_module(nullptr),
-          m_env(nullptr)
+        : m_logger(logger), m_compCtx(compCtx), m_instantiator(instantiator)
     {
     }
 

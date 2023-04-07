@@ -12,13 +12,15 @@ class GraphContext;
 class ASTTypeResolver : ASTVisitor<std::tuple<IRType*, std::string>>
 {
 private:
-    Instantiator m_instantiator;
+    Instantiator& m_instantiator;
 
-    Environment* m_env;
-    GraphContext* m_irCtx;
+    Environment* m_env = nullptr;
+    GraphContext* m_irCtx = nullptr;
 
 public:
-    ASTTypeResolver() : m_env(nullptr), m_irCtx(nullptr) {}
+    ASTTypeResolver(Instantiator& instantiator) : m_instantiator(instantiator)
+    {
+    }
 
 public:
     std::tuple<IRType*, std::string> resolve(
