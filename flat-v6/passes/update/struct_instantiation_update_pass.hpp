@@ -1,13 +1,13 @@
 #pragma once
 #include "../../ir/ir.hpp"
-#include "../support/instantiator.hpp"
 
 class ErrorLogger;
 class CompilationContext;
+class Instantiator;
 class GraphContext;
 class Environment;
 
-class ConstraintInstantiationFixupPass : IRVisitor<void>
+class StructInstantiationUpdatePass : IRVisitor<void>
 {
 private:
     ErrorLogger& m_logger;
@@ -19,7 +19,7 @@ private:
     Environment* m_env = nullptr;
 
 public:
-    ConstraintInstantiationFixupPass(
+    StructInstantiationUpdatePass(
         ErrorLogger& logger,
         CompilationContext& compCtx,
         Instantiator& instantiator

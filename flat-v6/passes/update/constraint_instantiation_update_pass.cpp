@@ -1,13 +1,14 @@
-#include "constraint_instantiation_fixup_pass.hpp"
+#include "constraint_instantiation_update_pass.hpp"
 
 #include "../../environment.hpp"
+#include "../support/instantiator.hpp"
 
-void ConstraintInstantiationFixupPass::process(IRModule* node)
+void ConstraintInstantiationUpdatePass::process(IRModule* node)
 {
     return dispatch(node);
 }
 
-void ConstraintInstantiationFixupPass::visit(IRModule* node)
+void ConstraintInstantiationUpdatePass::visit(IRModule* node)
 {
     for (auto [constraintTemplate, constraintInstantiation] :
          node->getEnv()->getConstraintInstantiationMap())

@@ -55,8 +55,9 @@ target_sources(flc PRIVATE
     flat-v6/passes/population/struct_population_pass.cpp
     flat-v6/passes/support/ast_type_resolver.cpp
     flat-v6/passes/support/instantiator.cpp
-    flat-v6/passes/update/constraint_instantiation_fixup_pass.cpp
-    flat-v6/passes/update/struct_instantiation_fixup_pass.cpp
+    flat-v6/passes/update/constraint_instantiation_update_pass.cpp
+    flat-v6/passes/update/function_instantiation_update_pass.cpp
+    flat-v6/passes/update/struct_instantiation_update_pass.cpp
     flat-v6/support/formatter.cpp
     flat-v6/util/error_logger.cpp
 )

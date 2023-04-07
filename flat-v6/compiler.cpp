@@ -30,8 +30,9 @@
 #include "passes/population/struct_population_pass.hpp"
 #include "passes/support/ast_type_resolver.hpp"
 #include "passes/support/instantiator.hpp"
-#include "passes/update/constraint_instantiation_fixup_pass.hpp"
-#include "passes/update/struct_instantiation_fixup_pass.hpp"
+#include "passes/update/constraint_instantiation_update_pass.hpp"
+#include "passes/update/function_instantiation_update_pass.hpp"
+#include "passes/update/struct_instantiation_update_pass.hpp"
 #include "support/formatter.hpp"
 #include "util/string_switch.hpp"
 
@@ -157,10 +158,13 @@ void CompilationContext::runPasses()
 
     SemanticPass semanticPass(m_logger, *this, envCtx, instantiator, formatter);
 
-    ConstraintInstantiationFixupPass constraintInstantiationFixupPass(
+    ConstraintInstantiationUpdatePass constraintInstantiationFixupPass(
         m_logger, *this, instantiator
     );
-    StructInstantiationFixupPass structInstantiationFixupPass(
+    StructInstantiationUpdatePass structInstantiationFixupPass(
+        m_logger, *this, instantiator
+    );
+    FunctionInstantiationUpdatePass functionInstantiationUpdatePass(
         m_logger, *this, instantiator
     );
 
