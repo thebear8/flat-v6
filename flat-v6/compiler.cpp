@@ -285,7 +285,7 @@ IRModule* CompilationContext::addModule(IRModule* mod)
     if (m_modules.contains(mod->name))
         return nullptr;
 
-    m_modules.try_emplace(mod->name);
+    m_modules.try_emplace(mod->name, mod);
     return m_modules.at(mod->name);
 }
 
