@@ -403,9 +403,14 @@ ASTExpression* Parser::l10()
 
 ASTExpression* Parser::expression()
 {
-    auto e = l10();
+    return l10();
+}
+
+ASTStatement* Parser::expressionStatement(size_t begin)
+{
+    auto e = expression();
     expect(Token::NewLine);
-    return e;
+    return ctx.make(ASTExpressionStatement(SourceRef(id, begin, position), e));
 }
 
 ASTStatement* Parser::blockStatement(std::size_t begin)
@@ -511,10 +516,7 @@ ASTStatement* Parser::statement()
     }
     else
     {
-        auto e = expression();
-        return ctx.make(
-            ASTExpressionStatement(SourceRef(id, begin, position), e)
-        );
+        return expressionStatement(begin);
     }
 }
 

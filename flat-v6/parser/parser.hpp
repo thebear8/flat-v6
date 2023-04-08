@@ -35,6 +35,7 @@ public:
     ASTExpression* l10();
     ASTExpression* expression();
 
+    ASTStatement* expressionStatement(std::size_t begin);
     ASTStatement* blockStatement(std::size_t begin);
     ASTStatement* variableStatement(std::size_t begin);
     ASTStatement* returnStatement(std::size_t begin);
