@@ -558,6 +558,7 @@ ASTConstraintDeclaration* Parser::constraintDeclaration(std::size_t begin)
     while (!match(Token::BraceClose) && !match(Token::Eof))
     {
         auto conditionBegin = trim();
+        expect(Token::Function);
         conditions.push_back(constraintCondition(conditionBegin));
         if (!match(Token::Comma))
         {
