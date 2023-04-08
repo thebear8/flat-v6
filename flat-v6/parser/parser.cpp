@@ -752,12 +752,12 @@ ASTType* Parser::typeName()
 {
     auto begin = trim();
     expect(Token::Identifier);
+    auto name = getTokenValue();
 
     auto typeArgs = typeArgList();
 
-    ASTType* type = ctx.make(
-        ASTNamedType(SourceRef(id, begin, position), getTokenValue(), typeArgs)
-    );
+    ASTType* type =
+        ctx.make(ASTNamedType(SourceRef(id, begin, position), name, typeArgs));
     while (true)
     {
         if (match(Token::Multiply))
