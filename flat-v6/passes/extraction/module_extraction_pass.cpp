@@ -9,17 +9,16 @@ void ModuleExtractionPass::process(ASTSourceFile* node)
 
 void ModuleExtractionPass::visit(ASTSourceFile* node)
 {
-    std::string name;
-    for (auto const& segment : node->modulePath)
-        name += ((name.empty()) ? "" : ".") + segment;
-
-    if (!m_compCtx.getModule(name))
+    if (!m_compCtx.getModule(node->modulePath))
     {
-        auto mod =
-            m_compCtx.addModule(m_irCtx.make(IRModule(name, {}, {}, {}, {})));
+        auto mod = m_compCtx.addModule(
+            m_irCtx.make(IRModule(node->modulePath, {}, {}, {}, {}))
+        );
         mod->setIrCtx(m_irCtx.make(GraphContext()));
-        mod->setEnv(mod->getIrCtx()->make(Environment(name, &m_compCtx)));
+        mod->setEnv(
+            mod->getIrCtx()->make(Environment(node->modulePath, &m_compCtx))
+        );
     }
-    auto mod = m_compCtx.getModule(name);
+    auto mod = m_compCtx.getModule(node->modulePath);
     node->setIRModule(mod);
 }
