@@ -607,6 +607,7 @@ ASTFunctionDeclaration* Parser::functionDeclaration(std::size_t begin)
     expect(Token::Identifier);
     auto name = getTokenValue();
     auto typeParams = typeParamList();
+    auto requirements = requirementList();
 
     std::vector<std::pair<std::string, ASTType*>> parameters;
     expect(Token::ParenOpen);
@@ -625,8 +626,6 @@ ASTFunctionDeclaration* Parser::functionDeclaration(std::size_t begin)
     }
 
     auto result = (match(Token::Colon) ? typeName() : nullptr);
-
-    auto requirements = requirementList();
 
     auto bodyBegin = trim();
     expect(Token::BraceOpen);

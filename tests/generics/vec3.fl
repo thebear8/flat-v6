@@ -13,7 +13,7 @@ struct vec3<T> {
     z: T,
 }
 
-fn __add__<T>(a: vec3<T>, b: vec3<T>): vec3<T> [Scalar<T>] {
+fn __add__<T>[Scalar<T>](a: vec3<T>, b: vec3<T>): vec3<T> {
     return vec3<T> {
         x: a.x + b.x,
         y: a.y + b.y,
@@ -21,7 +21,7 @@ fn __add__<T>(a: vec3<T>, b: vec3<T>): vec3<T> [Scalar<T>] {
     }
 }
 
-fn __sub__<T>(a: vec3<T>, b: vec3<T>): vec3<T> [Scalar<T>] {
+fn __sub__<T>[Scalar<T>](a: vec3<T>, b: vec3<T>): vec3<T> {
     return vec3<T> {
         x: a.x - b.x,
         y: a.y - b.y,
@@ -29,11 +29,11 @@ fn __sub__<T>(a: vec3<T>, b: vec3<T>): vec3<T> [Scalar<T>] {
     }
 }
 
-fn dotProduct<T>(a: vec3<T>, b: vec3<T>): T [Scalar<T>] {
+fn dotProduct<T>[Scalar<T>](a: vec3<T>, b: vec3<T>): T {
     return (a.x * b.x) + (a.y * b.y) + (a.z * b.z)
 }
 
-fn crossProduct<T>(a: vec3<T>, b: vec3<T>): vec3<T> [Scalar<T>] {
+fn crossProduct<T>[Scalar<T>](a: vec3<T>, b: vec3<T>): vec3<T> {
     return vec3<T> {
         x: (a.y * b.z) - (a.z * b.y),
         y: (a.z * b.x) - (a.x * b.z),
