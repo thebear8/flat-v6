@@ -101,6 +101,8 @@ struct IRStringType : public IRType
 {
     virtual std::string toString() override { return "str"; }
     virtual bool isStringType() override { return true; }
+
+    IMPLEMENT_ACCEPT()
 };
 
 struct IRPointerType : public IRType
