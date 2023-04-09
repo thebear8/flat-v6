@@ -13,12 +13,13 @@ void StructExtractionPass::visit(ASTStructDeclaration* node)
     for (auto typeParam : node->typeParams)
         typeParams.push_back(m_irCtx->make(IRGenericType(typeParam)));
 
-    auto structType =
+    auto structTemplate =
         m_irCtx->make(IRStructTemplate(node->name, typeParams, {}));
-    structType->setLocation(node->location);
-    m_module->structs.push_back(structType);
+    structTemplate->setParent(m_module);
+    structTemplate->setLocation(node->location);
+    m_module->structs.push_back(structTemplate);
 
-    if (!m_module->getEnv()->addStruct(structType))
+    if (!m_module->getEnv()->addStruct(structTemplate))
     {
         return m_logger.error(
             node->location,
@@ -27,7 +28,7 @@ void StructExtractionPass::visit(ASTStructDeclaration* node)
         );
     }
 
-    node->setIRStruct(structType);
+    node->setIRStruct(structTemplate);
 }
 
 void StructExtractionPass::visit(ASTSourceFile* node)
