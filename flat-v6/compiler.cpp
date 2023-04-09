@@ -91,14 +91,6 @@ CompilationContext::~CompilationContext()
 
     delete m_void;
     delete m_bool;
-    delete m_i8;
-    delete m_i16;
-    delete m_i32;
-    delete m_i64;
-    delete m_u8;
-    delete m_u16;
-    delete m_u32;
-    delete m_u64;
     delete m_char;
     delete m_string;
 }
