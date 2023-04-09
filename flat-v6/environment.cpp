@@ -5,6 +5,7 @@
 #include <ranges>
 
 #include "ir/ir.hpp"
+#include "util/assert.hpp"
 #include "util/to_vector.hpp"
 #include "util/zip_view.hpp"
 
@@ -398,7 +399,7 @@ IRFunctionTemplate* Environment::getMatchingFunctionTemplate(
         for (auto [param, arg] : zippedArgs)
         {
             if (param != arg
-                || !inferTypeArgsAndMatch(param, arg, typeArgMap, true))
+                && !inferTypeArgsAndMatch(param, arg, typeArgMap, true))
             {
                 return std::pair(false, std::pair((size_t)0, f));
             }
