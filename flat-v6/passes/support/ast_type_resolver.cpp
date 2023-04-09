@@ -63,12 +63,12 @@ std::tuple<IRType*, std::string> ASTTypeResolver::visit(ASTNamedType* node)
         }
         else
         {
-            instantiation = env->addStructInstantiation(
-                structTemplate,
-                m_instantiator.makeStructInstantiation(structTemplate, typeArgs)
+            return std::make_tuple(
+                m_instantiator.makeStructInstantiation(
+                    structTemplate, typeArgs
+                ),
+                ""
             );
-
-            return std::make_tuple(instantiation, "");
         }
     }
     else
