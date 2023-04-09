@@ -35,6 +35,8 @@ struct ASTRequirement : public ASTNode
         : ASTNode(location), constraintName(constraintName), typeArgs(typeArgs)
     {
     }
+
+    IMPLEMENT_ACCEPT()
 };
 
 struct ASTConstraintCondition : public ASTNode
