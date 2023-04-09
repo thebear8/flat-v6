@@ -4,6 +4,8 @@
 #include <llvm/Analysis/LoopAnalysisManager.h>
 #include <llvm/Passes/PassBuilder.h>
 
+#include "../../util/assert.hpp"
+
 void LLVMCodegenPass::process(IRModule* node)
 {
     dispatch(node);
@@ -69,9 +71,9 @@ llvm::Value* LLVMCodegenPass::visit(IRStringExpression* node)
 
 llvm::Value* LLVMCodegenPass::visit(IRIdentifierExpression* node)
 {
-    assert(
-        m_localValues.contains(node->value)
-        && "Undefined local Variable in identifier expression"
+    FLC_ASSERT(
+        m_localValues.contains(node->value),
+        "Undefined local Variable in identifier expression"
     );
     return m_builder.CreateLoad(
         getLLVMType(node->getType()),
@@ -91,7 +93,7 @@ llvm::Value* LLVMCodegenPass::visit(IRStructExpression* node)
     {
         if (!node->fields.contains(fieldName))
         {
-            assert(0 && "No initializer for field in struct expression");
+            FLC_ASSERT(0, "No initializer for field in struct expression");
             throw std::exception();
         }
 
@@ -129,7 +131,7 @@ llvm::Value* LLVMCodegenPass::visit(IRUnaryExpression* node)
     }
     else
     {
-        assert(0 && "Invalid operator in unary expression");
+        FLC_ASSERT(0, "Invalid operator in unary expression");
         return nullptr;
     }
 }
@@ -139,7 +141,7 @@ llvm::Value* LLVMCodegenPass::visit(IRBinaryExpression* node)
     if (dynamic_cast<IRIdentifierExpression*>(node->left))
     {
         auto const& name = ((IRIdentifierExpression*)node->left)->value;
-        assert(m_localValues.contains(name) && "Undefined local variable");
+        FLC_ASSERT(m_localValues.contains(name), "Undefined local variable");
 
         m_builder.CreateStore(dispatch(node->right), m_localValues.at(name));
         return m_builder.CreateLoad(
@@ -276,7 +278,7 @@ llvm::Value* LLVMCodegenPass::visit(IRBinaryExpression* node)
         }
         else
         {
-            assert(0 && "Invalid operator in binary expression");
+            FLC_ASSERT(0, "Invalid operator in binary expression");
             return nullptr;
         }
     }
@@ -285,15 +287,15 @@ llvm::Value* LLVMCodegenPass::visit(IRBinaryExpression* node)
 llvm::Value* LLVMCodegenPass::visit(IRCallExpression* node)
 {
     auto target = node->getTarget();
-    assert(
-        target && target->isFunctionInstantiation()
-        && "Target of call expression is undefined"
+    FLC_ASSERT(
+        target && target->isFunctionInstantiation(),
+        "Target of call expression is undefined"
     );
 
     auto function = ((IRFunctionInstantiation*)target)->getLLVMFunction();
-    assert(
-        function
-        && "LLVM Function object for target of call expression is undefined"
+    FLC_ASSERT(
+        function,
+        "LLVM Function object for target of call expression is undefined"
     );
 
     std::vector<llvm::Value*> args;
@@ -305,18 +307,17 @@ llvm::Value* LLVMCodegenPass::visit(IRCallExpression* node)
 
 llvm::Value* LLVMCodegenPass::visit(IRIndexExpression* node)
 {
-    assert(
-        node->args.size() == 1
-        && "Index expression must have exactly one operand"
+    FLC_ASSERT(
+        node->args.size() == 1, "Index expression must have exactly one operand"
     );
-    assert(
-        node->args.front()->getType()->isIntegerType()
-        && "Index of index expression must be of integer type"
+    FLC_ASSERT(
+        node->args.front()->getType()->isIntegerType(),
+        "Index of index expression must be of integer type"
     );
-    assert(
+    FLC_ASSERT(
         (node->expression->getType()->isArrayType()
-         || node->expression->getType()->isStringType())
-        && "Operand of index expression must be of string or array type"
+         || node->expression->getType()->isStringType()),
+        "Operand of index expression must be of string or array type"
     );
 
     auto fieldTypes = std::vector<llvm::Type*>(
@@ -340,9 +341,9 @@ llvm::Value* LLVMCodegenPass::visit(IRFieldExpression* node)
 {
     auto structType = dynamic_cast<IRStruct*>(node->expression->getType());
 
-    assert(
-        structType->fields.contains(node->fieldName)
-        && "Unknown struct field in field expression"
+    FLC_ASSERT(
+        structType->fields.contains(node->fieldName),
+        "Unknown struct field in field expression"
     );
 
     auto value = m_builder.CreateAlloca(
@@ -384,8 +385,8 @@ llvm::Value* LLVMCodegenPass::visit(IRVariableStatement* node)
 {
     for (auto& [name, value] : node->items)
     {
-        assert(
-            !m_localValues.contains(name) && "Local variable already defined"
+        FLC_ASSERT(
+            !m_localValues.contains(name), "Local variable already defined"
         );
 
         m_localValues.try_emplace(
@@ -471,8 +472,8 @@ llvm::Value* LLVMCodegenPass::visit(IRIfStatement* node)
 llvm::Value* LLVMCodegenPass::visit(IRFunctionInstantiation* node)
 {
     auto function = node->getLLVMFunction();
-    assert(
-        function && "No matching llvm function object for function declaration"
+    FLC_ASSERT(
+        function, "No matching llvm function object for function declaration"
     );
 
     if (!node->body)
@@ -488,9 +489,9 @@ llvm::Value* LLVMCodegenPass::visit(IRFunctionInstantiation* node)
     for (int i = 0; i < node->params.size(); i++)
     {
         auto& [paramName, paramType] = node->params.at(i);
-        assert(
-            !m_localValues.contains(paramName)
-            && "Local variable for parameter already defined"
+        FLC_ASSERT(
+            !m_localValues.contains(paramName),
+            "Local variable for parameter already defined"
         );
 
         m_localValues.try_emplace(
