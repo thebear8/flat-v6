@@ -5,6 +5,7 @@
 #include <ranges>
 #include <sstream>
 
+#include "../../util/assert.hpp"
 #include "../../util/to_vector.hpp"
 #include "../../util/zip_view.hpp"
 
@@ -635,7 +636,7 @@ IRFunctionHead* SemanticPass::findCallTarget(
     else if (functionTemplate)
     {
         return m_instantiator.makeFunctionInstantiation(
-            functionTemplate, typeArgs
+            functionTemplate, functionTemplateTypeArgs
         );
     }
     else
