@@ -18,9 +18,9 @@ using IRTripleDispatchVisitor = triple_dispatch_visitor::TripleDispatchVisitor<
     struct IRCallExpression,
     struct IRIndexExpression,
     struct IRFieldExpression,
-    struct IRBlockStatement,
 
     struct IRStatement,
+    struct IRBlockStatement,
     struct IRExpressionStatement,
     struct IRVariableStatement,
     struct IRReturnStatement,
