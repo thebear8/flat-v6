@@ -543,7 +543,7 @@ IRType* SemanticPass::visit(IRFunctionTemplate* node)
     if (!node->body)
         return nullptr;
 
-    m_env = m_irCtx->make(Environment(node->name, m_env));
+    m_env = m_irCtx->make(Environment(node->name, m_module->getEnv()));
 
     for (auto typeParam : node->typeParams)
         m_env->addTypeParam(typeParam);
@@ -590,8 +590,17 @@ IRType* SemanticPass::visit(IRFunctionTemplate* node)
 
 IRType* SemanticPass::visit(IRModule* node)
 {
-    for (auto& decl : node->functions)
-        dispatch(decl);
+    m_module = node;
+    m_irCtx = node->getIrCtx();
+
+    for (auto const& [name, function] :
+         node->getEnv()->getFunctionTemplateMap())
+    {
+        dispatch(function);
+    }
+
+    m_module = nullptr;
+    m_irCtx = nullptr;
     return nullptr;
 }
 
