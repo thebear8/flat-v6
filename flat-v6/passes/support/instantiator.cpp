@@ -7,6 +7,7 @@
 
 #include "../../compiler.hpp"
 #include "../../ir/ir.hpp"
+#include "../../util/assert.hpp"
 #include "../../util/error_logger.hpp"
 #include "../../util/graph_context.hpp"
 #include "../../util/to_vector.hpp"
@@ -16,9 +17,9 @@ IRStructInstantiation* Instantiator::makeStructInstantiation(
     IRStructTemplate* structTemplate, std::vector<IRType*> const& typeArgs
 )
 {
-    assert(
-        typeArgs.size() == structTemplate->typeParams.size()
-        && "Number of type args has to match number of type params"
+    FLC_ASSERT(
+        typeArgs.size() == structTemplate->typeParams.size(),
+        "Number of type args has to match number of type params"
     );
 
     auto instantiation = structTemplate->getParent()->getIrCtx()->make(
@@ -39,9 +40,9 @@ IRFunctionInstantiation* Instantiator::makeFunctionInstantiation(
     IRFunctionTemplate* functionTemplate, std::vector<IRType*> const& typeArgs
 )
 {
-    assert(
-        typeArgs.size() == functionTemplate->typeParams.size()
-        && "Number of type args has to match number of type params"
+    FLC_ASSERT(
+        typeArgs.size() == functionTemplate->typeParams.size(),
+        "Number of type args has to match number of type params"
     );
 
     Environment env(
@@ -91,9 +92,9 @@ IRConstraintInstantiation* Instantiator::makeConstraintInstantiation(
     std::vector<IRType*> const& typeArgs
 )
 {
-    assert(
-        typeArgs.size() == constraintTemplate->typeParams.size()
-        && "Number of type args has to match number of type params"
+    FLC_ASSERT(
+        typeArgs.size() == constraintTemplate->typeParams.size(),
+        "Number of type args has to match number of type params"
     );
 
     auto instantiation = constraintTemplate->getParent()->getIrCtx()->make(
@@ -116,10 +117,10 @@ IRStructInstantiation* Instantiator::updateStructInstantiation(
 {
     auto structTemplate = structInstantiation->getInstantiatedFrom();
 
-    assert(
+    FLC_ASSERT(
         structInstantiation->typeArgs.size()
-            == structTemplate->typeParams.size()
-        && "Number of type args has to match number of type params"
+            == structTemplate->typeParams.size(),
+        "Number of type args has to match number of type params"
     );
 
     Environment env(
@@ -154,10 +155,10 @@ IRFunctionInstantiation* Instantiator::updateFunctionInstantiation(
 {
     auto functionTemplate = functionInstantiation->getInstantiatedFrom();
 
-    assert(
+    FLC_ASSERT(
         functionInstantiation->typeArgs.size()
-            == functionTemplate->typeParams.size()
-        && "Number of type args has to match number of type params"
+            == functionTemplate->typeParams.size(),
+        "Number of type args has to match number of type params"
     );
 
     Environment env(
@@ -201,10 +202,10 @@ IRConstraintInstantiation* Instantiator::updateConstraintInstantiation(
         constraintTemplate->name, constraintTemplate->getParent()->getEnv()
     ));
 
-    assert(
+    FLC_ASSERT(
         constraintInstantiation->typeArgs.size()
-            == constraintTemplate->typeParams.size()
-        && "Number of type args has to match number of type params"
+            == constraintTemplate->typeParams.size(),
+        "Number of type args has to match number of type params"
     );
 
     auto zippedArgs = zip_view(
@@ -422,7 +423,7 @@ IRNode* Instantiator::visit(IRFunctionHead* node)
     auto target = m_env->findMatchingFunctionTemplate(
         node->name, {}, args, result, typeArgs
     );
-    assert(target && "Target for constraint condition has to exist.");
+    FLC_ASSERT(target, "Target for constraint condition has to exist.");
 
     return makeFunctionInstantiation(target, typeArgs);
 }
