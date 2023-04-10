@@ -503,7 +503,7 @@ IRFunctionTemplate* Environment::findMatchingFunctionTemplate(
     }
     else if (m_parent)
     {
-        return m_parent->getMatchingFunctionTemplate(
+        return m_parent->findMatchingFunctionTemplate(
             name, typeArgs, args, result, inferredTypeArgs, reason
         );
     }
