@@ -3,56 +3,41 @@
 
 class Environment;
 class GraphContext;
+class StructInstantiator;
+class ConstraintInstantiator;
 
-class Instantiator : IRVisitor<IRNode*>
+class FunctionInstantiator : IRVisitor<IRNode*>
 {
 private:
     GraphContext& m_envCtx;
+    StructInstantiator& m_structInstantiator;
+    ConstraintInstantiator& m_constraintInstantiator;
 
     Environment* m_env = nullptr;
     GraphContext* m_irCtx = nullptr;
 
 public:
-    Instantiator(GraphContext& envCtx) : m_envCtx(envCtx) {}
+    FunctionInstantiator(
+        GraphContext& envCtx,
+        StructInstantiator& structInstantiator,
+        ConstraintInstantiator& constraintInstantiator
+    )
+        : m_envCtx(envCtx),
+          m_structInstantiator(structInstantiator),
+          m_constraintInstantiator(constraintInstantiator)
+    {
+    }
 
-    /// @brief Create an empty struct instantiation with only name and typeArgs
-    /// set. Add this instantiation to the parent module of the template
-    /// @param structTemplate The struct template to create an instantiation of
-    /// @param typeArgs The type args of the instantiation
-    /// @return The created struct instantiation
-    IRStructInstantiation* makeStructInstantiation(
-        IRStructTemplate* structTemplate, std::vector<IRType*> const& typeArgs
-    );
-
-    /// @brief Create an empty function instantiation with only name, typeArgs,
-    /// params and result set. Add this instantiation to the parent module of
-    /// the template
-    /// @param functionTemplate The function template to create an instantiation
+    /// @brief Get the instantiation of the given function with the given type
+    /// args. If this instantiation does not yet exist, create it and add it to
+    /// the parent module of the function template.
+    /// @param functionTemplate The function template to get an instantiation
     /// of
     /// @param typeArgs The type args of the instantiation
-    /// @return The created function instantiation
-    IRFunctionInstantiation* makeFunctionInstantiation(
+    /// @return The function instantiation
+    IRFunctionInstantiation* getFunctionInstantiation(
         IRFunctionTemplate* functionTemplate,
         std::vector<IRType*> const& typeArgs
-    );
-
-    /// @brief Create an empty constraint instantiation with only name and
-    /// typeArgs set. Add this instantiation to the parent module of the
-    /// template
-    /// @param constraintTemplate The constraint template to create an
-    /// instantiation of
-    /// @param typeArgs The type args of the instantiation
-    /// @return The created constraint instantiation
-    IRConstraintInstantiation* makeConstraintInstantiation(
-        IRConstraintTemplate* constraintTemplate,
-        std::vector<IRType*> const& typeArgs
-    );
-
-    /// @brief Fully instantiate a struct template
-    /// @param structInstantiation The struct instantiation to update
-    /// @return The updated struct instantiation
-    IRStructInstantiation* updateStructInstantiation(
-        IRStructInstantiation* structInstantiation
     );
 
     /// @brief Fully instantiate a function template
@@ -60,13 +45,6 @@ public:
     /// @return The updated function instantiation
     IRFunctionInstantiation* updateFunctionInstantiation(
         IRFunctionInstantiation* functionInstantiation
-    );
-
-    /// @brief Fully instantiate a constraint template
-    /// @param constraintInstantiation The constraint template to update
-    /// @return The updated constraint instantiation
-    IRConstraintInstantiation* updateConstraintInstantiation(
-        IRConstraintInstantiation* constraintInstantiation
     );
 
 private:

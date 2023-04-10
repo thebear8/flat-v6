@@ -1,4 +1,4 @@
-#include "instantiator.hpp"
+#include "function_instantiator.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -12,31 +12,10 @@
 #include "../../util/graph_context.hpp"
 #include "../../util/to_vector.hpp"
 #include "../../util/zip_view.hpp"
+#include "constraint_instantiator.hpp"
+#include "struct_instantiator.hpp"
 
-IRStructInstantiation* Instantiator::makeStructInstantiation(
-    IRStructTemplate* structTemplate, std::vector<IRType*> const& typeArgs
-)
-{
-    FLC_ASSERT(
-        typeArgs.size() == structTemplate->typeParams.size(),
-        "Number of type args has to match number of type params"
-    );
-
-    auto instantiation = structTemplate->getParent()->getIrCtx()->make(
-        IRStructInstantiation(structTemplate->name, typeArgs, {})
-    );
-
-    instantiation->setInstantiatedFrom(structTemplate);
-    instantiation->setLocation(structTemplate->getLocation(SourceRef()));
-
-    structTemplate->getParent()->getEnv()->addStructInstantiation(
-        structTemplate, instantiation
-    );
-
-    return instantiation;
-}
-
-IRFunctionInstantiation* Instantiator::makeFunctionInstantiation(
+IRFunctionInstantiation* FunctionInstantiator::getFunctionInstantiation(
     IRFunctionTemplate* functionTemplate, std::vector<IRType*> const& typeArgs
 )
 {
@@ -81,68 +60,7 @@ IRFunctionInstantiation* Instantiator::makeFunctionInstantiation(
     return instantiation;
 }
 
-IRConstraintInstantiation* Instantiator::makeConstraintInstantiation(
-    IRConstraintTemplate* constraintTemplate,
-    std::vector<IRType*> const& typeArgs
-)
-{
-    FLC_ASSERT(
-        typeArgs.size() == constraintTemplate->typeParams.size(),
-        "Number of type args has to match number of type params"
-    );
-
-    auto instantiation = constraintTemplate->getParent()->getIrCtx()->make(
-        IRConstraintInstantiation(constraintTemplate->name, typeArgs, {}, {})
-    );
-
-    instantiation->setInstantiatedFrom(constraintTemplate);
-    instantiation->setLocation(constraintTemplate->getLocation(SourceRef()));
-
-    constraintTemplate->getParent()->getEnv()->addConstraintInstantiation(
-        constraintTemplate, instantiation
-    );
-
-    return instantiation;
-}
-
-IRStructInstantiation* Instantiator::updateStructInstantiation(
-    IRStructInstantiation* structInstantiation
-)
-{
-    auto structTemplate = structInstantiation->getInstantiatedFrom();
-
-    FLC_ASSERT(
-        structInstantiation->typeArgs.size()
-            == structTemplate->typeParams.size(),
-        "Number of type args has to match number of type params"
-    );
-
-    m_env = m_envCtx.make(Environment(
-        structTemplate->name, structTemplate->getParent()->getEnv()
-    ));
-    m_irCtx = structTemplate->getParent()->getIrCtx();
-
-    auto zippedTypeArgs = zip_view(
-        std::views::all(structTemplate->typeParams),
-        std::views::all(structInstantiation->typeArgs)
-    );
-
-    for (auto [typeParam, typeArg] : zippedTypeArgs)
-        m_env->addTypeParamValue(typeParam, typeArg);
-
-    auto fields = structTemplate->fields | std::views::transform([&](auto f) {
-                      return std::pair(f.first, (IRType*)dispatch(f.second));
-                  });
-
-    structInstantiation->fields =
-        tsl::ordered_map<std::string, IRType*>(fields.begin(), fields.end());
-
-    m_env = nullptr;
-    m_irCtx = nullptr;
-    return structInstantiation;
-}
-
-IRFunctionInstantiation* Instantiator::updateFunctionInstantiation(
+IRFunctionInstantiation* FunctionInstantiator::updateFunctionInstantiation(
     IRFunctionInstantiation* functionInstantiation
 )
 {
@@ -183,53 +101,7 @@ IRFunctionInstantiation* Instantiator::updateFunctionInstantiation(
     return functionInstantiation;
 }
 
-IRConstraintInstantiation* Instantiator::updateConstraintInstantiation(
-    IRConstraintInstantiation* constraintInstantiation
-)
-{
-    auto constraintTemplate = constraintInstantiation->getInstantiatedFrom();
-
-    m_env = m_envCtx.make(Environment(
-        constraintTemplate->name, constraintTemplate->getParent()->getEnv()
-    ));
-    m_irCtx = constraintTemplate->getParent()->getIrCtx();
-
-    FLC_ASSERT(
-        constraintInstantiation->typeArgs.size()
-            == constraintTemplate->typeParams.size(),
-        "Number of type args has to match number of type params"
-    );
-
-    auto zippedArgs = zip_view(
-        std::views::all(constraintTemplate->typeParams),
-        std::views::all(constraintInstantiation->typeArgs)
-    );
-
-    for (auto [typeParam, typeArg] : zippedArgs)
-        m_env->addTypeParamValue(typeParam, typeArg);
-
-    auto requirements =
-        constraintTemplate->requirements | std::views::transform([&](auto r) {
-            return (IRConstraintInstantiation*)dispatch(r);
-        });
-
-    auto conditions =
-        constraintTemplate->conditions | std::views::transform([&](auto c) {
-            return (IRFunctionHead*)dispatch(c);
-        });
-
-    constraintInstantiation->requirements =
-        std::set(requirements.begin(), requirements.end());
-
-    constraintInstantiation->conditions =
-        std::vector(conditions.begin(), conditions.end());
-
-    m_env = nullptr;
-    m_irCtx = nullptr;
-    return constraintInstantiation;
-}
-
-IRNode* Instantiator::visit(IRIdentifierExpression* node)
+IRNode* FunctionInstantiator::visit(IRIdentifierExpression* node)
 {
     auto type = (IRType*)dispatch(node->getType());
     auto location = node->getLocation(SourceRef());
@@ -245,7 +117,7 @@ IRNode* Instantiator::visit(IRIdentifierExpression* node)
         ->setLocation(location);
 }
 
-IRNode* Instantiator::visit(IRStructExpression* node)
+IRNode* FunctionInstantiator::visit(IRStructExpression* node)
 {
     auto type = (IRType*)dispatch(node->getType());
     auto location = node->getLocation(SourceRef());
@@ -267,7 +139,7 @@ IRNode* Instantiator::visit(IRStructExpression* node)
         ->setLocation(location);
 }
 
-IRNode* Instantiator::visit(IRUnaryExpression* node)
+IRNode* FunctionInstantiator::visit(IRUnaryExpression* node)
 {
     auto type = (IRType*)dispatch(node->getType());
     auto location = node->getLocation(SourceRef());
@@ -280,7 +152,7 @@ IRNode* Instantiator::visit(IRUnaryExpression* node)
         ->setLocation(location);
 }
 
-IRNode* Instantiator::visit(IRBinaryExpression* node)
+IRNode* FunctionInstantiator::visit(IRBinaryExpression* node)
 {
     auto type = (IRType*)dispatch(node->getType());
     auto location = node->getLocation(SourceRef());
@@ -294,7 +166,7 @@ IRNode* Instantiator::visit(IRBinaryExpression* node)
         ->setLocation(location);
 }
 
-IRNode* Instantiator::visit(IRCallExpression* node)
+IRNode* FunctionInstantiator::visit(IRCallExpression* node)
 {
     auto type = (IRType*)dispatch(node->getType());
     auto location = node->getLocation(SourceRef());
@@ -313,7 +185,7 @@ IRNode* Instantiator::visit(IRCallExpression* node)
         ->setLocation(location);
 }
 
-IRNode* Instantiator::visit(IRIndexExpression* node)
+IRNode* FunctionInstantiator::visit(IRIndexExpression* node)
 {
     auto type = (IRType*)dispatch(node->getType());
     auto location = node->getLocation(SourceRef());
@@ -332,7 +204,7 @@ IRNode* Instantiator::visit(IRIndexExpression* node)
         ->setLocation(location);
 }
 
-IRNode* Instantiator::visit(IRFieldExpression* node)
+IRNode* FunctionInstantiator::visit(IRFieldExpression* node)
 {
     auto type = (IRType*)dispatch(node->getType());
     auto expression = (IRExpression*)dispatch(node->expression);
@@ -342,7 +214,7 @@ IRNode* Instantiator::visit(IRFieldExpression* node)
         ->setLocation(node->getLocation(SourceRef()));
 }
 
-IRNode* Instantiator::visit(IRBlockStatement* node)
+IRNode* FunctionInstantiator::visit(IRBlockStatement* node)
 {
     auto statements = node->statements | std::views::transform([&](auto s) {
                           return (IRStatement*)dispatch(s);
@@ -355,7 +227,7 @@ IRNode* Instantiator::visit(IRBlockStatement* node)
         ->setLocation(node->getLocation(SourceRef()));
 }
 
-IRNode* Instantiator::visit(IRExpressionStatement* node)
+IRNode* FunctionInstantiator::visit(IRExpressionStatement* node)
 {
     auto expression = (IRExpression*)dispatch(node->expression);
 
@@ -363,7 +235,7 @@ IRNode* Instantiator::visit(IRExpressionStatement* node)
         ->setLocation(node->getLocation(SourceRef()));
 }
 
-IRNode* Instantiator::visit(IRVariableStatement* node)
+IRNode* FunctionInstantiator::visit(IRVariableStatement* node)
 {
     auto items =
         node->items | std::views::transform([&](auto i) {
@@ -375,7 +247,7 @@ IRNode* Instantiator::visit(IRVariableStatement* node)
         ->setLocation(node->getLocation(SourceRef()));
 }
 
-IRNode* Instantiator::visit(IRReturnStatement* node)
+IRNode* FunctionInstantiator::visit(IRReturnStatement* node)
 {
     auto expression = (IRExpression*)dispatch(node->expression);
 
@@ -383,7 +255,7 @@ IRNode* Instantiator::visit(IRReturnStatement* node)
         ->setLocation(node->getLocation(SourceRef()));
 }
 
-IRNode* Instantiator::visit(IRWhileStatement* node)
+IRNode* FunctionInstantiator::visit(IRWhileStatement* node)
 {
     auto condition = (IRExpression*)dispatch(node->condition);
     auto body = (IRStatement*)dispatch(node->body);
@@ -392,7 +264,7 @@ IRNode* Instantiator::visit(IRWhileStatement* node)
         ->setLocation(node->getLocation(SourceRef()));
 }
 
-IRNode* Instantiator::visit(IRIfStatement* node)
+IRNode* FunctionInstantiator::visit(IRIfStatement* node)
 {
     auto condition = (IRExpression*)dispatch(node->condition);
     auto ifBody = (IRStatement*)dispatch(node->ifBody);
@@ -403,7 +275,7 @@ IRNode* Instantiator::visit(IRIfStatement* node)
         ->setLocation(node->getLocation(SourceRef()));
 }
 
-IRNode* Instantiator::visit(IRFunctionHead* node)
+IRNode* FunctionInstantiator::visit(IRFunctionHead* node)
 {
     auto args = node->params | std::views::transform([&](auto const& p) {
                     return (IRType*)dispatch(p.second);
@@ -417,80 +289,51 @@ IRNode* Instantiator::visit(IRFunctionHead* node)
     );
     FLC_ASSERT(target, "Target for constraint condition has to exist.");
 
-    return makeFunctionInstantiation(target, typeArgs);
+    return getFunctionInstantiation(target, typeArgs);
 }
 
-IRNode* Instantiator::visit(IRConstraintInstantiation* node)
+IRNode* FunctionInstantiator::visit(IRConstraintInstantiation* node)
 {
     auto typeArgs = node->typeArgs | std::views::transform([&](auto a) {
                         return (IRType*)dispatch(a);
-                    });
+                    })
+        | range_utils::to_vector;
 
-    auto constraintTemplate = node->getInstantiatedFrom();
-    auto env = constraintTemplate->getParent()->getEnv();
-
-    auto instantiation = env->findConstraintInstantiation(
-        constraintTemplate, std::vector(typeArgs.begin(), typeArgs.end())
-    );
-
-    if (instantiation)
-        return instantiation;
-
-    return makeConstraintInstantiation(
-        constraintTemplate, std::vector(typeArgs.begin(), typeArgs.end())
+    return m_constraintInstantiator.getConstraintInstantiation(
+        node->getInstantiatedFrom(), typeArgs
     );
 }
 
-IRNode* Instantiator::visit(IRStructInstantiation* node)
+IRNode* FunctionInstantiator::visit(IRStructInstantiation* node)
 {
     auto typeArgs = node->typeArgs | std::views::transform([&](auto arg) {
                         return (IRType*)dispatch(arg);
-                    });
+                    })
+        | range_utils::to_vector;
 
-    auto structTemplate = node->getInstantiatedFrom();
-    auto env = structTemplate->getParent()->getEnv();
-
-    auto instantiation = env->findStructInstantiation(
-        structTemplate, std::vector(typeArgs.begin(), typeArgs.end())
-    );
-
-    if (instantiation)
-        return instantiation;
-
-    return makeStructInstantiation(
-        structTemplate, std::vector(typeArgs.begin(), typeArgs.end())
+    return m_structInstantiator.getStructInstantiation(
+        node->getInstantiatedFrom(), typeArgs
     );
 }
 
-IRNode* Instantiator::visit(IRFunctionInstantiation* node)
+IRNode* FunctionInstantiator::visit(IRFunctionInstantiation* node)
 {
     auto typeArgs = node->typeArgs | std::views::transform([&](auto arg) {
                         return (IRType*)dispatch(arg);
-                    });
+                    })
+        | range_utils::to_vector;
 
-    auto functionTemplate = node->getInstantiatedFrom();
-    auto env = functionTemplate->getParent()->getEnv();
-
-    auto instantiation = env->findFunctionInstantiation(
-        functionTemplate, std::vector(typeArgs.begin(), typeArgs.end())
-    );
-
-    if (instantiation)
-        return instantiation;
-
-    return makeFunctionInstantiation(
-        functionTemplate, std::vector(typeArgs.begin(), typeArgs.end())
-    );
+    return getFunctionInstantiation(node->getInstantiatedFrom(), typeArgs);
 }
 
-IRNode* Instantiator::visit(IRGenericType* node)
+IRNode* FunctionInstantiator::visit(IRGenericType* node)
 {
     if (auto v = m_env->findTypeParamValue(node))
         return v;
     return node;
 }
 
-IRNode* Instantiator::visit(IRPointerType* node)
+IRNode* FunctionInstantiator::visit(IRPointerType* node)
 {
     auto base = (IRType*)dispatch(node->base);
     if (base == node->base)
@@ -499,7 +342,7 @@ IRNode* Instantiator::visit(IRPointerType* node)
     return m_irCtx->make(IRPointerType(base));
 }
 
-IRNode* Instantiator::visit(IRArrayType* node)
+IRNode* FunctionInstantiator::visit(IRArrayType* node)
 {
     auto base = (IRType*)dispatch(node->base);
     if (base == node->base)
