@@ -187,13 +187,13 @@ void CompilationContext::runPasses()
         functionPopulationPass.process(sf);
 
     for (auto const& [name, module] : m_modules)
-        semanticPass.process(module);
-
-    for (auto const& [name, module] : m_modules)
         structInstantiationUpdatePass.process(module);
 
     for (auto const& [name, module] : m_modules)
         constraintInstantiationUpdatePass.process(module);
+
+    for (auto const& [name, module] : m_modules)
+        semanticPass.process(module);
 
     for (auto const& [name, module] : m_modules)
         functionInstantiationUpdatePass.process(module);
