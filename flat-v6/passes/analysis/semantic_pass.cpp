@@ -434,9 +434,14 @@ IRType* SemanticPass::visit(IRFieldExpression* node)
 
 IRType* SemanticPass::visit(IRBlockStatement* node)
 {
+    m_env = m_envCtx.make(
+        Environment("BlockStatement@" + std::to_string((size_t)node), m_env)
+    );
+
     for (auto& statement : node->statements)
         dispatch(statement);
 
+    m_env = m_env->getParent();
     return nullptr;
 }
 
