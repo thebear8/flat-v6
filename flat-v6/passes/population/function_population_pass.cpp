@@ -286,7 +286,7 @@ IRNode* FunctionPopulationPass::visit(ASTRequirement* node)
 
 IRNode* FunctionPopulationPass::visit(ASTFunctionDeclaration* node)
 {
-    m_env = m_irCtx->make(Environment(node->name, m_module->getEnv()));
+    m_env = m_envCtx.make(Environment(node->name, m_module->getEnv()));
 
     auto function = node->getIRFunction();
     for (auto typeParam : function->typeParams)

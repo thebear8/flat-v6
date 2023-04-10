@@ -85,7 +85,7 @@ IRNode* ConstraintPopulationPass::visit(ASTConstraintCondition* node)
 
 IRNode* ConstraintPopulationPass::visit(ASTConstraintDeclaration* node)
 {
-    m_env = m_irCtx->make(Environment(node->name, m_module->getEnv()));
+    m_env = m_envCtx.make(Environment(node->name, m_module->getEnv()));
 
     auto constraint = node->getIRConstraint();
 

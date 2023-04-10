@@ -10,7 +10,7 @@ void FunctionExtractionPass::process(ASTSourceFile* sourceFile)
 
 void FunctionExtractionPass::visit(ASTFunctionDeclaration* node)
 {
-    m_env = m_irCtx->make(Environment(node->name, m_module->getEnv()));
+    m_env = m_envCtx.make(Environment(node->name, m_module->getEnv()));
 
     std::vector<IRGenericType*> typeParams;
     for (auto typeParam : node->typeParams)

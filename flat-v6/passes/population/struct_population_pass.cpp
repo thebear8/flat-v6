@@ -7,7 +7,7 @@
 
 void StructPopulationPass::visit(ASTStructDeclaration* node)
 {
-    m_env = m_irCtx->make(Environment(node->name, m_module->getEnv()));
+    m_env = m_envCtx.make(Environment(node->name, m_module->getEnv()));
 
     auto structTemplate = node->getIRStruct();
 

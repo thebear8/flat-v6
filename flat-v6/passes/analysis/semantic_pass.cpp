@@ -544,7 +544,7 @@ IRType* SemanticPass::visit(IRFunctionTemplate* node)
     if (!node->body)
         return nullptr;
 
-    m_env = m_irCtx->make(Environment(node->name, m_module->getEnv()));
+    m_env = m_envCtx.make(Environment(node->name, m_module->getEnv()));
 
     for (auto typeParam : node->typeParams)
         m_env->addTypeParam(typeParam);
