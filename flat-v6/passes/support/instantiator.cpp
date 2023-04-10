@@ -45,10 +45,9 @@ IRFunctionInstantiation* Instantiator::makeFunctionInstantiation(
         "Number of type args has to match number of type params"
     );
 
-    Environment env(
+    m_env = m_envCtx.make(Environment(
         functionTemplate->name, functionTemplate->getParent()->getEnv()
-    );
-    m_env = &env;
+    ));
     m_irCtx = functionTemplate->getParent()->getIrCtx();
 
     auto zippedTypeArgs = zip_view(
@@ -58,23 +57,16 @@ IRFunctionInstantiation* Instantiator::makeFunctionInstantiation(
     for (auto [typeParam, typeArg] : zippedTypeArgs)
         m_env->addTypeParamValue(typeParam, typeArg);
 
-    auto params =
-        functionTemplate->params | std::views::transform([&](auto const& p) {
-            return std::pair(p.first, (IRType*)dispatch(p.second));
-        });
+    auto params = functionTemplate->params
+        | std::views::transform([&](auto const& p) {
+                      return std::pair(p.first, (IRType*)dispatch(p.second));
+                  })
+        | range_utils::to_vector;
 
     auto result = (IRType*)dispatch(functionTemplate->result);
 
-    m_env = nullptr;
-    m_irCtx = nullptr;
-
     auto instantiation = m_irCtx->make(IRFunctionInstantiation(
-        functionTemplate->name,
-        typeArgs,
-        std::vector(params.begin(), params.end()),
-        result,
-        {},
-        nullptr
+        functionTemplate->name, typeArgs, params, result, {}, nullptr
     ));
 
     instantiation->setInstantiatedFrom(functionTemplate);
@@ -84,6 +76,8 @@ IRFunctionInstantiation* Instantiator::makeFunctionInstantiation(
         functionTemplate, instantiation
     );
 
+    m_env = nullptr;
+    m_irCtx = nullptr;
     return instantiation;
 }
 
@@ -123,10 +117,9 @@ IRStructInstantiation* Instantiator::updateStructInstantiation(
         "Number of type args has to match number of type params"
     );
 
-    Environment env(
+    m_env = m_envCtx.make(Environment(
         structTemplate->name, structTemplate->getParent()->getEnv()
-    );
-    m_env = &env;
+    ));
     m_irCtx = structTemplate->getParent()->getIrCtx();
 
     auto zippedTypeArgs = zip_view(
@@ -161,10 +154,9 @@ IRFunctionInstantiation* Instantiator::updateFunctionInstantiation(
         "Number of type args has to match number of type params"
     );
 
-    Environment env(
+    m_env = m_envCtx.make(Environment(
         functionTemplate->name, functionTemplate->getParent()->getEnv()
-    );
-    m_env = &env;
+    ));
     m_irCtx = functionTemplate->getParent()->getIrCtx();
 
     auto zippedTypeArgs = zip_view(
@@ -197,10 +189,10 @@ IRConstraintInstantiation* Instantiator::updateConstraintInstantiation(
 {
     auto constraintTemplate = constraintInstantiation->getInstantiatedFrom();
 
-    m_irCtx = constraintTemplate->getParent()->getIrCtx();
-    m_env = m_irCtx->make(Environment(
+    m_env = m_envCtx.make(Environment(
         constraintTemplate->name, constraintTemplate->getParent()->getEnv()
     ));
+    m_irCtx = constraintTemplate->getParent()->getIrCtx();
 
     FLC_ASSERT(
         constraintInstantiation->typeArgs.size()
