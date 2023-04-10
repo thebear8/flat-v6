@@ -92,7 +92,6 @@ IRNode* ConstraintPopulationPass::visit(ASTConstraintDeclaration* node)
     for (auto typeParam : constraint->typeParams)
         m_env->addTypeParam(typeParam);
 
-    std::vector<IRConstraintInstantiation*> requirements;
     for (auto requirement : node->requirements)
     {
         auto instantiation = (IRConstraintInstantiation*)dispatch(requirement);
@@ -109,9 +108,8 @@ IRNode* ConstraintPopulationPass::visit(ASTConstraintDeclaration* node)
         constraint->requirements.emplace(instantiation);
     }
 
-    std::vector<IRFunctionHead*> conditions;
     for (auto condition : node->conditions)
-        conditions.push_back((IRFunctionHead*)dispatch(condition));
+        constraint->conditions.push_back((IRFunctionHead*)dispatch(condition));
 
     m_env = nullptr;
     return constraint;
