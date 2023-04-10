@@ -29,7 +29,9 @@
 #include "passes/population/module_import_population_pass.hpp"
 #include "passes/population/struct_population_pass.hpp"
 #include "passes/support/ast_type_resolver.hpp"
-#include "passes/support/instantiator.hpp"
+#include "passes/support/constraint_instantiator.hpp"
+#include "passes/support/function_instantiator.hpp"
+#include "passes/support/struct_instantiator.hpp"
 #include "passes/update/constraint_instantiation_update_pass.hpp"
 #include "passes/update/function_instantiation_update_pass.hpp"
 #include "passes/update/struct_instantiation_update_pass.hpp"
@@ -123,8 +125,12 @@ void CompilationContext::parseSourceFiles()
 void CompilationContext::runPasses()
 {
     GraphContext envCtx;
-    Instantiator instantiator(envCtx);
-    ASTTypeResolver resolver(instantiator);
+    StructInstantiator structInstantiator(envCtx);
+    ConstraintInstantiator constraintInstantiator(envCtx, structInstantiator);
+    FunctionInstantiator functionInstantiator(
+        envCtx, structInstantiator, constraintInstantiator
+    );
+    ASTTypeResolver resolver(structInstantiator);
     Formatter formatter;
 
     ModuleExtractionPass moduleExtractionPass(m_logger, *this, m_irCtx);
@@ -142,22 +148,30 @@ void CompilationContext::runPasses()
         m_logger, *this, envCtx, resolver
     );
     ConstraintPopulationPass constraintPopulationPass(
-        m_logger, *this, envCtx, resolver, instantiator
+        m_logger, *this, envCtx, resolver, constraintInstantiator
     );
     FunctionPopulationPass functionPopulationPass(
-        m_logger, *this, envCtx, resolver, instantiator
+        m_logger, *this, envCtx, resolver, constraintInstantiator
     );
 
-    SemanticPass semanticPass(m_logger, *this, envCtx, instantiator, formatter);
+    SemanticPass semanticPass(
+        m_logger,
+        *this,
+        envCtx,
+        structInstantiator,
+        constraintInstantiator,
+        functionInstantiator,
+        formatter
+    );
 
     StructInstantiationUpdatePass structInstantiationUpdatePass(
-        m_logger, *this, instantiator
+        m_logger, *this, structInstantiator
     );
     ConstraintInstantiationUpdatePass constraintInstantiationUpdatePass(
-        m_logger, *this, instantiator
+        m_logger, *this, constraintInstantiator
     );
     FunctionInstantiationUpdatePass functionInstantiationUpdatePass(
-        m_logger, *this, instantiator
+        m_logger, *this, functionInstantiator
     );
 
     OperatorLoweringPass operatorLoweringPass(m_logger, *this);

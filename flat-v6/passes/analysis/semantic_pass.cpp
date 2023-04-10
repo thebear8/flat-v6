@@ -5,9 +5,15 @@
 #include <ranges>
 #include <sstream>
 
+#include "../../compiler.hpp"
+#include "../../environment.hpp"
+#include "../../support/formatter.hpp"
 #include "../../util/assert.hpp"
 #include "../../util/to_vector.hpp"
 #include "../../util/zip_view.hpp"
+#include "../support/constraint_instantiator.hpp"
+#include "../support/function_instantiator.hpp"
+#include "../support/struct_instantiator.hpp"
 
 void SemanticPass::process(IRModule* mod)
 {
@@ -152,14 +158,9 @@ IRType* SemanticPass::visit(IRStructExpression* node)
         typeArgList.push_back(typeArgs.at(typeParam));
     }
 
-    auto instantiation =
-        m_module->getEnv()->getStructInstantiation(structTemplate, typeArgList);
-
-    if (!instantiation)
-    {
-        instantiation =
-            m_instantiator.makeStructInstantiation(structTemplate, typeArgList);
-    }
+    auto instantiation = m_structInstantiator.getStructInstantiation(
+        structTemplate, typeArgList
+    );
 
     node->setType(instantiation);
     return node->getType();
@@ -640,7 +641,7 @@ IRFunctionHead* SemanticPass::findCallTarget(
     }
     else if (functionTemplate)
     {
-        return m_instantiator.makeFunctionInstantiation(
+        return m_functionInstantiator.getFunctionInstantiation(
             functionTemplate, functionTemplateTypeArgs
         );
     }

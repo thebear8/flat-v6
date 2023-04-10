@@ -3,22 +3,23 @@
 #include <tuple>
 
 #include "../../ast/ast.hpp"
-#include "instantiator.hpp"
 
 class IRType;
 class Environment;
 class GraphContext;
+class StructInstantiator;
 
 class ASTTypeResolver : ASTVisitor<std::tuple<IRType*, std::string>>
 {
 private:
-    Instantiator& m_instantiator;
+    StructInstantiator& m_structInstantiator;
 
     Environment* m_env = nullptr;
     GraphContext* m_irCtx = nullptr;
 
 public:
-    ASTTypeResolver(Instantiator& instantiator) : m_instantiator(instantiator)
+    ASTTypeResolver(StructInstantiator& structInstantiator)
+        : m_structInstantiator(structInstantiator)
     {
     }
 

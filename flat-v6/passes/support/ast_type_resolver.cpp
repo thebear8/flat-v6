@@ -3,6 +3,7 @@
 #include "../../environment.hpp"
 #include "../../ir/ir.hpp"
 #include "../../util/graph_context.hpp"
+#include "struct_instantiator.hpp"
 
 std::tuple<IRType*, std::string> ASTTypeResolver::resolve(
     ASTType* node, Environment* env, GraphContext* irCtx
@@ -54,22 +55,12 @@ std::tuple<IRType*, std::string> ASTTypeResolver::visit(ASTNamedType* node)
         }
 
         auto env = structTemplate->getParent()->getEnv();
-        auto instantiation =
-            env->getStructInstantiation(structTemplate, typeArgs);
-
-        if (instantiation)
-        {
-            return std::make_tuple(instantiation, "");
-        }
-        else
-        {
-            return std::make_tuple(
-                m_instantiator.makeStructInstantiation(
-                    structTemplate, typeArgs
-                ),
-                ""
-            );
-        }
+        return std::tuple(
+            m_structInstantiator.getStructInstantiation(
+                structTemplate, typeArgs
+            ),
+            ""
+        );
     }
     else
     {

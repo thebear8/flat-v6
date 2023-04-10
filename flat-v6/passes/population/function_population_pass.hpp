@@ -1,10 +1,13 @@
 #pragma once
 #include "../../ast/ast.hpp"
-#include "../support/ast_type_resolver.hpp"
-#include "../support/instantiator.hpp"
 
+class IRNode;
 class ErrorLogger;
 class CompilationContext;
+class GraphContext;
+class ASTTypeResolver;
+class ConstraintInstantiator;
+class Environment;
 
 class FunctionPopulationPass : ASTVisitor<IRNode*>
 {
@@ -13,7 +16,7 @@ private:
     CompilationContext& m_compCtx;
     GraphContext& m_envCtx;
     ASTTypeResolver& m_resolver;
-    Instantiator& m_instantiator;
+    ConstraintInstantiator& m_constraintInstantiator;
 
     IRModule* m_module = nullptr;
     GraphContext* m_irCtx = nullptr;
@@ -25,13 +28,13 @@ public:
         CompilationContext& compCtx,
         GraphContext& envCtx,
         ASTTypeResolver& resolver,
-        Instantiator& instantiator
+        ConstraintInstantiator& constraintInstantiator
     )
         : m_logger(logger),
           m_compCtx(compCtx),
           m_envCtx(envCtx),
           m_resolver(resolver),
-          m_instantiator(instantiator)
+          m_constraintInstantiator(constraintInstantiator)
     {
     }
 

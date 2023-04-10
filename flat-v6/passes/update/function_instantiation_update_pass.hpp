@@ -3,7 +3,7 @@
 
 class ErrorLogger;
 class CompilationContext;
-class Instantiator;
+class FunctionInstantiator;
 class GraphContext;
 class Environment;
 
@@ -12,7 +12,7 @@ class FunctionInstantiationUpdatePass : IRVisitor<void>
 private:
     ErrorLogger& m_logger;
     CompilationContext& m_compCtx;
-    Instantiator& m_instantiator;
+    FunctionInstantiator& m_functionInstantiator;
 
     IRModule* m_module = nullptr;
     GraphContext* m_irCtx = nullptr;
@@ -22,9 +22,11 @@ public:
     FunctionInstantiationUpdatePass(
         ErrorLogger& logger,
         CompilationContext& compCtx,
-        Instantiator& instantiator
+        FunctionInstantiator& functionInstantiator
     )
-        : m_logger(logger), m_compCtx(compCtx), m_instantiator(instantiator)
+        : m_logger(logger),
+          m_compCtx(compCtx),
+          m_functionInstantiator(functionInstantiator)
     {
     }
 

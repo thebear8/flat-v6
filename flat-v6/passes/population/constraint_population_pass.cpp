@@ -5,6 +5,8 @@
 #include "../../ir/ir.hpp"
 #include "../../util/error_logger.hpp"
 #include "../../util/graph_context.hpp"
+#include "../support/ast_type_resolver.hpp"
+#include "../support/constraint_instantiator.hpp"
 
 void ConstraintPopulationPass::process(ASTSourceFile* node)
 {
@@ -43,18 +45,9 @@ IRNode* ConstraintPopulationPass::visit(ASTRequirement* node)
         typeArgs.push_back(irType);
     }
 
-    auto instantiation =
-        m_env->findConstraintInstantiation(constraint, typeArgs);
-
-    if (!instantiation)
-    {
-        instantiation = m_env->addConstraintInstantiation(
-            constraint,
-            m_instantiator.makeConstraintInstantiation(constraint, typeArgs)
-        );
-    }
-
-    return instantiation;
+    return m_constraintInstantiator.getConstraintInstantiation(
+        constraint, typeArgs
+    );
 }
 
 IRNode* ConstraintPopulationPass::visit(ASTConstraintCondition* node)

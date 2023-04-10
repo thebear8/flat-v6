@@ -1,7 +1,7 @@
 #include "struct_instantiation_update_pass.hpp"
 
 #include "../../environment.hpp"
-#include "../support/instantiator.hpp"
+#include "../support/struct_instantiator.hpp"
 
 void StructInstantiationUpdatePass::process(IRModule* node)
 {
@@ -13,6 +13,6 @@ void StructInstantiationUpdatePass::visit(IRModule* node)
     for (auto [structTemplate, structInstantiation] :
          node->getEnv()->getStructInstantiationMap())
     {
-        m_instantiator.updateStructInstantiation(structInstantiation);
+        m_structInstantiator.updateStructInstantiation(structInstantiation);
     }
 }

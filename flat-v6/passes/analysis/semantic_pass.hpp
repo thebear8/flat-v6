@@ -4,13 +4,16 @@
 #include <string_view>
 #include <unordered_map>
 
-#include "../../compiler.hpp"
-#include "../../data/operator.hpp"
 #include "../../ir/ir.hpp"
-#include "../../support/formatter.hpp"
-#include "../../util/error_logger.hpp"
 #include "../../util/optional_ref.hpp"
-#include "../support/instantiator.hpp"
+
+class ErrorLogger;
+class CompilationContext;
+class GraphContext;
+class StructInstantiator;
+class ConstraintInstantiator;
+class FunctionInstantiator;
+class Formatter;
 
 class SemanticPass : IRVisitor<IRType*>
 {
@@ -18,7 +21,9 @@ private:
     ErrorLogger& m_logger;
     CompilationContext& m_compCtx;
     GraphContext& m_envCtx;
-    Instantiator& m_instantiator;
+    StructInstantiator& m_structInstantiator;
+    ConstraintInstantiator& m_constraintInstantiator;
+    FunctionInstantiator& m_functionInstantiator;
     Formatter& m_formatter;
 
     IRModule* m_module = nullptr;
@@ -33,13 +38,17 @@ public:
         ErrorLogger& logger,
         CompilationContext& compCtx,
         GraphContext& envCtx,
-        Instantiator& instantiator,
+        StructInstantiator& structInstantiator,
+        ConstraintInstantiator& constraintInstantiator,
+        FunctionInstantiator& functionInstantiator,
         Formatter& formatter
     )
         : m_logger(logger),
           m_compCtx(compCtx),
           m_envCtx(envCtx),
-          m_instantiator(instantiator),
+          m_structInstantiator(structInstantiator),
+          m_constraintInstantiator(constraintInstantiator),
+          m_functionInstantiator(functionInstantiator),
           m_formatter(formatter)
     {
     }
