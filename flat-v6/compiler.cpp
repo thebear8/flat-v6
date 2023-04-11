@@ -29,7 +29,9 @@
 #include "passes/population/module_import_population_pass.hpp"
 #include "passes/population/struct_population_pass.hpp"
 #include "passes/support/ast_type_resolver.hpp"
+#include "passes/support/call_target_resolver.hpp"
 #include "passes/support/constraint_instantiator.hpp"
+#include "passes/support/function_body_instantiator.hpp"
 #include "passes/support/function_instantiator.hpp"
 #include "passes/support/struct_instantiator.hpp"
 #include "passes/update/constraint_instantiation_update_pass.hpp"
@@ -125,33 +127,40 @@ void CompilationContext::parseSourceFiles()
 void CompilationContext::runPasses()
 {
     GraphContext envCtx;
+    Formatter formatter;
+
     StructInstantiator structInstantiator(envCtx);
     ConstraintInstantiator constraintInstantiator(envCtx, structInstantiator);
     FunctionInstantiator functionInstantiator(
         envCtx, structInstantiator, constraintInstantiator
     );
-    ASTTypeResolver resolver(structInstantiator);
-    Formatter formatter;
+
+    CallTargetResolver callTargetResolver(functionInstantiator, formatter);
+
+    FunctionBodyInstantiator functionBodyInstantiator(
+        envCtx, structInstantiator, functionInstantiator, callTargetResolver
+    );
+    ASTTypeResolver astTypeResolver(structInstantiator);
 
     ModuleExtractionPass moduleExtractionPass(m_logger, *this, m_irCtx);
     ModuleImportPopulationPass moduleImportPopulationPass(m_logger, *this);
 
     StructExtractionPass structExtractionPass(m_logger, *this);
     ConstraintExtractionPass constraintExtractionPass(
-        m_logger, *this, resolver
+        m_logger, *this, astTypeResolver
     );
     FunctionExtractionPass functionExtractionPass(
-        m_logger, *this, envCtx, resolver
+        m_logger, *this, envCtx, astTypeResolver
     );
 
     StructPopulationPass structPopulationPass(
-        m_logger, *this, envCtx, resolver
+        m_logger, *this, envCtx, astTypeResolver
     );
     ConstraintPopulationPass constraintPopulationPass(
-        m_logger, *this, envCtx, resolver, constraintInstantiator
+        m_logger, *this, envCtx, astTypeResolver, constraintInstantiator
     );
     FunctionPopulationPass functionPopulationPass(
-        m_logger, *this, envCtx, resolver, constraintInstantiator
+        m_logger, *this, envCtx, astTypeResolver, constraintInstantiator
     );
 
     SemanticPass semanticPass(
@@ -161,6 +170,7 @@ void CompilationContext::runPasses()
         structInstantiator,
         constraintInstantiator,
         functionInstantiator,
+        callTargetResolver,
         formatter
     );
 
@@ -171,7 +181,7 @@ void CompilationContext::runPasses()
         m_logger, *this, constraintInstantiator
     );
     FunctionInstantiationUpdatePass functionInstantiationUpdatePass(
-        m_logger, *this, functionInstantiator
+        m_logger, *this, functionInstantiator, functionBodyInstantiator
     );
 
     OperatorLoweringPass operatorLoweringPass(m_logger, *this);

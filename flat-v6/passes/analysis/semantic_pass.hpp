@@ -13,6 +13,7 @@ class GraphContext;
 class StructInstantiator;
 class ConstraintInstantiator;
 class FunctionInstantiator;
+class CallTargetResolver;
 class Formatter;
 
 class SemanticPass : IRVisitor<IRType*>
@@ -24,6 +25,7 @@ private:
     StructInstantiator& m_structInstantiator;
     ConstraintInstantiator& m_constraintInstantiator;
     FunctionInstantiator& m_functionInstantiator;
+    CallTargetResolver& m_callTargetResolver;
     Formatter& m_formatter;
 
     IRModule* m_module = nullptr;
@@ -41,6 +43,7 @@ public:
         StructInstantiator& structInstantiator,
         ConstraintInstantiator& constraintInstantiator,
         FunctionInstantiator& functionInstantiator,
+        CallTargetResolver& callTargetResolver,
         Formatter& formatter
     )
         : m_logger(logger),
@@ -49,6 +52,7 @@ public:
           m_structInstantiator(structInstantiator),
           m_constraintInstantiator(constraintInstantiator),
           m_functionInstantiator(functionInstantiator),
+          m_callTargetResolver(callTargetResolver),
           m_formatter(formatter)
     {
     }

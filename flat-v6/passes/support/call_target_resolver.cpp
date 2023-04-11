@@ -1,11 +1,14 @@
 #include "call_target_resolver.hpp"
 
+#include <set>
+
 #include "../../environment.hpp"
 #include "../../support/formatter.hpp"
 #include "../../util/assert.hpp"
 #include "../../util/graph_context.hpp"
 #include "../../util/to_vector.hpp"
 #include "../../util/zip_view.hpp"
+#include "function_instantiator.hpp"
 
 IRFunctionHead* CallTargetResolver::getMatchingConstraintCondition(
     Environment* env,
@@ -85,6 +88,62 @@ IRFunctionHead* CallTargetResolver::findMatchingConstraintCondition(
     }
 }
 
+std::optional<std::pair<std::vector<IRType*>, IRFunctionTemplate*>>
+CallTargetResolver::matchFunctionTemplate(
+    IRFunctionTemplate* functionTemplate,
+    std::vector<IRType*> const& typeArgs,
+    std::vector<IRType*> const& args,
+    IRType* result
+)
+{
+    zip_view zippedTypeArgs(functionTemplate->typeParams, typeArgs);
+    std::unordered_map typeArgMap(zippedTypeArgs.begin(), zippedTypeArgs.end());
+
+    zip_view zippedArgs(functionTemplate->params | std::views::values, args);
+    for (auto [param, arg] : zippedArgs)
+    {
+        if (param != arg
+            && !Environment::inferTypeArgsAndMatch(
+                param, arg, typeArgMap, true
+            ))
+        {
+            return std::nullopt;
+        }
+    }
+
+    std::vector<IRType*> typeArgList;
+    for (auto typeParam : functionTemplate->typeParams)
+    {
+        if (!typeArgMap.contains(typeParam))
+            return std::nullopt;
+
+        typeArgList.push_back(typeArgMap.at(typeParam));
+    }
+
+    return std::pair(typeArgList, functionTemplate);
+}
+
+bool CallTargetResolver::checkRequirements(
+    Environment* env,
+    IRFunctionTemplate* functionTemplate,
+    std::vector<IRType*> const& typeArgs
+)
+{
+    auto functionInstantiation =
+        m_functionInstantiator.getFunctionInstantiation(
+            functionTemplate, typeArgs
+        );
+    m_functionInstantiator.updateRequirements(functionInstantiation);
+
+    for (auto r : functionInstantiation->requirements)
+    {
+        if (!isConstraintSatisfied(env, r))
+            return false;
+    }
+
+    return true;
+}
+
 IRFunctionTemplate* CallTargetResolver::getMatchingFunctionTemplate(
     Environment* env,
     std::string const& name,
@@ -95,60 +154,26 @@ IRFunctionTemplate* CallTargetResolver::getMatchingFunctionTemplate(
     optional_ref<std::string> reason
 )
 {
-    auto matchFunctionTemplate =
-        [&](IRFunctionTemplate* f,
-            optional_ref<std::vector<IRType*>> inferredTypeArgs =
-                std::nullopt) {
-        zip_view zippedTypeArgs(f->typeParams, typeArgs);
-        std::unordered_map typeArgMap(
-            zippedTypeArgs.begin(), zippedTypeArgs.end()
-        );
-
-        zip_view zippedArgs(f->params | std::views::values, args);
-        for (auto [param, arg] : zippedArgs)
-        {
-            if (param != arg
-                && !env->inferTypeArgsAndMatch(param, arg, typeArgMap, true))
-            {
-                return std::pair(false, std::pair((size_t)0, f));
-            }
-        }
-
-        for (auto typeParam : f->typeParams)
-        {
-            if (!typeArgMap.contains(typeParam))
-                return std::pair(false, std::pair((size_t)0, f));
-
-            if (inferredTypeArgs.has_value())
-                inferredTypeArgs.get().push_back(typeArgMap.at(typeParam));
-        }
-
-        return std::pair(true, std::pair(typeArgMap.size(), f));
-    };
-
     auto [it, end] = env->getFunctionTemplateMap().equal_range(name);
-    auto candidates = std::ranges::subrange(it, end) | std::views::values
-        | std::views::filter([&](auto f) {
-                          return (typeArgs.size() <= f->typeParams.size())
-                              && (args.size() == f->params.size());
-                      })
-        | std::views::transform([&](auto f) {
-                          return matchFunctionTemplate(f);
-                      })
+    auto candidates =
+        std::ranges::subrange(it, end) | std::views::values
+        | std::views::filter([&](IRFunctionTemplate* f) {
+              return (typeArgs.size() <= f->typeParams.size())
+                  && (args.size() == f->params.size());
+          })
+        | std::views::transform([&](IRFunctionTemplate* f) {
+              return matchFunctionTemplate(f, typeArgs, args, result);
+          })
         | std::views::filter([&](auto const& f) {
-                          return f.first;
-                      })
+              return f.has_value();
+          })
         | std::views::transform([&](auto const& f) {
-                          return f.second;
-                      });
-
-    auto candidatesVec = candidates | range_utils::to_vector;
+              return f.value();
+          });
 
     auto requirementCompatibleCandidates =
         candidates | std::views::filter([&](auto const& f) {
-            return std::ranges::all_of(f.second->requirements, [&](auto r) {
-                return isConstraintSatisfied(env, r);
-            });
+            return checkRequirements(env, f.second, f.first);
         })
         | range_utils::to_vector;
 
@@ -168,15 +193,19 @@ IRFunctionTemplate* CallTargetResolver::getMatchingFunctionTemplate(
     std::ranges::sort(
         requirementCompatibleCandidates,
         [](auto const& a, auto const& b) {
-        return a.second > b.second;
+        return a.first.size() > b.first.size();
         });
 
-    std::unordered_multimap functionTemplateMap(
-        requirementCompatibleCandidates.begin(),
-        requirementCompatibleCandidates.end()
-    );
+    std::multiset<size_t> substitutionCount;
+    for (auto const& [typeArgs, functionTemplate] :
+         requirementCompatibleCandidates)
+    {
+        substitutionCount.emplace(typeArgs.size());
+    }
 
-    if (functionTemplateMap.count(requirementCompatibleCandidates.front().first)
+    if (substitutionCount.count(
+            requirementCompatibleCandidates.front().first.size()
+        )
         > 1)
     {
         if (reason.has_value())
@@ -190,11 +219,13 @@ IRFunctionTemplate* CallTargetResolver::getMatchingFunctionTemplate(
         return nullptr;
     }
 
-    auto target = requirementCompatibleCandidates.front().second;
     if (inferredTypeArgs.has_value())
-        matchFunctionTemplate(target, inferredTypeArgs.get());
+    {
+        inferredTypeArgs.get() =
+            std::vector(requirementCompatibleCandidates.front().first);
+    }
 
-    return target;
+    return requirementCompatibleCandidates.front().second;
 }
 
 IRFunctionTemplate* CallTargetResolver::findMatchingFunctionTemplate(

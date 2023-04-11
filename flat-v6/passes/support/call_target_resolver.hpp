@@ -2,28 +2,21 @@
 #include "../../util/optional_ref.hpp"
 
 class GraphContext;
-class ConstraintInstantiator;
+class FunctionInstantiator;
 class Formatter;
 class Environment;
 
 class CallTargetResolver : IRVisitor<IRNode*>
 {
 private:
-    GraphContext& m_envCtx;
-    ConstraintInstantiator& m_constraintInstantiator;
+    FunctionInstantiator& m_functionInstantiator;
     Formatter& m_formatter;
-
-    Environment* m_env = nullptr;
 
 public:
     CallTargetResolver(
-        GraphContext& envCtx,
-        ConstraintInstantiator& constraintInstantiator,
-        Formatter& formatter
+        FunctionInstantiator& functionInstantiator, Formatter& formatter
     )
-        : m_envCtx(envCtx),
-          m_constraintInstantiator(constraintInstantiator),
-          m_formatter(formatter)
+        : m_functionInstantiator(functionInstantiator), m_formatter(formatter)
     {
     }
 
@@ -122,6 +115,7 @@ public:
         optional_ref<std::string> reason = std::nullopt
     );
 
+private:
     /// @brief Determine if a constraint is satisfied within the given
     /// environment
     /// @param env The environment to perform the check in
@@ -133,5 +127,19 @@ public:
         Environment* env,
         IRConstraintInstantiation* constraint,
         optional_ref<std::string> reason = std::nullopt
+    );
+
+    std::optional<std::pair<std::vector<IRType*>, IRFunctionTemplate*>>
+    matchFunctionTemplate(
+        IRFunctionTemplate* functionTemplate,
+        std::vector<IRType*> const& typeArgs,
+        std::vector<IRType*> const& args,
+        IRType* result
+    );
+
+    bool checkRequirements(
+        Environment* env,
+        IRFunctionTemplate* functionTemplate,
+        std::vector<IRType*> const& typeArgs
     );
 };

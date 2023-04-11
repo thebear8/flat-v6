@@ -4,6 +4,7 @@
 class ErrorLogger;
 class CompilationContext;
 class FunctionInstantiator;
+class FunctionBodyInstantiator;
 class GraphContext;
 class Environment;
 
@@ -13,6 +14,7 @@ private:
     ErrorLogger& m_logger;
     CompilationContext& m_compCtx;
     FunctionInstantiator& m_functionInstantiator;
+    FunctionBodyInstantiator& m_functionBodyInstantiator;
 
     IRModule* m_module = nullptr;
     GraphContext* m_irCtx = nullptr;
@@ -22,11 +24,13 @@ public:
     FunctionInstantiationUpdatePass(
         ErrorLogger& logger,
         CompilationContext& compCtx,
-        FunctionInstantiator& functionInstantiator
+        FunctionInstantiator& functionInstantiator,
+        FunctionBodyInstantiator& functionBodyInstantiator
     )
         : m_logger(logger),
           m_compCtx(compCtx),
-          m_functionInstantiator(functionInstantiator)
+          m_functionInstantiator(functionInstantiator),
+          m_functionBodyInstantiator(functionBodyInstantiator)
     {
     }
 

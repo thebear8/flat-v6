@@ -247,44 +247,6 @@ public:
     /// and parameters already exists
     IRFunctionHead* addConstraintCondition(IRFunctionHead* condition);
 
-    /// @brief Search for a constraint condition by name, params and optionally
-    /// result type in this environment
-    /// @param name Name of the constraint condition
-    /// @param args Arguments that the params of the constraint condition have
-    /// to match
-    /// @param result Result type of the constraint condition. Will be ignored
-    /// if set to nullptr
-    /// @param reason A reference to a string to receive a description of why no
-    /// matching constraint condition was found. Will be ignored if set to
-    /// nullopt
-    /// @return The found constraint condition or nullptr if no constraint
-    /// condition was found
-    IRFunctionHead* getMatchingConstraintCondition(
-        std::string const& name,
-        std::vector<IRType*> args,
-        IRType* result = nullptr,
-        optional_ref<std::string> reason = std::nullopt
-    );
-
-    /// @brief Search for a constraint condition by name, params and optionally
-    /// result type in the environment chain
-    /// @param name Name of the constraint condition
-    /// @param args Arguments that the params of the constraint condition have
-    /// to match
-    /// @param result Result type of the constraint condition. Will be ignored
-    /// if set to nullptr
-    /// @param reason A reference to a string to receive a description of why no
-    /// matching constraint condition was found. Will be ignored if set to
-    /// nullopt
-    /// @return The found constraint condition or nullptr if no constraint
-    /// condition was found
-    IRFunctionHead* findMatchingConstraintCondition(
-        std::string const& name,
-        std::vector<IRType*> args,
-        IRType* result = nullptr,
-        optional_ref<std::string> reason = std::nullopt
-    );
-
     /// @brief Search for a constraint condition by name and params in this
     /// environment
     /// @param name Name of the constraint condition
@@ -314,56 +276,6 @@ public:
     /// @return The added function or nullptr if a function with the same name
     /// and parameters already exists
     IRFunctionTemplate* addFunctionTemplate(IRFunctionTemplate* function);
-
-    /// @brief Search for a matching function template by name, type args, args
-    /// and optionally return type in this environment
-    /// @param name Name of the function template
-    /// @param typeArgs Type arguments to match the type parameters of the
-    /// function template to
-    /// @param args Arguments to match the parameters of the function template
-    /// to
-    /// @param result Result type of the function template. Will be ignored if
-    /// set to nullptr
-    /// @param reason A reference to a string to receive a description of why no
-    /// matching function template was found
-    /// @param inferredTypeArgs A reference to a vector<IRType*> to which the
-    /// inferred type parameters of the function template shall be appended.
-    /// Will be ignored if set to std::nullopt
-    /// @return The found function template or nullptr if no function template
-    /// was found
-    IRFunctionTemplate* getMatchingFunctionTemplate(
-        std::string const& name,
-        std::vector<IRType*> const& typeArgs,
-        std::vector<IRType*> const& args,
-        IRType* result = nullptr,
-        optional_ref<std::vector<IRType*>> inferredTypeArgs = std::nullopt,
-        optional_ref<std::string> reason = std::nullopt
-    );
-
-    /// @brief Search for a matching function template by name, type args, args
-    /// and optionally return type in the environment chain
-    /// @param name Name of the function template
-    /// @param typeArgs Type arguments to match the type parameters of the
-    /// function template to
-    /// @param args Arguments to match the parameters of the function template
-    /// to
-    /// @param result Result type of the function template. Will be ignored if
-    /// set to nullptr
-    /// @param reason A reference to a string to receive a description of why no
-    /// matching function template was found
-    /// @param inferredTypeArgs A reference to a vector<IRType*> to which the
-    /// inferred type parameters of the function template shall be appended.
-    /// Will be ignored if set to std::nullopt
-    /// @return The found function template or nullptr if no function template
-    /// was found
-    IRFunctionTemplate* findMatchingFunctionTemplate(
-        std::string const& name,
-        std::vector<IRType*> const& typeArgs,
-        std::vector<IRType*> const& args,
-        IRType* result = nullptr,
-        optional_ref<std::vector<IRType*>> inferredTypeArgs = std::nullopt,
-        optional_ref<std::string> reason = std::nullopt
-    );
 
     /// @brief Search for a function by name and params in this environment
     /// @param name Name of the function
@@ -491,21 +403,11 @@ public:
     /// are generic types
     /// @return true if @p actualType is compatible with @p genericType
     /// , otherwise false
-    bool inferTypeArgsAndMatch(
+    static bool inferTypeArgsAndMatch(
         IRType* actualType,
         IRType* genericType,
         std::unordered_map<IRGenericType*, IRType*>& typeArgs,
         bool allowGenericSubstitution,
-        optional_ref<std::string> reason = std::nullopt
-    );
-
-    /// @brief Determine if a constraint is satisfied within this environment
-    /// @param constraint The constraint to check
-    /// @param reason A string to receive a description of why the constraint is
-    /// not satisfied. Will be ignored if set to nullptr
-    /// @return true if the constraint is satisfied, false otherwise
-    bool isConstraintSatisfied(
-        IRConstraintInstantiation* constraint,
         optional_ref<std::string> reason = std::nullopt
     );
 };

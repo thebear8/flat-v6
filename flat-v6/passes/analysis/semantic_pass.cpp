@@ -11,6 +11,7 @@
 #include "../../util/assert.hpp"
 #include "../../util/to_vector.hpp"
 #include "../../util/zip_view.hpp"
+#include "../support/call_target_resolver.hpp"
 #include "../support/constraint_instantiator.hpp"
 #include "../support/function_instantiator.hpp"
 #include "../support/struct_instantiator.hpp"
@@ -620,13 +621,15 @@ IRFunctionHead* SemanticPass::findCallTarget(
 )
 {
     std::string constraintConditionReason;
-    auto constraintCondition = m_env->findMatchingConstraintCondition(
-        name, args, result, constraintConditionReason
-    );
+    auto constraintCondition =
+        m_callTargetResolver.findMatchingConstraintCondition(
+            m_env, name, args, result, constraintConditionReason
+        );
 
     std::string functionTemplateReason;
     std::vector<IRType*> functionTemplateTypeArgs;
-    auto functionTemplate = m_env->findMatchingFunctionTemplate(
+    auto functionTemplate = m_callTargetResolver.findMatchingFunctionTemplate(
+        m_env,
         name,
         typeArgs,
         args,

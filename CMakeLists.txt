@@ -56,6 +56,7 @@ target_sources(flc PRIVATE
     flat-v6/passes/support/ast_type_resolver.cpp
     flat-v6/passes/support/call_target_resolver.cpp
     flat-v6/passes/support/constraint_instantiator.cpp
+    flat-v6/passes/support/function_body_instantiator.cpp
     flat-v6/passes/support/function_instantiator.cpp
     flat-v6/passes/support/struct_instantiator.cpp
     flat-v6/passes/update/constraint_instantiation_update_pass.cpp
