@@ -1,20 +1,17 @@
 #pragma once
 #include "../../ir/ir.hpp"
 
-class ErrorLogger;
-class CompilationContext;
-class FunctionInstantiator;
-class FunctionBodyInstantiator;
 class GraphContext;
+class Instantiator;
+class CallTargetResolver;
 class Environment;
 
-class FunctionInstantiationUpdatePass : IRVisitor<void>
+class FunctionInstantiationUpdatePass : IRVisitor<IRNode*>
 {
 private:
-    ErrorLogger& m_logger;
-    CompilationContext& m_compCtx;
-    FunctionInstantiator& m_functionInstantiator;
-    FunctionBodyInstantiator& m_functionBodyInstantiator;
+    GraphContext& m_envCtx;
+    Instantiator& m_instantiator;
+    CallTargetResolver& m_callTargetResolver;
 
     IRModule* m_module = nullptr;
     GraphContext* m_irCtx = nullptr;
@@ -22,21 +19,40 @@ private:
 
 public:
     FunctionInstantiationUpdatePass(
-        ErrorLogger& logger,
-        CompilationContext& compCtx,
-        FunctionInstantiator& functionInstantiator,
-        FunctionBodyInstantiator& functionBodyInstantiator
+        GraphContext& envCtx,
+        Instantiator& instantiator,
+        CallTargetResolver& callTargetResolver
     )
-        : m_logger(logger),
-          m_compCtx(compCtx),
-          m_functionInstantiator(functionInstantiator),
-          m_functionBodyInstantiator(functionBodyInstantiator)
+        : m_envCtx(envCtx),
+          m_instantiator(instantiator),
+          m_callTargetResolver(callTargetResolver)
     {
     }
 
 public:
     void process(IRModule* node);
+    IRFunctionInstantiation* update(IRFunctionInstantiation* node);
 
 private:
-    void visit(IRModule* node) override;
+    IRNode* visit(IRIntegerExpression* node) override { return node; }
+    IRNode* visit(IRBoolExpression* node) override { return node; }
+    IRNode* visit(IRCharExpression* node) override { return node; }
+    IRNode* visit(IRStringExpression* node) override { return node; }
+    IRNode* visit(IRIdentifierExpression* node) override;
+    IRNode* visit(IRStructExpression* node) override;
+    IRNode* visit(IRUnaryExpression* node) override;
+    IRNode* visit(IRBinaryExpression* node) override;
+    IRNode* visit(IRCallExpression* node) override;
+    IRNode* visit(IRIndexExpression* node) override;
+    IRNode* visit(IRFieldExpression* node) override;
+
+    IRNode* visit(IRBlockStatement* node) override;
+    IRNode* visit(IRExpressionStatement* node) override;
+    IRNode* visit(IRVariableStatement* node) override;
+    IRNode* visit(IRReturnStatement* node) override;
+    IRNode* visit(IRWhileStatement* node) override;
+    IRNode* visit(IRIfStatement* node) override;
+
+    IRNode* visit(IRFunctionHead* node) override;
+    IRNode* visit(IRFunctionInstantiation* node) override;
 };

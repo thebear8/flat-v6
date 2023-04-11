@@ -1,38 +1,28 @@
 #pragma once
 #include "../../ir/ir.hpp"
 
-class ErrorLogger;
-class CompilationContext;
-class StructInstantiator;
 class GraphContext;
 class Environment;
+class Instantiator;
 
-class StructInstantiationUpdatePass : IRVisitor<void>
+class StructInstantiationUpdatePass
 {
 private:
-    ErrorLogger& m_logger;
-    CompilationContext& m_compCtx;
-    StructInstantiator& m_structInstantiator;
+    GraphContext& m_envCtx;
+    Instantiator& m_instantiator;
 
-    IRModule* m_module = nullptr;
-    GraphContext* m_irCtx = nullptr;
     Environment* m_env = nullptr;
+    GraphContext* m_irCtx = nullptr;
 
 public:
     StructInstantiationUpdatePass(
-        ErrorLogger& logger,
-        CompilationContext& compCtx,
-        StructInstantiator& structInstantiator
+        GraphContext& envCtx, Instantiator& instantiator
     )
-        : m_logger(logger),
-          m_compCtx(compCtx),
-          m_structInstantiator(structInstantiator)
+        : m_envCtx(envCtx), m_instantiator(instantiator)
     {
     }
 
 public:
     void process(IRModule* node);
-
-private:
-    void visit(IRModule* node) override;
+    IRStructInstantiation* update(IRStructInstantiation* node);
 };

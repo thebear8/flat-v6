@@ -1,18 +1,15 @@
 #pragma once
 #include "../../ir/ir.hpp"
 
-class ErrorLogger;
-class CompilationContext;
-class ConstraintInstantiator;
 class GraphContext;
 class Environment;
+class Instantiator;
 
-class ConstraintInstantiationUpdatePass : IRVisitor<void>
+class ConstraintInstantiationUpdatePass
 {
 private:
-    ErrorLogger& m_logger;
-    CompilationContext& m_compCtx;
-    ConstraintInstantiator& m_constraintInstantiator;
+    GraphContext& m_envCtx;
+    Instantiator& m_instantiator;
 
     IRModule* m_module = nullptr;
     GraphContext* m_irCtx = nullptr;
@@ -20,19 +17,15 @@ private:
 
 public:
     ConstraintInstantiationUpdatePass(
-        ErrorLogger& logger,
-        CompilationContext& compCtx,
-        ConstraintInstantiator& constraintInstantiator
+        GraphContext& envCtx, Instantiator& instantiator
     )
-        : m_logger(logger),
-          m_compCtx(compCtx),
-          m_constraintInstantiator(constraintInstantiator)
+        : m_envCtx(envCtx), m_instantiator(instantiator)
     {
     }
 
 public:
     void process(IRModule* node);
-
-private:
-    void visit(IRModule* node) override;
+    IRConstraintInstantiation* update(
+        IRConstraintInstantiation* constraintInstantiation
+    );
 };

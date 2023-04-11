@@ -33,6 +33,7 @@
 #include "passes/support/constraint_instantiator.hpp"
 #include "passes/support/function_body_instantiator.hpp"
 #include "passes/support/function_instantiator.hpp"
+#include "passes/support/instantiator.hpp"
 #include "passes/support/struct_instantiator.hpp"
 #include "passes/update/constraint_instantiation_update_pass.hpp"
 #include "passes/update/function_instantiation_update_pass.hpp"
@@ -129,6 +130,7 @@ void CompilationContext::runPasses()
     GraphContext envCtx;
     Formatter formatter;
 
+    Instantiator instantiator(envCtx);
     StructInstantiator structInstantiator(envCtx);
     ConstraintInstantiator constraintInstantiator(envCtx, structInstantiator);
     FunctionInstantiator functionInstantiator(
@@ -175,13 +177,13 @@ void CompilationContext::runPasses()
     );
 
     StructInstantiationUpdatePass structInstantiationUpdatePass(
-        m_logger, *this, structInstantiator
+        envCtx, instantiator
     );
     ConstraintInstantiationUpdatePass constraintInstantiationUpdatePass(
-        m_logger, *this, constraintInstantiator
+        envCtx, instantiator
     );
     FunctionInstantiationUpdatePass functionInstantiationUpdatePass(
-        m_logger, *this, functionInstantiator, functionBodyInstantiator
+        envCtx, instantiator, callTargetResolver
     );
 
     OperatorLoweringPass operatorLoweringPass(m_logger, *this);
