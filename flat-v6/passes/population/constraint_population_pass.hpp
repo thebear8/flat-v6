@@ -6,7 +6,7 @@ class ErrorLogger;
 class CompilationContext;
 class GraphContext;
 class ASTTypeResolver;
-class ConstraintInstantiator;
+class Instantiator;
 class Environment;
 
 class ConstraintPopulationPass : ASTVisitor<IRNode*>
@@ -16,7 +16,7 @@ private:
     CompilationContext& m_compCtx;
     GraphContext& m_envCtx;
     ASTTypeResolver& m_resolver;
-    ConstraintInstantiator& m_constraintInstantiator;
+    Instantiator& m_instantiator;
 
     IRModule* m_module = nullptr;
     GraphContext* m_irCtx = nullptr;
@@ -28,13 +28,13 @@ public:
         CompilationContext& compCtx,
         GraphContext& envCtx,
         ASTTypeResolver& resolver,
-        ConstraintInstantiator& constraintInstantiator
+        Instantiator& instantiator
     )
         : m_logger(logger),
           m_compCtx(compCtx),
           m_envCtx(envCtx),
           m_resolver(resolver),
-          m_constraintInstantiator(constraintInstantiator)
+          m_instantiator(instantiator)
     {
     }
 

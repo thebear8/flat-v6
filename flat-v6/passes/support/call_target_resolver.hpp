@@ -2,21 +2,19 @@
 #include "../../util/optional_ref.hpp"
 
 class GraphContext;
-class FunctionInstantiator;
+class Instantiator;
 class Formatter;
 class Environment;
 
 class CallTargetResolver : IRVisitor<IRNode*>
 {
 private:
-    FunctionInstantiator& m_functionInstantiator;
+    Instantiator& m_instantiator;
     Formatter& m_formatter;
 
 public:
-    CallTargetResolver(
-        FunctionInstantiator& functionInstantiator, Formatter& formatter
-    )
-        : m_functionInstantiator(functionInstantiator), m_formatter(formatter)
+    CallTargetResolver(Instantiator& instantiator, Formatter& formatter)
+        : m_instantiator(instantiator), m_formatter(formatter)
     {
     }
 

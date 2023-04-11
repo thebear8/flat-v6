@@ -10,9 +10,7 @@
 class ErrorLogger;
 class CompilationContext;
 class GraphContext;
-class StructInstantiator;
-class ConstraintInstantiator;
-class FunctionInstantiator;
+class Instantiator;
 class CallTargetResolver;
 class Formatter;
 
@@ -22,9 +20,7 @@ private:
     ErrorLogger& m_logger;
     CompilationContext& m_compCtx;
     GraphContext& m_envCtx;
-    StructInstantiator& m_structInstantiator;
-    ConstraintInstantiator& m_constraintInstantiator;
-    FunctionInstantiator& m_functionInstantiator;
+    Instantiator& m_instantiator;
     CallTargetResolver& m_callTargetResolver;
     Formatter& m_formatter;
 
@@ -40,18 +36,14 @@ public:
         ErrorLogger& logger,
         CompilationContext& compCtx,
         GraphContext& envCtx,
-        StructInstantiator& structInstantiator,
-        ConstraintInstantiator& constraintInstantiator,
-        FunctionInstantiator& functionInstantiator,
+        Instantiator& instantiator,
         CallTargetResolver& callTargetResolver,
         Formatter& formatter
     )
         : m_logger(logger),
           m_compCtx(compCtx),
           m_envCtx(envCtx),
-          m_structInstantiator(structInstantiator),
-          m_constraintInstantiator(constraintInstantiator),
-          m_functionInstantiator(functionInstantiator),
+          m_instantiator(instantiator),
           m_callTargetResolver(callTargetResolver),
           m_formatter(formatter)
     {

@@ -30,11 +30,7 @@
 #include "passes/population/struct_population_pass.hpp"
 #include "passes/support/ast_type_resolver.hpp"
 #include "passes/support/call_target_resolver.hpp"
-#include "passes/support/constraint_instantiator.hpp"
-#include "passes/support/function_body_instantiator.hpp"
-#include "passes/support/function_instantiator.hpp"
 #include "passes/support/instantiator.hpp"
-#include "passes/support/struct_instantiator.hpp"
 #include "passes/update/constraint_instantiation_update_pass.hpp"
 #include "passes/update/function_instantiation_update_pass.hpp"
 #include "passes/update/struct_instantiation_update_pass.hpp"
@@ -131,18 +127,8 @@ void CompilationContext::runPasses()
     Formatter formatter;
 
     Instantiator instantiator(envCtx);
-    StructInstantiator structInstantiator(envCtx);
-    ConstraintInstantiator constraintInstantiator(envCtx, structInstantiator);
-    FunctionInstantiator functionInstantiator(
-        envCtx, structInstantiator, constraintInstantiator
-    );
-
-    CallTargetResolver callTargetResolver(functionInstantiator, formatter);
-
-    FunctionBodyInstantiator functionBodyInstantiator(
-        envCtx, structInstantiator, functionInstantiator, callTargetResolver
-    );
-    ASTTypeResolver astTypeResolver(structInstantiator);
+    CallTargetResolver callTargetResolver(instantiator, formatter);
+    ASTTypeResolver astTypeResolver(instantiator);
 
     ModuleExtractionPass moduleExtractionPass(m_logger, *this, m_irCtx);
     ModuleImportPopulationPass moduleImportPopulationPass(m_logger, *this);
@@ -159,21 +145,14 @@ void CompilationContext::runPasses()
         m_logger, *this, envCtx, astTypeResolver
     );
     ConstraintPopulationPass constraintPopulationPass(
-        m_logger, *this, envCtx, astTypeResolver, constraintInstantiator
+        m_logger, *this, envCtx, astTypeResolver, instantiator
     );
     FunctionPopulationPass functionPopulationPass(
-        m_logger, *this, envCtx, astTypeResolver, constraintInstantiator
+        m_logger, *this, envCtx, astTypeResolver, instantiator
     );
 
     SemanticPass semanticPass(
-        m_logger,
-        *this,
-        envCtx,
-        structInstantiator,
-        constraintInstantiator,
-        functionInstantiator,
-        callTargetResolver,
-        formatter
+        m_logger, *this, envCtx, instantiator, callTargetResolver, formatter
     );
 
     StructInstantiationUpdatePass structInstantiationUpdatePass(

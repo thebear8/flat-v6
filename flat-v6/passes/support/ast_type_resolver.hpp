@@ -7,19 +7,18 @@
 class IRType;
 class Environment;
 class GraphContext;
-class StructInstantiator;
+class Instantiator;
 
 class ASTTypeResolver : ASTVisitor<std::tuple<IRType*, std::string>>
 {
 private:
-    StructInstantiator& m_structInstantiator;
+    Instantiator& m_instantiator;
 
     Environment* m_env = nullptr;
     GraphContext* m_irCtx = nullptr;
 
 public:
-    ASTTypeResolver(StructInstantiator& structInstantiator)
-        : m_structInstantiator(structInstantiator)
+    ASTTypeResolver(Instantiator& instantiator) : m_instantiator(instantiator)
     {
     }
 

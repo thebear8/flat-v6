@@ -8,7 +8,7 @@
 #include "../../util/graph_context.hpp"
 #include "../../util/to_vector.hpp"
 #include "../../util/zip_view.hpp"
-#include "function_instantiator.hpp"
+#include "instantiator.hpp"
 
 IRFunctionHead* CallTargetResolver::getMatchingConstraintCondition(
     Environment* env,
@@ -130,10 +130,7 @@ bool CallTargetResolver::checkRequirements(
 )
 {
     auto functionInstantiation =
-        m_functionInstantiator.getFunctionInstantiation(
-            functionTemplate, typeArgs
-        );
-    m_functionInstantiator.updateRequirements(functionInstantiation);
+        m_instantiator.getFunctionInstantiation(functionTemplate, typeArgs);
 
     for (auto r : functionInstantiation->requirements)
     {

@@ -6,7 +6,7 @@
 #include "../../util/error_logger.hpp"
 #include "../../util/graph_context.hpp"
 #include "../support/ast_type_resolver.hpp"
-#include "../support/constraint_instantiator.hpp"
+#include "../support/instantiator.hpp"
 
 void ConstraintPopulationPass::process(ASTSourceFile* node)
 {
@@ -45,9 +45,7 @@ IRNode* ConstraintPopulationPass::visit(ASTRequirement* node)
         typeArgs.push_back(irType);
     }
 
-    return m_constraintInstantiator.getConstraintInstantiation(
-        constraint, typeArgs
-    );
+    return m_instantiator.getConstraintInstantiation(constraint, typeArgs);
 }
 
 IRNode* ConstraintPopulationPass::visit(ASTConstraintCondition* node)

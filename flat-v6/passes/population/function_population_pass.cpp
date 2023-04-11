@@ -9,7 +9,7 @@
 #include "../../util/graph_context.hpp"
 #include "../../util/string_switch.hpp"
 #include "../support/ast_type_resolver.hpp"
-#include "../support/constraint_instantiator.hpp"
+#include "../support/instantiator.hpp"
 
 IRModule* FunctionPopulationPass::process(ASTSourceFile* sourceFile)
 {
@@ -272,9 +272,7 @@ IRNode* FunctionPopulationPass::visit(ASTRequirement* node)
         typeArgs.push_back(irType);
     }
 
-    return m_constraintInstantiator.getConstraintInstantiation(
-        constraint, typeArgs
-    );
+    return m_instantiator.getConstraintInstantiation(constraint, typeArgs);
 }
 
 IRNode* FunctionPopulationPass::visit(ASTFunctionDeclaration* node)
