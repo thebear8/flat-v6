@@ -39,7 +39,7 @@ target_sources(flc PRIVATE
     flat-v6/compiler.cpp
     flat-v6/environment.cpp
     flat-v6/flat-v6.cpp
-    flat-v6/parser/lexer.cpp
+    flat-v6/lexer/lexer.cpp
     flat-v6/parser/parser.cpp
     flat-v6/passes/analysis/semantic_pass.cpp
     flat-v6/passes/codegen/codegen_pass.cpp
