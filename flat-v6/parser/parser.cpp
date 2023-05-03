@@ -1,5 +1,7 @@
 #include "parser.hpp"
 
+#include "../util/error_logger.hpp"
+
 ASTExpression* Parser::l0()
 {
     auto begin = trim();
@@ -11,31 +13,33 @@ ASTExpression* Parser::l0()
     }
     else if (match(Token::Integer))
     {
-        return ctx.make(ASTIntegerExpression(
-            SourceRef(id, begin, position), getIntValue(), getIntSuffixValue()
+        return m_ctx.make(ASTIntegerExpression(
+            SourceRef(m_id, begin, getPosition()),
+            getIntValue(),
+            getIntSuffixValue()
         ));
     }
     else if (match(Token::True) || match(Token::False))
     {
-        return ctx.make(
-            ASTBoolExpression(SourceRef(id, begin, position), getTokenValue())
-        );
+        return m_ctx.make(ASTBoolExpression(
+            SourceRef(m_id, begin, getPosition()), std::string(getTokenValue())
+        ));
     }
     else if (match(Token::CharLiteral))
     {
-        return ctx.make(
-            ASTCharExpression(SourceRef(id, begin, position), getTokenValue())
-        );
+        return m_ctx.make(ASTCharExpression(
+            SourceRef(m_id, begin, getPosition()), std::string(getTokenValue())
+        ));
     }
     else if (match(Token::StringLiteral))
     {
-        return ctx.make(
-            ASTStringExpression(SourceRef(id, begin, position), getTokenValue())
-        );
+        return m_ctx.make(ASTStringExpression(
+            SourceRef(m_id, begin, getPosition()), std::string(getTokenValue())
+        ));
     }
     else if (match(Token::Identifier))
     {
-        auto identifier = getTokenValue();
+        auto identifier = std::string(getTokenValue());
         auto typeArgs = typeArgList();
         if (match(Token::BraceOpen))
         {
@@ -43,7 +47,7 @@ ASTExpression* Parser::l0()
             while (!match(Token::BraceClose) && !match(Token::Eof))
             {
                 expect(Token::Identifier);
-                auto name = getTokenValue();
+                auto name = std::string(getTokenValue());
                 expect(Token::Colon);
                 values.push_back(std::pair(name, expression()));
                 if (!match(Token::Comma))
@@ -52,20 +56,25 @@ ASTExpression* Parser::l0()
                     break;
                 }
             }
-            return ctx.make(ASTStructExpression(
-                SourceRef(id, begin, position), identifier, typeArgs, values
+            return m_ctx.make(ASTStructExpression(
+                SourceRef(m_id, begin, getPosition()),
+                identifier,
+                typeArgs,
+                values
             ));
         }
         else
         {
-            return ctx.make(ASTIdentifierExpression(
-                SourceRef(id, begin, position), identifier, typeArgs
+            return m_ctx.make(ASTIdentifierExpression(
+                SourceRef(m_id, begin, getPosition()), identifier, typeArgs
             ));
         }
     }
     else
     {
-        return logger.error(SourceRef(id, position), "Invalid L0", nullptr);
+        return m_logger.error(
+            SourceRef(m_id, getPosition()), "Invalid L0", nullptr
+        );
     }
 }
 
@@ -87,9 +96,9 @@ ASTExpression* Parser::l1()
                     break;
                 }
             }
-            e = ctx.make(
-                ASTCallExpression(SourceRef(id, begin, position), e, args)
-            );
+            e = m_ctx.make(ASTCallExpression(
+                SourceRef(m_id, begin, getPosition()), e, args
+            ));
         }
         else if (match(Token::BracketOpen))
         {
@@ -103,15 +112,17 @@ ASTExpression* Parser::l1()
                     break;
                 }
             }
-            e = ctx.make(
-                ASTIndexExpression(SourceRef(id, begin, position), e, args)
-            );
+            e = m_ctx.make(ASTIndexExpression(
+                SourceRef(m_id, begin, getPosition()), e, args
+            ));
         }
         else if (match(Token::Dot))
         {
             expect(Token::Identifier);
-            e = ctx.make(ASTFieldExpression(
-                SourceRef(id, begin, position), e, getTokenValue()
+            e = m_ctx.make(ASTFieldExpression(
+                SourceRef(m_id, begin, getPosition()),
+                e,
+                std::string(getTokenValue())
             ));
         }
         else
@@ -127,29 +138,29 @@ ASTExpression* Parser::l2()
     if (match(Token::Plus))
     {
         auto e = l2();
-        return ctx.make(ASTUnaryExpression(
-            SourceRef(id, begin, position), UnaryOperator::Positive, e
+        return m_ctx.make(ASTUnaryExpression(
+            SourceRef(m_id, begin, getPosition()), UnaryOperator::Positive, e
         ));
     }
     else if (match(Token::Minus))
     {
         auto e = l2();
-        return ctx.make(ASTUnaryExpression(
-            SourceRef(id, begin, position), UnaryOperator::Negative, e
+        return m_ctx.make(ASTUnaryExpression(
+            SourceRef(m_id, begin, getPosition()), UnaryOperator::Negative, e
         ));
     }
     else if (match(Token::LogicalNot))
     {
         auto e = l2();
-        return ctx.make(ASTUnaryExpression(
-            SourceRef(id, begin, position), UnaryOperator::LogicalNot, e
+        return m_ctx.make(ASTUnaryExpression(
+            SourceRef(m_id, begin, getPosition()), UnaryOperator::LogicalNot, e
         ));
     }
     else if (match(Token::BitwiseNot))
     {
         auto e = l2();
-        return ctx.make(ASTUnaryExpression(
-            SourceRef(id, begin, position), UnaryOperator::BitwiseNot, e
+        return m_ctx.make(ASTUnaryExpression(
+            SourceRef(m_id, begin, getPosition()), UnaryOperator::BitwiseNot, e
         ));
     }
     else
@@ -167,22 +178,31 @@ ASTExpression* Parser::l3()
         if (match(Token::Multiply))
         {
             auto r = l2();
-            e = ctx.make(ASTBinaryExpression(
-                SourceRef(id, begin, position), BinaryOperator::Multiply, e, r
+            e = m_ctx.make(ASTBinaryExpression(
+                SourceRef(m_id, begin, getPosition()),
+                BinaryOperator::Multiply,
+                e,
+                r
             ));
         }
         else if (match(Token::Divide))
         {
             auto r = l2();
-            e = ctx.make(ASTBinaryExpression(
-                SourceRef(id, begin, position), BinaryOperator::Divide, e, r
+            e = m_ctx.make(ASTBinaryExpression(
+                SourceRef(m_id, begin, getPosition()),
+                BinaryOperator::Divide,
+                e,
+                r
             ));
         }
         else if (match(Token::Modulo))
         {
             auto r = l2();
-            e = ctx.make(ASTBinaryExpression(
-                SourceRef(id, begin, position), BinaryOperator::Modulo, e, r
+            e = m_ctx.make(ASTBinaryExpression(
+                SourceRef(m_id, begin, getPosition()),
+                BinaryOperator::Modulo,
+                e,
+                r
             ));
         }
         else
@@ -201,15 +221,18 @@ ASTExpression* Parser::l4()
         if (match(Token::Plus))
         {
             auto r = l3();
-            e = ctx.make(ASTBinaryExpression(
-                SourceRef(id, begin, position), BinaryOperator::Add, e, r
+            e = m_ctx.make(ASTBinaryExpression(
+                SourceRef(m_id, begin, getPosition()), BinaryOperator::Add, e, r
             ));
         }
         else if (match(Token::Minus))
         {
             auto r = l3();
-            e = ctx.make(ASTBinaryExpression(
-                SourceRef(id, begin, position), BinaryOperator::Subtract, e, r
+            e = m_ctx.make(ASTBinaryExpression(
+                SourceRef(m_id, begin, getPosition()),
+                BinaryOperator::Subtract,
+                e,
+                r
             ));
         }
         else
@@ -228,15 +251,21 @@ ASTExpression* Parser::l5()
         if (match(Token::ShiftLeft))
         {
             auto r = l4();
-            e = ctx.make(ASTBinaryExpression(
-                SourceRef(id, begin, position), BinaryOperator::ShiftLeft, e, r
+            e = m_ctx.make(ASTBinaryExpression(
+                SourceRef(m_id, begin, getPosition()),
+                BinaryOperator::ShiftLeft,
+                e,
+                r
             ));
         }
         else if (match(Token::ShiftRight))
         {
             auto r = l4();
-            e = ctx.make(ASTBinaryExpression(
-                SourceRef(id, begin, position), BinaryOperator::ShiftRight, e, r
+            e = m_ctx.make(ASTBinaryExpression(
+                SourceRef(m_id, begin, getPosition()),
+                BinaryOperator::ShiftRight,
+                e,
+                r
             ));
         }
         else
@@ -255,22 +284,31 @@ ASTExpression* Parser::l6()
         if (match(Token::BitwiseAnd))
         {
             auto r = l5();
-            e = ctx.make(ASTBinaryExpression(
-                SourceRef(id, begin, position), BinaryOperator::BitwiseAnd, e, r
+            e = m_ctx.make(ASTBinaryExpression(
+                SourceRef(m_id, begin, getPosition()),
+                BinaryOperator::BitwiseAnd,
+                e,
+                r
             ));
         }
         else if (match(Token::BitwiseOr))
         {
             auto r = l5();
-            e = ctx.make(ASTBinaryExpression(
-                SourceRef(id, begin, position), BinaryOperator::BitwiseOr, e, r
+            e = m_ctx.make(ASTBinaryExpression(
+                SourceRef(m_id, begin, getPosition()),
+                BinaryOperator::BitwiseOr,
+                e,
+                r
             ));
         }
         else if (match(Token::BitwiseXor))
         {
             auto r = l5();
-            e = ctx.make(ASTBinaryExpression(
-                SourceRef(id, begin, position), BinaryOperator::BitwiseXor, e, r
+            e = m_ctx.make(ASTBinaryExpression(
+                SourceRef(m_id, begin, getPosition()),
+                BinaryOperator::BitwiseXor,
+                e,
+                r
             ));
         }
         else
@@ -289,29 +327,38 @@ ASTExpression* Parser::l7()
         if (match(Token::Equal))
         {
             auto r = l6();
-            e = ctx.make(ASTBinaryExpression(
-                SourceRef(id, begin, position), BinaryOperator::Equal, e, r
+            e = m_ctx.make(ASTBinaryExpression(
+                SourceRef(m_id, begin, getPosition()),
+                BinaryOperator::Equal,
+                e,
+                r
             ));
         }
         else if (match(Token::NotEqual))
         {
             auto r = l6();
-            e = ctx.make(ASTBinaryExpression(
-                SourceRef(id, begin, position), BinaryOperator::NotEqual, e, r
+            e = m_ctx.make(ASTBinaryExpression(
+                SourceRef(m_id, begin, getPosition()),
+                BinaryOperator::NotEqual,
+                e,
+                r
             ));
         }
         else if (match(Token::LessThan))
         {
             auto r = l6();
-            e = ctx.make(ASTBinaryExpression(
-                SourceRef(id, begin, position), BinaryOperator::LessThan, e, r
+            e = m_ctx.make(ASTBinaryExpression(
+                SourceRef(m_id, begin, getPosition()),
+                BinaryOperator::LessThan,
+                e,
+                r
             ));
         }
         else if (match(Token::GreaterThan))
         {
             auto r = l6();
-            e = ctx.make(ASTBinaryExpression(
-                SourceRef(id, begin, position),
+            e = m_ctx.make(ASTBinaryExpression(
+                SourceRef(m_id, begin, getPosition()),
                 BinaryOperator::GreaterThan,
                 e,
                 r
@@ -320,8 +367,8 @@ ASTExpression* Parser::l7()
         else if (match(Token::LessOrEqual))
         {
             auto r = l6();
-            e = ctx.make(ASTBinaryExpression(
-                SourceRef(id, begin, position),
+            e = m_ctx.make(ASTBinaryExpression(
+                SourceRef(m_id, begin, getPosition()),
                 BinaryOperator::LessOrEqual,
                 e,
                 r
@@ -330,8 +377,8 @@ ASTExpression* Parser::l7()
         else if (match(Token::GreaterOrEqual))
         {
             auto r = l6();
-            e = ctx.make(ASTBinaryExpression(
-                SourceRef(id, begin, position),
+            e = m_ctx.make(ASTBinaryExpression(
+                SourceRef(m_id, begin, getPosition()),
                 BinaryOperator::GreaterOrEqual,
                 e,
                 r
@@ -353,8 +400,11 @@ ASTExpression* Parser::l8()
         if (match(Token::LogicalAnd))
         {
             auto r = l7();
-            e = ctx.make(ASTBinaryExpression(
-                SourceRef(id, begin, position), BinaryOperator::LogicalAnd, e, r
+            e = m_ctx.make(ASTBinaryExpression(
+                SourceRef(m_id, begin, getPosition()),
+                BinaryOperator::LogicalAnd,
+                e,
+                r
             ));
         }
         else
@@ -373,8 +423,11 @@ ASTExpression* Parser::l9()
         if (match(Token::LogicalOr))
         {
             auto r = l8();
-            e = ctx.make(ASTBinaryExpression(
-                SourceRef(id, begin, position), BinaryOperator::LogicalOr, e, r
+            e = m_ctx.make(ASTBinaryExpression(
+                SourceRef(m_id, begin, getPosition()),
+                BinaryOperator::LogicalOr,
+                e,
+                r
             ));
         }
         else
@@ -391,8 +444,8 @@ ASTExpression* Parser::l10()
     if (match(Token::Assign))
     {
         auto r = l10();
-        return ctx.make(ASTBinaryExpression(
-            SourceRef(id, begin, position), BinaryOperator::Assign, e, r
+        return m_ctx.make(ASTBinaryExpression(
+            SourceRef(m_id, begin, getPosition()), BinaryOperator::Assign, e, r
         ));
     }
     else
@@ -410,7 +463,9 @@ ASTStatement* Parser::expressionStatement(size_t begin)
 {
     auto e = expression();
     expect(Token::NewLine);
-    return ctx.make(ASTExpressionStatement(SourceRef(id, begin, position), e));
+    return m_ctx.make(
+        ASTExpressionStatement(SourceRef(m_id, begin, getPosition()), e)
+    );
 }
 
 ASTStatement* Parser::blockStatement(std::size_t begin)
@@ -420,8 +475,8 @@ ASTStatement* Parser::blockStatement(std::size_t begin)
     {
         statements.push_back(statement());
     }
-    return ctx.make(
-        ASTBlockStatement(SourceRef(id, begin, position), statements)
+    return m_ctx.make(
+        ASTBlockStatement(SourceRef(m_id, begin, getPosition()), statements)
     );
 }
 
@@ -430,7 +485,7 @@ ASTStatement* Parser::variableStatement(std::size_t begin)
     std::vector<std::pair<std::string, ASTExpression*>> items;
     while (!match(Token::NewLine) && match(Token::Identifier))
     {
-        auto name = getTokenValue();
+        auto name = std::string(getTokenValue());
         expect(Token::Assign);
         items.push_back(std::pair(name, expression()));
         if (!match(Token::Comma))
@@ -439,7 +494,8 @@ ASTStatement* Parser::variableStatement(std::size_t begin)
             break;
         }
     }
-    return ctx.make(ASTVariableStatement(SourceRef(id, begin, position), items)
+    return m_ctx.make(
+        ASTVariableStatement(SourceRef(m_id, begin, getPosition()), items)
     );
 }
 
@@ -447,15 +503,17 @@ ASTStatement* Parser::returnStatement(std::size_t begin)
 {
     if (match(Token::NewLine))
     {
-        return ctx.make(
-            ASTReturnStatement(SourceRef(id, begin, position), nullptr)
+        return m_ctx.make(
+            ASTReturnStatement(SourceRef(m_id, begin, getPosition()), nullptr)
         );
     }
     else
     {
         auto e = expression();
         expect(Token::NewLine);
-        return ctx.make(ASTReturnStatement(SourceRef(id, begin, position), e));
+        return m_ctx.make(
+            ASTReturnStatement(SourceRef(m_id, begin, getPosition()), e)
+        );
     }
 }
 
@@ -465,9 +523,9 @@ ASTStatement* Parser::whileStatement(std::size_t begin)
     auto condition = expression();
     expect(Token::ParenClose);
     auto body = statement();
-    return ctx.make(
-        ASTWhileStatement(SourceRef(id, begin, position), condition, body)
-    );
+    return m_ctx.make(ASTWhileStatement(
+        SourceRef(m_id, begin, getPosition()), condition, body
+    ));
 }
 
 ASTStatement* Parser::ifStatement(std::size_t begin)
@@ -479,14 +537,14 @@ ASTStatement* Parser::ifStatement(std::size_t begin)
     if (match(Token::Else))
     {
         auto elseBody = statement();
-        return ctx.make(ASTIfStatement(
-            SourceRef(id, begin, position), condition, ifBody, elseBody
+        return m_ctx.make(ASTIfStatement(
+            SourceRef(m_id, begin, getPosition()), condition, ifBody, elseBody
         ));
     }
     else
     {
-        return ctx.make(ASTIfStatement(
-            SourceRef(id, begin, position), condition, ifBody, nullptr
+        return m_ctx.make(ASTIfStatement(
+            SourceRef(m_id, begin, getPosition()), condition, ifBody, nullptr
         ));
     }
 }
@@ -523,14 +581,14 @@ ASTStatement* Parser::statement()
 ASTConstraintCondition* Parser::constraintCondition(std::size_t begin)
 {
     expect(Token::Identifier);
-    auto name = getTokenValue();
+    auto name = std::string(getTokenValue());
 
     std::vector<std::pair<std::string, ASTType*>> parameters;
     expect(Token::ParenOpen);
     while (!match(Token::ParenClose) && !match(Token::Eof))
     {
         expect(Token::Identifier);
-        auto paramName = getTokenValue();
+        auto paramName = std::string(getTokenValue());
         expect(Token::Colon);
         auto type = typeName();
         parameters.push_back(std::make_pair(paramName, type));
@@ -543,15 +601,15 @@ ASTConstraintCondition* Parser::constraintCondition(std::size_t begin)
 
     auto result = (match(Token::Colon) ? typeName() : nullptr);
 
-    return ctx.make(ASTConstraintCondition(
-        SourceRef(id, begin, position), name, parameters, result
+    return m_ctx.make(ASTConstraintCondition(
+        SourceRef(m_id, begin, getPosition()), name, parameters, result
     ));
 }
 
 ASTConstraintDeclaration* Parser::constraintDeclaration(std::size_t begin)
 {
     expect(Token::Identifier);
-    auto constraintName = getTokenValue();
+    auto constraintName = std::string(getTokenValue());
     auto typeParams = typeParamList();
     auto requirements = requirementList();
 
@@ -569,8 +627,8 @@ ASTConstraintDeclaration* Parser::constraintDeclaration(std::size_t begin)
         }
     }
 
-    return ctx.make(ASTConstraintDeclaration(
-        SourceRef(id, begin, position),
+    return m_ctx.make(ASTConstraintDeclaration(
+        SourceRef(m_id, begin, getPosition()),
         constraintName,
         typeParams,
         requirements,
@@ -581,7 +639,7 @@ ASTConstraintDeclaration* Parser::constraintDeclaration(std::size_t begin)
 ASTStructDeclaration* Parser::structDeclaration(std::size_t begin)
 {
     expect(Token::Identifier);
-    auto structName = getTokenValue();
+    auto structName = std::string(getTokenValue());
     auto typeParams = typeParamList();
 
     expect(Token::BraceOpen);
@@ -589,7 +647,7 @@ ASTStructDeclaration* Parser::structDeclaration(std::size_t begin)
     while (!match(Token::BraceClose) && !match(Token::Eof))
     {
         expect(Token::Identifier);
-        auto name = getTokenValue();
+        auto name = std::string(getTokenValue());
         expect(Token::Colon);
         fields.push_back(std::pair(name, typeName()));
         if (!match(Token::Comma))
@@ -599,15 +657,15 @@ ASTStructDeclaration* Parser::structDeclaration(std::size_t begin)
         }
     }
 
-    return ctx.make(ASTStructDeclaration(
-        SourceRef(id, begin, position), structName, typeParams, fields
+    return m_ctx.make(ASTStructDeclaration(
+        SourceRef(m_id, begin, getPosition()), structName, typeParams, fields
     ));
 }
 
 ASTFunctionDeclaration* Parser::functionDeclaration(std::size_t begin)
 {
     expect(Token::Identifier);
-    auto name = getTokenValue();
+    auto name = std::string(getTokenValue());
     auto typeParams = typeParamList();
     auto requirements = requirementList();
 
@@ -616,7 +674,7 @@ ASTFunctionDeclaration* Parser::functionDeclaration(std::size_t begin)
     while (!match(Token::ParenClose) && !match(Token::Eof))
     {
         expect(Token::Identifier);
-        auto paramName = getTokenValue();
+        auto paramName = std::string(getTokenValue());
         expect(Token::Colon);
         auto type = typeName();
         parameters.push_back({ paramName, type });
@@ -632,8 +690,8 @@ ASTFunctionDeclaration* Parser::functionDeclaration(std::size_t begin)
     auto bodyBegin = trim();
     expect(Token::BraceOpen);
     auto body = blockStatement(bodyBegin);
-    return ctx.make(ASTFunctionDeclaration(
-        SourceRef(id, begin, position),
+    return m_ctx.make(ASTFunctionDeclaration(
+        SourceRef(m_id, begin, getPosition()),
         "",
         name,
         typeParams,
@@ -648,19 +706,19 @@ ASTFunctionDeclaration* Parser::externFunctionDeclaration(std::size_t begin)
 {
     expect(Token::ParenOpen);
     expect(Token::Identifier);
-    auto lib = getTokenValue();
+    auto lib = std::string(getTokenValue());
     expect(Token::ParenClose);
 
     expect(Token::Function);
     expect(Token::Identifier);
-    auto name = getTokenValue();
+    auto name = std::string(getTokenValue());
 
     std::vector<std::pair<std::string, ASTType*>> parameters;
     expect(Token::ParenOpen);
     while (!match(Token::ParenClose) && !match(Token::Eof))
     {
         expect(Token::Identifier);
-        auto paramName = getTokenValue();
+        auto paramName = std::string(getTokenValue());
         expect(Token::Colon);
         auto type = typeName();
         parameters.push_back({ paramName, type });
@@ -673,8 +731,8 @@ ASTFunctionDeclaration* Parser::externFunctionDeclaration(std::size_t begin)
 
     auto result = (match(Token::Colon) ? typeName() : nullptr);
 
-    return ctx.make(ASTFunctionDeclaration(
-        SourceRef(id, begin, position),
+    return m_ctx.make(ASTFunctionDeclaration(
+        SourceRef(m_id, begin, getPosition()),
         lib,
         name,
         {},
@@ -695,7 +753,8 @@ ASTSourceFile* Parser::sourceFile()
     {
         expect(Token::Identifier);
         modulePath +=
-            (modulePath.empty() ? getTokenValue() : "." + getTokenValue());
+            (modulePath.empty() ? std::string(getTokenValue())
+                                : "." + std::string(getTokenValue()));
         if (!match(Token::Dot))
             break;
         modulePath += ".";
@@ -709,7 +768,8 @@ ASTSourceFile* Parser::sourceFile()
         {
             expect(Token::Identifier);
             importPath +=
-                (importPath.empty() ? getTokenValue() : "." + getTokenValue());
+                (importPath.empty() ? std::string(getTokenValue())
+                                    : "." + std::string(getTokenValue()));
             if (!match(Token::Dot))
                 break;
             importPath += ".";
@@ -739,14 +799,14 @@ ASTSourceFile* Parser::sourceFile()
         }
         else
         {
-            logger.error(
-                SourceRef(id, position),
+            m_logger.error(
+                SourceRef(m_id, getPosition()),
                 "Expected eiter ConstraintDeclaration, StructDeclaration, FunctionDeclaration or ExternFunctionDeclaration"
             );
         }
     }
-    return ctx.make(ASTSourceFile(
-        SourceRef(id, begin, position), modulePath, imports, declarations
+    return m_ctx.make(ASTSourceFile(
+        SourceRef(m_id, begin, getPosition()), modulePath, imports, declarations
     ));
 }
 
@@ -754,22 +814,26 @@ ASTType* Parser::typeName()
 {
     auto begin = trim();
     expect(Token::Identifier);
-    auto name = getTokenValue();
+    auto name = std::string(getTokenValue());
 
     auto typeArgs = typeArgList();
 
-    ASTType* type =
-        ctx.make(ASTNamedType(SourceRef(id, begin, position), name, typeArgs));
+    ASTType* type = m_ctx.make(
+        ASTNamedType(SourceRef(m_id, begin, getPosition()), name, typeArgs)
+    );
     while (true)
     {
         if (match(Token::Multiply))
         {
-            type =
-                ctx.make(ASTPointerType(SourceRef(id, begin, position), type));
+            type = m_ctx.make(
+                ASTPointerType(SourceRef(m_id, begin, getPosition()), type)
+            );
         }
         else if (match(Token::BracketOpen) && match(Token::BracketClose))
         {
-            type = ctx.make(ASTArrayType(SourceRef(id, begin, position), type));
+            type = m_ctx.make(
+                ASTArrayType(SourceRef(m_id, begin, getPosition()), type)
+            );
         }
         else
         {
@@ -788,7 +852,7 @@ std::vector<std::string> Parser::typeParamList()
         while (!match(Token::GreaterThan) && !match(Token::Eof))
         {
             expect(Token::Identifier);
-            params.push_back(getTokenValue());
+            params.push_back(std::string(getTokenValue()));
             if (!match(Token::Comma))
             {
                 expect(Token::GreaterThan);
@@ -826,10 +890,10 @@ std::vector<ASTRequirement*> Parser::requirementList()
         {
             auto begin = trim();
             expect(Token::Identifier);
-            auto constraintName = getTokenValue();
+            auto constraintName = std::string(getTokenValue());
             auto typeArgs = typeArgList();
-            requirements.push_back(ctx.make(ASTRequirement(
-                SourceRef(id, begin, position), constraintName, typeArgs
+            requirements.push_back(m_ctx.make(ASTRequirement(
+                SourceRef(m_id, begin, getPosition()), constraintName, typeArgs
             )));
             if (!match(Token::Comma))
             {
@@ -839,4 +903,48 @@ std::vector<ASTRequirement*> Parser::requirementList()
         }
     }
     return requirements;
+}
+
+size_t Parser::trim()
+{
+    return m_lexer.trim();
+}
+
+TokenInfo Parser::match(Token token)
+{
+    size_t position = m_lexer.getPosition();
+    auto next = m_lexer.match(token);
+    if (next.token == Token::Error)
+    {
+        m_logger.error(SourceRef(m_id, next.begin, next.end), "Unknown token");
+    }
+
+    return next;
+}
+
+TokenInfo Parser::expect(Token token)
+{
+    auto next = match(token);
+    if (!next)
+    {
+        m_logger.error(
+            SourceRef(m_id, next.begin, next.end),
+            std::string("Unexpected token ") + TokenNames[(size_t)next.token]
+                + " `" + std::string(next.value) + "`\n  expected "
+                + TokenNames[(size_t)token]
+        );
+    }
+
+    return next;
+}
+
+TokenInfo Parser::lookahead(Token token)
+{
+    auto next = m_lexer.lookahead(token);
+    if (!next)
+    {
+        m_logger.error(SourceRef(m_id, next.begin, next.end), "Unknown token");
+    }
+
+    return next;
 }

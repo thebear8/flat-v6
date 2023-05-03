@@ -1,27 +1,24 @@
 #pragma once
 #include "../ast/ast.hpp"
+#include "../lexer/lexer.hpp"
 #include "../util/graph_context.hpp"
-#include "lexer.hpp"
 
-class Parser : protected Lexer
+class Parser
 {
 private:
-    ErrorLogger& logger;
-    GraphContext& ctx;
-    std::size_t id;
+    ErrorLogger& m_logger;
+    Lexer& m_lexer;
+    GraphContext& m_ctx;
+
+    std::size_t m_id = 0;
+    std::string_view m_tokenValue = {};
 
 public:
-    Parser(
-        ErrorLogger& logger,
-        GraphContext& ctx,
-        std::string_view input,
-        std::size_t id
-    )
-        : Lexer(logger, input, id), logger(logger), ctx(ctx), id(id)
+    Parser(ErrorLogger& logger, Lexer& lexer, GraphContext& ctx)
+        : m_logger(logger), m_lexer(lexer), m_ctx(ctx), m_id(m_id)
     {
     }
 
-public:
     ASTExpression* l0();
     ASTExpression* l1();
     ASTExpression* l2();
@@ -53,8 +50,16 @@ public:
 
     ASTType* typeName();
 
-private:
     std::vector<std::string> typeParamList();
     std::vector<ASTType*> typeArgList();
     std::vector<ASTRequirement*> requirementList();
+
+private:
+    std::size_t trim();
+    TokenInfo match(Token token);
+    TokenInfo expect(Token token);
+    TokenInfo lookahead(Token token);
+
+    std::size_t getPosition() { return m_lexer.getPosition(); }
+    std::string_view getTokenValue() { return m_tokenValue; }
 };
