@@ -1,4 +1,5 @@
 #pragma once
+#include <concepts>
 #include <new>
 #include <type_traits>
 
@@ -31,41 +32,42 @@ struct VisitorBase : VisitorBase<TVisitInvoker, TReturn, TNodes>...
 template<typename TVisitInvoker>
 struct VisitorBase<TVisitInvoker, void> : TVisitInvoker
 {
+protected:
+    void** m_node = nullptr;
 };
 
 template<typename TVisitInvoker, typename TReturn>
+    requires std::movable<TReturn>
 struct VisitorBase<TVisitInvoker, TReturn> : TVisitInvoker
 {
 protected:
-    bool m_valid = false;
+    void** m_node = nullptr;
     std::aligned_storage<sizeof(TReturn), alignof(TReturn)>::type m_result = {};
-
-public:
-    virtual ~VisitorBase()
-    {
-        if (m_valid)
-            std::launder((TReturn*)&this->m_result)->~TReturn();
-    }
 };
 
 template<typename TVisitInvoker, typename TNode>
 struct VisitorBase<TVisitInvoker, void, TNode>
     : virtual VisitorBase<TVisitInvoker, void>
 {
-    virtual void visit(TNode* node) { FLC_ASSERT(false); }
-    virtual void invoke(TNode* node) { return visit(node); }
+    virtual void visit(TNode*& node) { FLC_ASSERT(false); }
+
+    virtual void invoke(TNode* node) override
+    {
+        auto& ref = *((TNode**)this->m_node);
+        visit(ref);
+    }
 };
 
 template<typename TVisitInvoker, typename TReturn, typename TNode>
 struct VisitorBase<TVisitInvoker, TReturn, TNode>
     : virtual VisitorBase<TVisitInvoker, TReturn>
 {
-    virtual TReturn visit(TNode* node) { FLC_ASSERT(false); }
+    virtual TReturn visit(TNode*& node) { FLC_ASSERT(false); }
 
-    virtual void invoke(TNode* node)
+    virtual void invoke(TNode* node) override
     {
-        this->m_valid = true;
-        ::new (&this->m_result) TReturn(visit(node));
+        auto& ref = *((TNode**)this->m_node);
+        ::new (&this->m_result) TReturn(std::forward<TReturn>(visit(ref)));
     }
 };
 
@@ -81,10 +83,14 @@ struct NodeBase
 template<typename TReturn, typename... TNodes>
 struct Visitor : VisitorBase<VisitInvoker<TNodes...>, TReturn, TNodes...>
 {
-    TReturn dispatch(NodeBase<TNodes...>* node)
+    template<typename TNode>
+        requires std::derived_from<TNode, NodeBase<TNodes...>>
+    TReturn dispatch(TNode*& node)
     {
+        this->m_node = (void**)(&node);
         node->accept(this);
-        return *std::launder((TReturn*)&this->m_result);
+        this->m_node = nullptr;
+        return std::move(*std::launder((TReturn*)&this->m_result));
     }
 };
 
@@ -92,7 +98,14 @@ template<typename... TNodes>
 struct Visitor<void, TNodes...>
     : VisitorBase<VisitInvoker<TNodes...>, void, TNodes...>
 {
-    void dispatch(NodeBase<TNodes...>* node) { return node->accept(this); }
+    template<typename TNode>
+        requires std::derived_from<TNode, NodeBase<TNodes...>>
+    void dispatch(TNode*& node)
+    {
+        this->m_node = (void**)(&node);
+        node->accept(this);
+        this->m_node = nullptr;
+    }
 };
 
 template<typename... TNodes>
