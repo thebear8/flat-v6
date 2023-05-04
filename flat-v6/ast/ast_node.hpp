@@ -1,9 +1,9 @@
 #pragma once
 #include "../data/source_ref.hpp"
 #include "../util/metadata_prop.hpp"
-#include "../util/visitor.hpp"
+#include "../util/ref_visitor.hpp"
 
-using ASTTripleDispatchVisitor = triple_dispatch_visitor::TripleDispatchVisitor<
+using ASTTripleDispatchVisitor = TDV::TripleDispatchVisitor<
     struct ASTNode,
 
     struct ASTExpression,
