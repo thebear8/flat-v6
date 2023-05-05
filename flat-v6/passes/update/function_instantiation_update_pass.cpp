@@ -50,7 +50,7 @@ IRFunctionInstantiation* FunctionInstantiationUpdatePass::update(
     return functionInstantiation;
 }
 
-IRNode* FunctionInstantiationUpdatePass::visit(IRIdentifierExpression* node)
+IRNode* FunctionInstantiationUpdatePass::visit(IRIdentifierExpression*& node)
 {
     auto type = m_instantiator.instantiateType(node->getType(), m_env, m_irCtx);
     auto location = node->getLocation(SourceRef());
@@ -67,7 +67,7 @@ IRNode* FunctionInstantiationUpdatePass::visit(IRIdentifierExpression* node)
         ->setLocation(location);
 }
 
-IRNode* FunctionInstantiationUpdatePass::visit(IRStructExpression* node)
+IRNode* FunctionInstantiationUpdatePass::visit(IRStructExpression*& node)
 {
     auto type = m_instantiator.instantiateType(node->getType(), m_env, m_irCtx);
     auto location = node->getLocation(SourceRef());
@@ -76,7 +76,7 @@ IRNode* FunctionInstantiationUpdatePass::visit(IRStructExpression* node)
             return m_instantiator.instantiateType(a, m_env, m_irCtx);
         });
     auto fields =
-        node->fields | std::views::transform([&](auto const& f) {
+        node->fields | std::views::transform([&](auto& f) {
             return std::pair(f.first, (IRExpression*)dispatch(f.second));
         });
 
@@ -90,7 +90,7 @@ IRNode* FunctionInstantiationUpdatePass::visit(IRStructExpression* node)
         ->setLocation(location);
 }
 
-IRNode* FunctionInstantiationUpdatePass::visit(IRUnaryExpression* node)
+IRNode* FunctionInstantiationUpdatePass::visit(IRUnaryExpression*& node)
 {
     auto type = m_instantiator.instantiateType(node->getType(), m_env, m_irCtx);
     auto location = node->getLocation(SourceRef());
@@ -103,7 +103,7 @@ IRNode* FunctionInstantiationUpdatePass::visit(IRUnaryExpression* node)
         ->setLocation(location);
 }
 
-IRNode* FunctionInstantiationUpdatePass::visit(IRBinaryExpression* node)
+IRNode* FunctionInstantiationUpdatePass::visit(IRBinaryExpression*& node)
 {
     auto type = m_instantiator.instantiateType(node->getType(), m_env, m_irCtx);
     auto location = node->getLocation(SourceRef());
@@ -117,7 +117,7 @@ IRNode* FunctionInstantiationUpdatePass::visit(IRBinaryExpression* node)
         ->setLocation(location);
 }
 
-IRNode* FunctionInstantiationUpdatePass::visit(IRCallExpression* node)
+IRNode* FunctionInstantiationUpdatePass::visit(IRCallExpression*& node)
 {
     auto type = m_instantiator.instantiateType(node->getType(), m_env, m_irCtx);
     auto location = node->getLocation(SourceRef());
@@ -136,7 +136,7 @@ IRNode* FunctionInstantiationUpdatePass::visit(IRCallExpression* node)
         ->setLocation(location);
 }
 
-IRNode* FunctionInstantiationUpdatePass::visit(IRIndexExpression* node)
+IRNode* FunctionInstantiationUpdatePass::visit(IRIndexExpression*& node)
 {
     auto type = m_instantiator.instantiateType(node->getType(), m_env, m_irCtx);
     auto location = node->getLocation(SourceRef());
@@ -155,7 +155,7 @@ IRNode* FunctionInstantiationUpdatePass::visit(IRIndexExpression* node)
         ->setLocation(location);
 }
 
-IRNode* FunctionInstantiationUpdatePass::visit(IRFieldExpression* node)
+IRNode* FunctionInstantiationUpdatePass::visit(IRFieldExpression*& node)
 {
     auto type = m_instantiator.instantiateType(node->getType(), m_env, m_irCtx);
     auto expression = (IRExpression*)dispatch(node->expression);
@@ -165,7 +165,7 @@ IRNode* FunctionInstantiationUpdatePass::visit(IRFieldExpression* node)
         ->setLocation(node->getLocation(SourceRef()));
 }
 
-IRNode* FunctionInstantiationUpdatePass::visit(IRBlockStatement* node)
+IRNode* FunctionInstantiationUpdatePass::visit(IRBlockStatement*& node)
 {
     auto statements = node->statements | std::views::transform([&](auto s) {
                           return (IRStatement*)dispatch(s);
@@ -178,7 +178,7 @@ IRNode* FunctionInstantiationUpdatePass::visit(IRBlockStatement* node)
         ->setLocation(node->getLocation(SourceRef()));
 }
 
-IRNode* FunctionInstantiationUpdatePass::visit(IRExpressionStatement* node)
+IRNode* FunctionInstantiationUpdatePass::visit(IRExpressionStatement*& node)
 {
     auto expression = (IRExpression*)dispatch(node->expression);
 
@@ -186,7 +186,7 @@ IRNode* FunctionInstantiationUpdatePass::visit(IRExpressionStatement* node)
         ->setLocation(node->getLocation(SourceRef()));
 }
 
-IRNode* FunctionInstantiationUpdatePass::visit(IRVariableStatement* node)
+IRNode* FunctionInstantiationUpdatePass::visit(IRVariableStatement*& node)
 {
     auto items =
         node->items | std::views::transform([&](auto i) {
@@ -198,7 +198,7 @@ IRNode* FunctionInstantiationUpdatePass::visit(IRVariableStatement* node)
         ->setLocation(node->getLocation(SourceRef()));
 }
 
-IRNode* FunctionInstantiationUpdatePass::visit(IRReturnStatement* node)
+IRNode* FunctionInstantiationUpdatePass::visit(IRReturnStatement*& node)
 {
     auto expression = (IRExpression*)dispatch(node->expression);
 
@@ -206,7 +206,7 @@ IRNode* FunctionInstantiationUpdatePass::visit(IRReturnStatement* node)
         ->setLocation(node->getLocation(SourceRef()));
 }
 
-IRNode* FunctionInstantiationUpdatePass::visit(IRWhileStatement* node)
+IRNode* FunctionInstantiationUpdatePass::visit(IRWhileStatement*& node)
 {
     auto condition = (IRExpression*)dispatch(node->condition);
     auto body = (IRStatement*)dispatch(node->body);
@@ -215,7 +215,7 @@ IRNode* FunctionInstantiationUpdatePass::visit(IRWhileStatement* node)
         ->setLocation(node->getLocation(SourceRef()));
 }
 
-IRNode* FunctionInstantiationUpdatePass::visit(IRIfStatement* node)
+IRNode* FunctionInstantiationUpdatePass::visit(IRIfStatement*& node)
 {
     auto condition = (IRExpression*)dispatch(node->condition);
     auto ifBody = (IRStatement*)dispatch(node->ifBody);
@@ -226,7 +226,7 @@ IRNode* FunctionInstantiationUpdatePass::visit(IRIfStatement* node)
         ->setLocation(node->getLocation(SourceRef()));
 }
 
-IRNode* FunctionInstantiationUpdatePass::visit(IRFunctionHead* node)
+IRNode* FunctionInstantiationUpdatePass::visit(IRFunctionHead*& node)
 {
     auto args =
         node->params | std::views::transform([&](auto const& p) {
@@ -244,7 +244,7 @@ IRNode* FunctionInstantiationUpdatePass::visit(IRFunctionHead* node)
     return m_instantiator.getFunctionInstantiation(target, typeArgs);
 }
 
-IRNode* FunctionInstantiationUpdatePass::visit(IRFunctionInstantiation* node)
+IRNode* FunctionInstantiationUpdatePass::visit(IRFunctionInstantiation*& node)
 {
     auto typeArgs =
         node->typeArgs | std::views::transform([&](auto arg) {

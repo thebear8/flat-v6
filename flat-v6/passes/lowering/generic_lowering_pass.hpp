@@ -26,27 +26,27 @@ public:
     void process(IRModule* node);
 
 private:
-    virtual IRNode* visit(IRIntegerExpression* node) override;
-    virtual IRNode* visit(IRBoolExpression* node) override;
-    virtual IRNode* visit(IRCharExpression* node) override;
-    virtual IRNode* visit(IRStringExpression* node) override;
-    virtual IRNode* visit(IRIdentifierExpression* node) override;
-    virtual IRNode* visit(IRStructExpression* node) override;
-    virtual IRNode* visit(IRUnaryExpression* node) override;
-    virtual IRNode* visit(IRBinaryExpression* node) override;
-    virtual IRNode* visit(IRCallExpression* node) override;
-    virtual IRNode* visit(IRIndexExpression* node) override;
-    virtual IRNode* visit(IRFieldExpression* node) override;
+    virtual IRNode* visit(IRIntegerExpression*& node) override;
+    virtual IRNode* visit(IRBoolExpression*& node) override;
+    virtual IRNode* visit(IRCharExpression*& node) override;
+    virtual IRNode* visit(IRStringExpression*& node) override;
+    virtual IRNode* visit(IRIdentifierExpression*& node) override;
+    virtual IRNode* visit(IRStructExpression*& node) override;
+    virtual IRNode* visit(IRUnaryExpression*& node) override;
+    virtual IRNode* visit(IRBinaryExpression*& node) override;
+    virtual IRNode* visit(IRCallExpression*& node) override;
+    virtual IRNode* visit(IRIndexExpression*& node) override;
+    virtual IRNode* visit(IRFieldExpression*& node) override;
 
-    virtual IRNode* visit(IRBlockStatement* node) override;
-    virtual IRNode* visit(IRExpressionStatement* node) override;
-    virtual IRNode* visit(IRVariableStatement* node) override;
-    virtual IRNode* visit(IRReturnStatement* node) override;
-    virtual IRNode* visit(IRWhileStatement* node) override;
-    virtual IRNode* visit(IRIfStatement* node) override;
+    virtual IRNode* visit(IRBlockStatement*& node) override;
+    virtual IRNode* visit(IRExpressionStatement*& node) override;
+    virtual IRNode* visit(IRVariableStatement*& node) override;
+    virtual IRNode* visit(IRReturnStatement*& node) override;
+    virtual IRNode* visit(IRWhileStatement*& node) override;
+    virtual IRNode* visit(IRIfStatement*& node) override;
 
-    virtual IRNode* visit(IRFunctionHead* node) override;
-    virtual IRNode* visit(IRModule* node) override;
+    virtual IRNode* visit(IRFunctionHead*& node) override;
+    virtual IRNode* visit(IRModule*& node) override;
 
 private:
     IRType* inferTypeArg(

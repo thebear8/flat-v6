@@ -5,37 +5,37 @@ void OperatorLoweringPass::process(IRModule* mod)
     dispatch(mod);
 }
 
-IRNode* OperatorLoweringPass::visit(IRIntegerExpression* node)
+IRNode* OperatorLoweringPass::visit(IRIntegerExpression*& node)
 {
     return node;
 }
 
-IRNode* OperatorLoweringPass::visit(IRBoolExpression* node)
+IRNode* OperatorLoweringPass::visit(IRBoolExpression*& node)
 {
     return node;
 }
 
-IRNode* OperatorLoweringPass::visit(IRCharExpression* node)
+IRNode* OperatorLoweringPass::visit(IRCharExpression*& node)
 {
     return node;
 }
 
-IRNode* OperatorLoweringPass::visit(IRStringExpression* node)
+IRNode* OperatorLoweringPass::visit(IRStringExpression*& node)
 {
     return node;
 }
 
-IRNode* OperatorLoweringPass::visit(IRIdentifierExpression* node)
+IRNode* OperatorLoweringPass::visit(IRIdentifierExpression*& node)
 {
     return node;
 }
 
-IRNode* OperatorLoweringPass::visit(IRStructExpression* node)
+IRNode* OperatorLoweringPass::visit(IRStructExpression*& node)
 {
     return node;
 }
 
-IRNode* OperatorLoweringPass::visit(IRUnaryExpression* node)
+IRNode* OperatorLoweringPass::visit(IRUnaryExpression*& node)
 {
     node->expression = (IRExpression*)dispatch(node->expression);
 
@@ -75,7 +75,7 @@ IRNode* OperatorLoweringPass::visit(IRUnaryExpression* node)
     }
 }
 
-IRNode* OperatorLoweringPass::visit(IRBinaryExpression* node)
+IRNode* OperatorLoweringPass::visit(IRBinaryExpression*& node)
 {
     node->left = (IRExpression*)dispatch(node->left);
     node->right = (IRExpression*)dispatch(node->right);
@@ -166,7 +166,7 @@ IRNode* OperatorLoweringPass::visit(IRBinaryExpression* node)
     }
 }
 
-IRNode* OperatorLoweringPass::visit(IRCallExpression* node)
+IRNode* OperatorLoweringPass::visit(IRCallExpression*& node)
 {
     node->expression = (IRExpression*)dispatch(node->expression);
     for (auto& arg : node->args)
@@ -188,7 +188,7 @@ IRNode* OperatorLoweringPass::visit(IRCallExpression* node)
     return call;
 }
 
-IRNode* OperatorLoweringPass::visit(IRIndexExpression* node)
+IRNode* OperatorLoweringPass::visit(IRIndexExpression*& node)
 {
     node->expression = (IRExpression*)dispatch(node->expression);
     for (auto& arg : node->args)
@@ -213,46 +213,46 @@ IRNode* OperatorLoweringPass::visit(IRIndexExpression* node)
     return call;
 }
 
-IRNode* OperatorLoweringPass::visit(IRFieldExpression* node)
+IRNode* OperatorLoweringPass::visit(IRFieldExpression*& node)
 {
     node->expression = (IRExpression*)dispatch(node->expression);
     return node;
 }
 
-IRNode* OperatorLoweringPass::visit(IRBlockStatement* node)
+IRNode* OperatorLoweringPass::visit(IRBlockStatement*& node)
 {
     for (auto& statement : node->statements)
         statement = (IRStatement*)dispatch(statement);
     return node;
 }
 
-IRNode* OperatorLoweringPass::visit(IRExpressionStatement* node)
+IRNode* OperatorLoweringPass::visit(IRExpressionStatement*& node)
 {
     node->expression = (IRExpression*)dispatch(node->expression);
     return node;
 }
 
-IRNode* OperatorLoweringPass::visit(IRVariableStatement* node)
+IRNode* OperatorLoweringPass::visit(IRVariableStatement*& node)
 {
     for (auto& [name, value] : node->items)
         value = (IRExpression*)dispatch(value);
     return node;
 }
 
-IRNode* OperatorLoweringPass::visit(IRReturnStatement* node)
+IRNode* OperatorLoweringPass::visit(IRReturnStatement*& node)
 {
     node->expression = (IRExpression*)dispatch(node->expression);
     return node;
 }
 
-IRNode* OperatorLoweringPass::visit(IRWhileStatement* node)
+IRNode* OperatorLoweringPass::visit(IRWhileStatement*& node)
 {
     node->condition = (IRExpression*)dispatch(node->condition);
     node->body = (IRStatement*)dispatch(node->body);
     return node;
 }
 
-IRNode* OperatorLoweringPass::visit(IRIfStatement* node)
+IRNode* OperatorLoweringPass::visit(IRIfStatement*& node)
 {
     node->condition = (IRExpression*)dispatch(node->condition);
     node->ifBody = (IRStatement*)dispatch(node->ifBody);
@@ -261,13 +261,13 @@ IRNode* OperatorLoweringPass::visit(IRIfStatement* node)
     return node;
 }
 
-IRNode* OperatorLoweringPass::visit(IRFunctionTemplate* node)
+IRNode* OperatorLoweringPass::visit(IRFunctionTemplate*& node)
 {
     node->body = ((node->body) ? (IRStatement*)dispatch(node->body) : nullptr);
     return node;
 }
 
-IRNode* OperatorLoweringPass::visit(IRModule* node)
+IRNode* OperatorLoweringPass::visit(IRModule*& node)
 {
     m_module = node;
     m_irCtx = node->getIrCtx();

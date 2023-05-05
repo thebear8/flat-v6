@@ -60,13 +60,13 @@ private:
     IRType* instantiateType(IRType* type);
 
 private:
-    IRNode* visit(IRStructInstantiation* node) override;
-    IRNode* visit(IRGenericType* node) override;
-    IRNode* visit(IRVoidType* node) override { return node; }
-    IRNode* visit(IRBoolType* node) override { return node; }
-    IRNode* visit(IRIntegerType* node) override { return node; }
-    IRNode* visit(IRCharType* node) override { return node; }
-    IRNode* visit(IRStringType* node) override { return node; }
-    IRNode* visit(IRPointerType* node) override;
-    IRNode* visit(IRArrayType* node) override;
+    IRNode* visit(IRStructInstantiation*& node) override;
+    IRNode* visit(IRGenericType*& node) override;
+    IRNode* visit(IRVoidType*& node) override { return node; }
+    IRNode* visit(IRBoolType*& node) override { return node; }
+    IRNode* visit(IRIntegerType*& node) override { return node; }
+    IRNode* visit(IRCharType*& node) override { return node; }
+    IRNode* visit(IRStringType*& node) override { return node; }
+    IRNode* visit(IRPointerType*& node) override;
+    IRNode* visit(IRArrayType*& node) override;
 };

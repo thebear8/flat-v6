@@ -151,7 +151,7 @@ IRType* Instantiator::instantiateType(
     return instantiation;
 }
 
-IRNode* Instantiator::visit(IRStructInstantiation* node)
+IRNode* Instantiator::visit(IRStructInstantiation*& node)
 {
     auto typeArgs = node->typeArgs | std::views::transform([&](auto arg) {
                         return (IRType*)dispatch(arg);
@@ -161,14 +161,14 @@ IRNode* Instantiator::visit(IRStructInstantiation* node)
     return getStructInstantiation(node->getInstantiatedFrom(), typeArgs);
 }
 
-IRNode* Instantiator::visit(IRGenericType* node)
+IRNode* Instantiator::visit(IRGenericType*& node)
 {
     if (auto v = m_env->findTypeParamValue(node))
         return v;
     return node;
 }
 
-IRNode* Instantiator::visit(IRPointerType* node)
+IRNode* Instantiator::visit(IRPointerType*& node)
 {
     auto base = (IRType*)dispatch(node->base);
     if (base == node->base)
@@ -177,7 +177,7 @@ IRNode* Instantiator::visit(IRPointerType* node)
     return m_irCtx->make(IRPointerType(base));
 }
 
-IRNode* Instantiator::visit(IRArrayType* node)
+IRNode* Instantiator::visit(IRArrayType*& node)
 {
     auto base = (IRType*)dispatch(node->base);
     if (base == node->base)
