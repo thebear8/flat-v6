@@ -28,6 +28,7 @@ struct IRFunctionHead : public IRNode
     }
 
     virtual bool isFunctionHead() { return true; }
+    virtual bool isIntrinsicFunction() { return true; }
     virtual bool isFunctionTemplate() { return false; }
     virtual bool isFunctionInstantiation() { return false; }
 
@@ -39,6 +40,20 @@ struct IRFunctionHead : public IRNode
         getLibraryNameForImport,
         setLibraryNameForImport
     )
+};
+
+struct IRIntrinsicFunction : public IRFunctionHead
+{
+    IRIntrinsicFunction(
+        std::string const& name,
+        std::vector<std::pair<std::string, IRType*>> const& params,
+        IRType* result
+    )
+        : IRFunctionHead(name, params, result)
+    {
+    }
+
+    IMPLEMENT_ACCEPT()
 };
 
 struct IRFunctionTemplate : IRFunctionHead

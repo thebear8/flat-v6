@@ -22,7 +22,10 @@ struct IRIntegerExpression : public IRExpression
     std::string value;
 
     IRIntegerExpression(
-        bool isSigned, std::size_t width, std::size_t radix, std::string const& value
+        bool isSigned,
+        std::size_t width,
+        std::size_t radix,
+        std::string const& value
     )
         : isSigned(isSigned), width(width), radix(radix), value(value)
     {
@@ -164,6 +167,21 @@ struct IRFieldExpression : public IRExpression
 
     IRFieldExpression(IRExpression* expression, std::string const& fieldName)
         : expression(expression), fieldName(fieldName)
+    {
+    }
+
+    IMPLEMENT_ACCEPT()
+};
+
+struct IRBoundCallExpression : public IRExpression
+{
+    IRFunctionHead* target;
+    std::vector<IRExpression*> args;
+
+    IRBoundCallExpression(
+        IRFunctionHead* target, std::vector<IRExpression*> const& args
+    )
+        : target(target), args(args)
     {
     }
 
