@@ -1,7 +1,7 @@
 #pragma once
 #include "../../ir/ir.hpp"
 
-class Instantiator : IRVisitor<IRNode*>
+class Instantiator : IRRefVisitor<IRNode*>
 {
 private:
     GraphContext& m_envCtx;

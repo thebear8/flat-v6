@@ -11,27 +11,27 @@ void LLVMCodegenPass::process(IRModule* node)
     dispatch(node);
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRIntegerExpression*& node)
+llvm::Value* LLVMCodegenPass::visit(IRIntegerExpression* node)
 {
     auto type = llvm::IntegerType::get(m_llvmCtx, (unsigned int)node->width);
     return llvm::ConstantInt::get(type, node->value, (uint8_t)node->radix);
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRBoolExpression*& node)
+llvm::Value* LLVMCodegenPass::visit(IRBoolExpression* node)
 {
     return llvm::ConstantInt::get(
         llvm::Type::getInt1Ty(m_llvmCtx), node->value
     );
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRCharExpression*& node)
+llvm::Value* LLVMCodegenPass::visit(IRCharExpression* node)
 {
     return llvm::ConstantInt::get(
         llvm::Type::getInt32Ty(m_llvmCtx), node->value
     );
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRStringExpression*& node)
+llvm::Value* LLVMCodegenPass::visit(IRStringExpression* node)
 {
     std::vector<llvm::Constant*> stringBytes;
     for (auto c : node->value)
@@ -69,7 +69,7 @@ llvm::Value* LLVMCodegenPass::visit(IRStringExpression*& node)
     );
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRIdentifierExpression*& node)
+llvm::Value* LLVMCodegenPass::visit(IRIdentifierExpression* node)
 {
     FLC_ASSERT(
         m_localValues.contains(node->value),
@@ -82,7 +82,7 @@ llvm::Value* LLVMCodegenPass::visit(IRIdentifierExpression*& node)
     );
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRStructExpression*& node)
+llvm::Value* LLVMCodegenPass::visit(IRStructExpression* node)
 {
     auto type = dynamic_cast<IRStruct*>(node->getType());
     auto structPtr =
@@ -111,7 +111,7 @@ llvm::Value* LLVMCodegenPass::visit(IRStructExpression*& node)
     return m_builder.CreateLoad(getLLVMType(type), structPtr);
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRUnaryExpression*& node)
+llvm::Value* LLVMCodegenPass::visit(IRUnaryExpression* node)
 {
     if (node->operation == UnaryOperator::Positive)
     {
@@ -136,7 +136,7 @@ llvm::Value* LLVMCodegenPass::visit(IRUnaryExpression*& node)
     }
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRBinaryExpression*& node)
+llvm::Value* LLVMCodegenPass::visit(IRBinaryExpression* node)
 {
     if (dynamic_cast<IRIdentifierExpression*>(node->left))
     {
@@ -284,7 +284,7 @@ llvm::Value* LLVMCodegenPass::visit(IRBinaryExpression*& node)
     }
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRCallExpression*& node)
+llvm::Value* LLVMCodegenPass::visit(IRCallExpression* node)
 {
     auto target = node->getTarget();
     FLC_ASSERT(
@@ -305,7 +305,7 @@ llvm::Value* LLVMCodegenPass::visit(IRCallExpression*& node)
     return m_builder.CreateCall(function, args);
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRIndexExpression*& node)
+llvm::Value* LLVMCodegenPass::visit(IRIndexExpression* node)
 {
     FLC_ASSERT(
         node->args.size() == 1, "Index expression must have exactly one operand"
@@ -337,7 +337,7 @@ llvm::Value* LLVMCodegenPass::visit(IRIndexExpression*& node)
     return m_builder.CreateLoad(getLLVMType(node->getType()), ptr);
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRFieldExpression*& node)
+llvm::Value* LLVMCodegenPass::visit(IRFieldExpression* node)
 {
     auto structType = dynamic_cast<IRStruct*>(node->expression->getType());
 
@@ -363,7 +363,7 @@ llvm::Value* LLVMCodegenPass::visit(IRFieldExpression*& node)
     );
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRBlockStatement*& node)
+llvm::Value* LLVMCodegenPass::visit(IRBlockStatement* node)
 {
     auto prevLocalValues = m_localValues;
 
@@ -375,13 +375,13 @@ llvm::Value* LLVMCodegenPass::visit(IRBlockStatement*& node)
     return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRExpressionStatement*& node)
+llvm::Value* LLVMCodegenPass::visit(IRExpressionStatement* node)
 {
     dispatch(node->expression);
     return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRVariableStatement*& node)
+llvm::Value* LLVMCodegenPass::visit(IRVariableStatement* node)
 {
     for (auto& [name, value] : node->items)
     {
@@ -399,7 +399,7 @@ llvm::Value* LLVMCodegenPass::visit(IRVariableStatement*& node)
     return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRReturnStatement*& node)
+llvm::Value* LLVMCodegenPass::visit(IRReturnStatement* node)
 {
     if (node->expression)
         m_builder.CreateRet(dispatch(node->expression));
@@ -409,7 +409,7 @@ llvm::Value* LLVMCodegenPass::visit(IRReturnStatement*& node)
     return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRWhileStatement*& node)
+llvm::Value* LLVMCodegenPass::visit(IRWhileStatement* node)
 {
     auto parentFunction = m_builder.GetInsertBlock()->getParent();
 
@@ -435,7 +435,7 @@ llvm::Value* LLVMCodegenPass::visit(IRWhileStatement*& node)
     return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRIfStatement*& node)
+llvm::Value* LLVMCodegenPass::visit(IRIfStatement* node)
 {
     auto hasElse = (node->elseBody != nullptr);
     auto parentFunction = m_builder.GetInsertBlock()->getParent();
@@ -469,7 +469,7 @@ llvm::Value* LLVMCodegenPass::visit(IRIfStatement*& node)
     return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRFunctionInstantiation*& node)
+llvm::Value* LLVMCodegenPass::visit(IRFunctionInstantiation* node)
 {
     auto function = node->getLLVMFunction();
     FLC_ASSERT(
@@ -515,7 +515,7 @@ llvm::Value* LLVMCodegenPass::visit(IRFunctionInstantiation*& node)
     return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRModule*& node)
+llvm::Value* LLVMCodegenPass::visit(IRModule* node)
 {
     for (auto [functionTemplate, function] :
          node->getEnv()->getFunctionInstantiationMap())

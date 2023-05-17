@@ -49,27 +49,27 @@ public:
     void process(IRModule* node);
 
 private:
-    virtual llvm::Value* visit(IRIntegerExpression*& node) override;
-    virtual llvm::Value* visit(IRBoolExpression*& node) override;
-    virtual llvm::Value* visit(IRCharExpression*& node) override;
-    virtual llvm::Value* visit(IRStringExpression*& node) override;
-    virtual llvm::Value* visit(IRIdentifierExpression*& node) override;
-    virtual llvm::Value* visit(IRStructExpression*& node) override;
-    virtual llvm::Value* visit(IRUnaryExpression*& node) override;
-    virtual llvm::Value* visit(IRBinaryExpression*& node) override;
-    virtual llvm::Value* visit(IRCallExpression*& node) override;
-    virtual llvm::Value* visit(IRIndexExpression*& node) override;
-    virtual llvm::Value* visit(IRFieldExpression*& node) override;
+    virtual llvm::Value* visit(IRIntegerExpression* node) override;
+    virtual llvm::Value* visit(IRBoolExpression* node) override;
+    virtual llvm::Value* visit(IRCharExpression* node) override;
+    virtual llvm::Value* visit(IRStringExpression* node) override;
+    virtual llvm::Value* visit(IRIdentifierExpression* node) override;
+    virtual llvm::Value* visit(IRStructExpression* node) override;
+    virtual llvm::Value* visit(IRUnaryExpression* node) override;
+    virtual llvm::Value* visit(IRBinaryExpression* node) override;
+    virtual llvm::Value* visit(IRCallExpression* node) override;
+    virtual llvm::Value* visit(IRIndexExpression* node) override;
+    virtual llvm::Value* visit(IRFieldExpression* node) override;
 
-    virtual llvm::Value* visit(IRBlockStatement*& node) override;
-    virtual llvm::Value* visit(IRExpressionStatement*& node) override;
-    virtual llvm::Value* visit(IRVariableStatement*& node) override;
-    virtual llvm::Value* visit(IRReturnStatement*& node) override;
-    virtual llvm::Value* visit(IRWhileStatement*& node) override;
-    virtual llvm::Value* visit(IRIfStatement*& node) override;
+    virtual llvm::Value* visit(IRBlockStatement* node) override;
+    virtual llvm::Value* visit(IRExpressionStatement* node) override;
+    virtual llvm::Value* visit(IRVariableStatement* node) override;
+    virtual llvm::Value* visit(IRReturnStatement* node) override;
+    virtual llvm::Value* visit(IRWhileStatement* node) override;
+    virtual llvm::Value* visit(IRIfStatement* node) override;
 
-    virtual llvm::Value* visit(IRFunctionInstantiation*& node) override;
-    virtual llvm::Value* visit(IRModule*& node) override;
+    virtual llvm::Value* visit(IRFunctionInstantiation* node) override;
+    virtual llvm::Value* visit(IRModule* node) override;
 
 private:
     llvm::Type* getLLVMType(IRType* type);

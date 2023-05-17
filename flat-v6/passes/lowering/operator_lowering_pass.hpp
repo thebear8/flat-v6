@@ -8,7 +8,7 @@
 #include "../../ir/ir.hpp"
 #include "../../util/error_logger.hpp"
 
-class OperatorLoweringPass : protected IRVisitor<IRNode*>
+class OperatorLoweringPass : protected IRRefVisitor<IRNode*>
 {
 private:
     ErrorLogger& m_logger;

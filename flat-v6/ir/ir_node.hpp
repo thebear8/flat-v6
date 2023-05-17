@@ -51,7 +51,10 @@ using IRTripleDispatchVisitor = TDV::TripleDispatchVisitor<
     struct IRStructInstantiation>;
 
 template<typename TReturn>
-using IRVisitor = IRTripleDispatchVisitor::RefVisitor<TReturn>;
+using IRVisitor = IRTripleDispatchVisitor::Visitor<TReturn>;
+
+template<typename TReturn>
+using IRRefVisitor = IRTripleDispatchVisitor::RefVisitor<TReturn>;
 
 struct IRNode : IRTripleDispatchVisitor::NodeBase
 {

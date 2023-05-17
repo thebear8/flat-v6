@@ -6,7 +6,7 @@
 #include "../../ir/ir.hpp"
 #include "../../util/error_logger.hpp"
 
-class GenericLoweringPass : IRVisitor<IRNode*>
+class GenericLoweringPass : IRRefVisitor<IRNode*>
 {
 private:
     ErrorLogger& m_logger;

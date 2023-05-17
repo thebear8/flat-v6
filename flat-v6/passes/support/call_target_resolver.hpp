@@ -6,7 +6,7 @@ class Instantiator;
 class Formatter;
 class Environment;
 
-class CallTargetResolver : IRVisitor<IRNode*>
+class CallTargetResolver : IRRefVisitor<IRNode*>
 {
 private:
     Instantiator& m_instantiator;

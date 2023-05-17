@@ -14,7 +14,7 @@ class Instantiator;
 class CallTargetResolver;
 class Formatter;
 
-class SemanticPass : IRVisitor<IRType*>
+class SemanticPass : IRRefVisitor<IRType*>
 {
 private:
     ErrorLogger& m_logger;
