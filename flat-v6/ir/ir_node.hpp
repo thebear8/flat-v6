@@ -31,10 +31,10 @@ using IRTripleDispatchVisitor = TDV::TripleDispatchVisitor<
     struct IRConstraint,
     struct IRConstraintTemplate,
     struct IRConstraintInstantiation,
-    struct IRFunctionHead,
+    struct IRFunction,
+    struct IRConstraintFunction,
     struct IRIntrinsicFunction,
-    struct IRFunctionTemplate,
-    struct IRFunctionInstantiation,
+    struct IRNormalFunction,
     struct IRModule,
 
     struct IRType,
