@@ -148,6 +148,12 @@ public:
     }
 };
 
+template<std::ranges::range Rng1, std::ranges::range Rng2>
+constexpr auto zip(Rng1&& rng1, Rng2&& rng2)
+{
+    return zip_view(std::forward<Rng1>(rng1), std::forward<Rng2>(rng2));
+}
+
 static_assert(std::input_iterator<
               zip_view<std::vector<int>, std::vector<int>>::iterator>);
 
