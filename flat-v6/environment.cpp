@@ -238,124 +238,28 @@ IRStructInstantiation* Environment::findStructInstantiation(
     return nullptr;
 }
 
-IRFunctionHead* Environment::addConstraintCondition(IRFunctionHead* condition)
+IRFunction* Environment::addFunction(IRFunction* function)
 {
-    auto params = condition->params | std::views::transform([](auto const& p) {
-                      return p.second;
-                  })
-        | range_utils::to_vector;
-
-    if (getConstraintCondition(condition->name, params))
-        return nullptr;
-
-    m_constraintConditions.insert(std::pair(condition->name, condition));
-    return condition;
-}
-
-IRFunctionHead* Environment::getConstraintCondition(
-    std::string const& name, std::vector<IRType*> const& params
-)
-{
-    for (auto [i, end] = m_constraintConditions.equal_range(name); i != end;
-         ++i)
-    {
-        auto t = [](std::pair<std::string, IRType*> p) {
-            return p.second;
-        };
-
-        auto candidate = i->second;
-        auto candidateParams = candidate->params | std::views::transform(t);
-
-        if (params.size() == candidateParams.size()
-            && std::ranges::equal(params, candidateParams))
-            return candidate;
-    }
-
-    return nullptr;
-}
-
-IRFunctionHead* Environment::findConstraintCondition(
-    std::string const& name, std::vector<IRType*> const& params
-)
-{
-    if (auto c = getConstraintCondition(name, params))
-        return c;
-    else if (m_parent)
-        return m_parent->findConstraintCondition(name, params);
-
-    return nullptr;
-}
-
-IRFunctionTemplate* Environment::addFunctionTemplate(
-    IRFunctionTemplate* function
-)
-{
-    auto params = function->params | std::views::transform([](auto const& p) {
-                      return p.second;
-                  })
-        | range_utils::to_vector;
-
-    if (getFunctionTemplate(function->name, params))
-        return nullptr;
-
-    m_functionTemplates.insert(std::pair(function->name, function));
+    m_functions.emplace(function->name, function);
     return function;
 }
 
-IRFunctionTemplate* Environment::getFunctionTemplate(
-    std::string const& functionName, std::vector<IRType*> const& params
+IRFunction* Environment::addFunctionInstantiation(
+    IRFunction* function, IRFunction* instantiation
 )
 {
-    for (auto [i, end] = m_functionTemplates.equal_range(functionName);
-         i != end;
-         ++i)
-    {
-        auto t = [](std::pair<std::string, IRType*> p) {
-            return p.second;
-        };
-
-        auto candidate = i->second;
-        auto candidateParams = candidate->params | std::views::transform(t);
-
-        if (params.size() == candidateParams.size()
-            && std::ranges::equal(params, candidateParams))
-            return candidate;
-    }
-
-    return nullptr;
-}
-
-IRFunctionTemplate* Environment::findFunctionTemplate(
-    std::string const& functionName, std::vector<IRType*> const& params
-)
-{
-    if (auto f = getFunctionTemplate(functionName, params))
-        return f;
-    else if (m_parent)
-        return m_parent->findFunctionTemplate(functionName, params);
-
-    return nullptr;
-}
-
-IRFunctionInstantiation* Environment::addFunctionInstantiation(
-    IRFunctionTemplate* functionTemplate,
-    IRFunctionInstantiation* functionInstantiation
-)
-{
-    auto const& typeArgs = functionInstantiation->typeArgs;
-    if (getFunctionInstantiation(functionTemplate, typeArgs))
+    if (getFunctionInstantiation(function, instantiation->typeArgs))
         return nullptr;
 
-    m_functionInstantiations.emplace(functionTemplate, functionInstantiation);
-    return functionInstantiation;
+    m_functionInstantiations.emplace(function, instantiation);
+    return instantiation;
 }
 
-IRFunctionInstantiation* Environment::getFunctionInstantiation(
-    IRFunctionTemplate* functionTemplate, std::vector<IRType*> const& typeArgs
+IRFunction* Environment::getFunctionInstantiation(
+    IRFunction* function, std::vector<IRType*> const& typeArgs
 )
 {
-    for (auto [it, end] =
-             m_functionInstantiations.equal_range(functionTemplate);
+    for (auto [it, end] = m_functionInstantiations.equal_range(function);
          it != end;
          ++it)
     {
@@ -366,14 +270,14 @@ IRFunctionInstantiation* Environment::getFunctionInstantiation(
     return nullptr;
 }
 
-IRFunctionInstantiation* Environment::findFunctionInstantiation(
-    IRFunctionTemplate* functionTemplate, std::vector<IRType*> const& typeArgs
+IRFunction* Environment::findFunctionInstantiation(
+    IRFunction* function, std::vector<IRType*> const& typeArgs
 )
 {
-    if (auto i = getFunctionInstantiation(functionTemplate, typeArgs))
+    if (auto i = getFunctionInstantiation(function, typeArgs))
         return i;
     else if (m_parent)
-        return m_parent->findFunctionInstantiation(functionTemplate, typeArgs);
+        return m_parent->findFunctionInstantiation(function, typeArgs);
 
     return nullptr;
 }
