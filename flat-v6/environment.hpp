@@ -236,6 +236,7 @@ public:
     auto& getStructInstantiationMap() { return m_structInstantiations; }
 
     IRFunction* addFunction(IRFunction* function);
+
     auto& getFunctionMap() { return m_functions; }
 
     IRFunction* addFunctionInstantiation(
@@ -249,6 +250,8 @@ public:
     IRFunction* findFunctionInstantiation(
         IRFunction* function, std::vector<IRType*> const& typeArgs
     );
+
+    auto& getFunctionInstantiationMap() { return m_functionInstantiations; }
 
     /// @brief Add a type for a variable of given name to the current
     /// environment
