@@ -36,16 +36,22 @@ void FunctionExtractionPass::visit(ASTFunctionDeclaration* node)
     if (!result)
         return m_logger.error(node->result->location, error);
 
-    auto function = m_irCtx->make(
-        IRFunctionTemplate(node->name, typeParams, params, result, {}, nullptr)
-    );
+    auto function = m_irCtx->make(IRNormalFunction(
+        m_module,
+        nullptr,
+        node->name,
+        typeParams,
+        {},
+        params,
+        result,
+        {},
+        nullptr
+    ));
 
-    function->setParent(m_module);
-    function->setLibraryNameForImport(node->lib);
     function->setLocation(node->location);
     node->setIRFunction(function);
 
-    if (!m_module->getEnv()->addFunctionTemplate(function))
+    if (!m_module->getEnv()->addFunction(function))
     {
         return m_logger.error(
             node->location,
