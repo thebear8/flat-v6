@@ -14,7 +14,7 @@ class Instantiator;
 class CallTargetResolver;
 class Formatter;
 
-class SemanticPass : IRRefVisitor<IRType*>
+class SemanticPass : IRVisitor<IRType*>
 {
 private:
     ErrorLogger& m_logger;
@@ -53,30 +53,30 @@ public:
     void process(IRModule* mod);
 
 private:
-    virtual IRType* visit(IRIntegerExpression*& node) override;
-    virtual IRType* visit(IRBoolExpression*& node) override;
-    virtual IRType* visit(IRCharExpression*& node) override;
-    virtual IRType* visit(IRStringExpression*& node) override;
-    virtual IRType* visit(IRIdentifierExpression*& node) override;
-    virtual IRType* visit(IRStructExpression*& node) override;
-    virtual IRType* visit(IRUnaryExpression*& node) override;
-    virtual IRType* visit(IRBinaryExpression*& node) override;
-    virtual IRType* visit(IRCallExpression*& node) override;
-    virtual IRType* visit(IRIndexExpression*& node) override;
-    virtual IRType* visit(IRFieldExpression*& node) override;
+    virtual IRType* visit(IRIntegerExpression* node, IRNode*& ref) override;
+    virtual IRType* visit(IRBoolExpression* node, IRNode*& ref) override;
+    virtual IRType* visit(IRCharExpression* node, IRNode*& ref) override;
+    virtual IRType* visit(IRStringExpression* node, IRNode*& ref) override;
+    virtual IRType* visit(IRIdentifierExpression* node, IRNode*& ref) override;
+    virtual IRType* visit(IRStructExpression* node, IRNode*& ref) override;
+    virtual IRType* visit(IRUnaryExpression* node, IRNode*& ref) override;
+    virtual IRType* visit(IRBinaryExpression* node, IRNode*& ref) override;
+    virtual IRType* visit(IRCallExpression* node, IRNode*& ref) override;
+    virtual IRType* visit(IRIndexExpression* node, IRNode*& ref) override;
+    virtual IRType* visit(IRFieldExpression* node, IRNode*& ref) override;
 
-    virtual IRType* visit(IRBlockStatement*& node) override;
-    virtual IRType* visit(IRExpressionStatement*& node) override;
-    virtual IRType* visit(IRVariableStatement*& node) override;
-    virtual IRType* visit(IRReturnStatement*& node) override;
-    virtual IRType* visit(IRWhileStatement*& node) override;
-    virtual IRType* visit(IRIfStatement*& node) override;
+    virtual IRType* visit(IRBlockStatement* node, IRNode*& ref) override;
+    virtual IRType* visit(IRExpressionStatement* node, IRNode*& ref) override;
+    virtual IRType* visit(IRVariableStatement* node, IRNode*& ref) override;
+    virtual IRType* visit(IRReturnStatement* node, IRNode*& ref) override;
+    virtual IRType* visit(IRWhileStatement* node, IRNode*& ref) override;
+    virtual IRType* visit(IRIfStatement* node, IRNode*& ref) override;
 
-    virtual IRType* visit(IRFunctionTemplate*& node) override;
-    virtual IRType* visit(IRModule*& node) override;
+    virtual IRType* visit(IRNormalFunction* node, IRNode*& ref) override;
+    virtual IRType* visit(IRModule* node, IRNode*& ref) override;
 
 private:
-    IRFunctionHead* findCallTarget(
+    IRFunction* findCallTarget(
         std::string const& name,
         std::vector<IRType*> const& typeArgs,
         std::vector<IRType*> const& args,

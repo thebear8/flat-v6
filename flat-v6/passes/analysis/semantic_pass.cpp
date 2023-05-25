@@ -19,31 +19,31 @@ void SemanticPass::process(IRModule* mod)
     dispatch(mod);
 }
 
-IRType* SemanticPass::visit(IRIntegerExpression*& node)
+IRType* SemanticPass::visit(IRIntegerExpression* node, IRNode*& ref)
 {
     node->setType(m_compCtx.getIntegerType(node->width, node->isSigned));
     return node->getType();
 }
 
-IRType* SemanticPass::visit(IRBoolExpression*& node)
+IRType* SemanticPass::visit(IRBoolExpression* node, IRNode*& ref)
 {
     node->setType(m_compCtx.getBool());
     return node->getType();
 }
 
-IRType* SemanticPass::visit(IRCharExpression*& node)
+IRType* SemanticPass::visit(IRCharExpression* node, IRNode*& ref)
 {
     node->setType(m_compCtx.getChar());
     return node->getType();
 }
 
-IRType* SemanticPass::visit(IRStringExpression*& node)
+IRType* SemanticPass::visit(IRStringExpression* node, IRNode*& ref)
 {
     node->setType(m_compCtx.getString());
     return node->getType();
 }
 
-IRType* SemanticPass::visit(IRIdentifierExpression*& node)
+IRType* SemanticPass::visit(IRIdentifierExpression* node, IRNode*& ref)
 {
     if (node->typeArgs.size() != 0)
     {
@@ -65,7 +65,7 @@ IRType* SemanticPass::visit(IRIdentifierExpression*& node)
     return node->getType();
 }
 
-IRType* SemanticPass::visit(IRStructExpression*& node)
+IRType* SemanticPass::visit(IRStructExpression* node, IRNode*& ref)
 {
     auto structTemplate = m_env->findStruct(node->structName);
     if (!structTemplate)
@@ -78,7 +78,7 @@ IRType* SemanticPass::visit(IRStructExpression*& node)
     }
 
     for (auto& [name, value] : node->fields)
-        dispatch(value);
+        dispatchRef(value);
 
     for (auto const& [name, value] : node->fields)
     {
@@ -164,9 +164,9 @@ IRType* SemanticPass::visit(IRStructExpression*& node)
     return node->getType();
 }
 
-IRType* SemanticPass::visit(IRUnaryExpression*& node)
+IRType* SemanticPass::visit(IRUnaryExpression* node, IRNode*& ref)
 {
-    auto value = dispatch(node->expression);
+    auto value = dispatchRef(node->expression);
     if (unaryOperators.at(node->operation).category
             == OperatorCategory::UnaryArithmetic
         && value->isIntegerType())
@@ -208,16 +208,16 @@ IRType* SemanticPass::visit(IRUnaryExpression*& node)
             );
         }
 
-        node->setTarget(target);
+        // node->setTarget(target);
         node->setType(target->result);
         return node->getType();
     }
 }
 
-IRType* SemanticPass::visit(IRBinaryExpression*& node)
+IRType* SemanticPass::visit(IRBinaryExpression* node, IRNode*& ref)
 {
-    auto left = dispatch(node->left);
-    auto right = dispatch(node->right);
+    auto left = dispatchRef(node->left);
+    auto right = dispatchRef(node->right);
 
     if (binaryOperators.at(node->operation).category
             == OperatorCategory::BinaryArithmetic
@@ -308,17 +308,17 @@ IRType* SemanticPass::visit(IRBinaryExpression*& node)
             );
         }
 
-        node->setTarget(target);
+        // node->setTarget(target);
         node->setType(target->result);
         return node->getType();
     }
 }
 
-IRType* SemanticPass::visit(IRCallExpression*& node)
+IRType* SemanticPass::visit(IRCallExpression* node, IRNode*& ref)
 {
     std::vector<IRType*> args;
     for (auto arg : node->args)
-        args.push_back(dispatch(arg));
+        args.push_back(dispatchRef(arg));
 
     if (auto identifierExpression =
             dynamic_cast<IRIdentifierExpression*>(node->expression))
@@ -337,13 +337,13 @@ IRType* SemanticPass::visit(IRCallExpression*& node)
             );
         }
 
-        node->setTarget(target);
+        // node->setTarget(target);
         node->setType(target->result);
         return node->getType();
     }
     else
     {
-        args.insert(args.begin(), dispatch(node->expression));
+        args.insert(args.begin(), dispatchRef(node->expression));
 
         std::string error;
         auto target = findCallTarget("__call__", {}, args, nullptr, error);
@@ -357,19 +357,19 @@ IRType* SemanticPass::visit(IRCallExpression*& node)
             );
         }
 
-        node->setTarget(target);
+        // node->setTarget(target);
         node->setType(target->result);
         return node->getType();
     }
 }
 
-IRType* SemanticPass::visit(IRIndexExpression*& node)
+IRType* SemanticPass::visit(IRIndexExpression* node, IRNode*& ref)
 {
     std::vector<IRType*> args;
     for (auto arg : node->args)
-        args.push_back(dispatch(arg));
+        args.push_back(dispatchRef(arg));
 
-    auto value = dispatch(node->expression);
+    auto value = dispatchRef(node->expression);
     if (value->isArrayType() && args.size() == 1
         && args.front()->isIntegerType())
     {
@@ -398,15 +398,15 @@ IRType* SemanticPass::visit(IRIndexExpression*& node)
             );
         }
 
-        node->setTarget(target);
+        // node->setTarget(target);
         node->setType(target->result);
         return node->getType();
     }
 }
 
-IRType* SemanticPass::visit(IRFieldExpression*& node)
+IRType* SemanticPass::visit(IRFieldExpression* node, IRNode*& ref)
 {
-    auto value = dispatch(node->expression);
+    auto value = dispatchRef(node->expression);
     if (!value->isStructType())
     {
         return m_logger.error(
@@ -431,26 +431,26 @@ IRType* SemanticPass::visit(IRFieldExpression*& node)
     return node->getType();
 }
 
-IRType* SemanticPass::visit(IRBlockStatement*& node)
+IRType* SemanticPass::visit(IRBlockStatement* node, IRNode*& ref)
 {
     m_env = m_envCtx.make(
         Environment("BlockStatement@" + std::to_string((size_t)node), m_env)
     );
 
     for (auto& statement : node->statements)
-        dispatch(statement);
+        dispatchRef(statement);
 
     m_env = m_env->getParent();
     return nullptr;
 }
 
-IRType* SemanticPass::visit(IRExpressionStatement*& node)
+IRType* SemanticPass::visit(IRExpressionStatement* node, IRNode*& ref)
 {
-    dispatch(node->expression);
+    dispatchRef(node->expression);
     return nullptr;
 }
 
-IRType* SemanticPass::visit(IRVariableStatement*& node)
+IRType* SemanticPass::visit(IRVariableStatement* node, IRNode*& ref)
 {
     for (auto& [name, value] : node->items)
     {
@@ -463,7 +463,7 @@ IRType* SemanticPass::visit(IRVariableStatement*& node)
             );
         }
 
-        if (dispatch(value)->isVoidType())
+        if (dispatchRef(value)->isVoidType())
         {
             return m_logger.error(
                 node->getLocation(SourceRef()),
@@ -478,9 +478,9 @@ IRType* SemanticPass::visit(IRVariableStatement*& node)
     return nullptr;
 }
 
-IRType* SemanticPass::visit(IRReturnStatement*& node)
+IRType* SemanticPass::visit(IRReturnStatement* node, IRNode*& ref)
 {
-    m_result = dispatch(node->expression);
+    m_result = dispatchRef(node->expression);
     if (m_result != m_expectedResult)
     {
         m_result = nullptr;
@@ -494,9 +494,9 @@ IRType* SemanticPass::visit(IRReturnStatement*& node)
     return nullptr;
 }
 
-IRType* SemanticPass::visit(IRWhileStatement*& node)
+IRType* SemanticPass::visit(IRWhileStatement* node, IRNode*& ref)
 {
-    auto condition = dispatch(node->condition);
+    auto condition = dispatchRef(node->condition);
     if (!condition->isBoolType())
     {
         return m_logger.error(
@@ -507,15 +507,15 @@ IRType* SemanticPass::visit(IRWhileStatement*& node)
     }
 
     auto prevResult = m_result;
-    dispatch(node->body);
+    dispatchRef(node->body);
     m_result = prevResult;
 
     return nullptr;
 }
 
-IRType* SemanticPass::visit(IRIfStatement*& node)
+IRType* SemanticPass::visit(IRIfStatement* node, IRNode*& ref)
 {
-    auto condition = dispatch(node->condition);
+    auto condition = dispatchRef(node->condition);
     if (!condition->isBoolType())
     {
         return m_logger.error(
@@ -528,12 +528,12 @@ IRType* SemanticPass::visit(IRIfStatement*& node)
     auto prevResult = m_result;
 
     m_result = nullptr;
-    dispatch(node->ifBody);
+    dispatchRef(node->ifBody);
     auto ifResult = m_result;
 
     m_result = nullptr;
     if (node->elseBody)
-        dispatch(node->elseBody);
+        dispatchRef(node->elseBody);
     auto elseResult = m_result;
 
     m_result =
@@ -543,7 +543,7 @@ IRType* SemanticPass::visit(IRIfStatement*& node)
     return nullptr;
 }
 
-IRType* SemanticPass::visit(IRFunctionTemplate*& node)
+IRType* SemanticPass::visit(IRNormalFunction* node, IRNode*& ref)
 {
     if (!node->body)
         return nullptr;
@@ -557,12 +557,12 @@ IRType* SemanticPass::visit(IRFunctionTemplate*& node)
     {
         for (auto condition : requirement->conditions)
         {
-            if (!m_env->addConstraintCondition(condition))
+            if (!m_env->addFunction(condition))
             {
                 return m_logger.error(
                     node->getLocation(SourceRef()),
                     "Function "
-                        + m_formatter.formatFunctionHeadDescriptor(condition)
+                        + m_formatter.formatFunctionDescriptor(condition)
                         + " is already defined",
                     nullptr
                 );
@@ -576,7 +576,7 @@ IRType* SemanticPass::visit(IRFunctionTemplate*& node)
     m_result = nullptr;
     m_expectedResult = node->result;
 
-    dispatch(node->body);
+    dispatchRef(node->body);
 
     m_env = m_env->getParent();
 
@@ -593,14 +593,14 @@ IRType* SemanticPass::visit(IRFunctionTemplate*& node)
     return nullptr;
 }
 
-IRType* SemanticPass::visit(IRModule*& node)
+IRType* SemanticPass::visit(IRModule* node, IRNode*& ref)
 {
     m_module = node;
     m_irCtx = node->getIrCtx();
 
-    for (auto& [name, function] : node->getEnv()->getFunctionTemplateMap())
+    for (auto& [name, function] : node->getEnv()->getFunctionMap())
     {
-        dispatch(function);
+        dispatchRef(function);
     }
 
     m_module = nullptr;
@@ -608,7 +608,7 @@ IRType* SemanticPass::visit(IRModule*& node)
     return nullptr;
 }
 
-IRFunctionHead* SemanticPass::findCallTarget(
+IRFunction* SemanticPass::findCallTarget(
     std::string const& name,
     std::vector<IRType*> const& typeArgs,
     std::vector<IRType*> const& args,
@@ -616,41 +616,37 @@ IRFunctionHead* SemanticPass::findCallTarget(
     optional_ref<std::string> reason
 )
 {
-    std::string constraintConditionReason;
-    auto constraintCondition =
-        m_callTargetResolver.findMatchingConstraintCondition(
-            m_env, name, args, result, constraintConditionReason
-        );
-
-    std::string functionTemplateReason;
-    std::vector<IRType*> functionTemplateTypeArgs;
-    auto functionTemplate = m_callTargetResolver.findMatchingFunctionTemplate(
-        m_env,
-        name,
-        typeArgs,
-        args,
-        result,
-        functionTemplateTypeArgs,
-        functionTemplateReason
+    std::vector<IRType*> inferredTypeArgs;
+    // std::set<IRFunction*> argRejected;
+    // std::set<IRFunction*> requirementRejected;
+    auto functions = m_callTargetResolver.getMatchingFunctions(
+        m_env, name, typeArgs, args, result, inferredTypeArgs
+        // argRejected,
+        // requirementRejected
     );
 
-    if (constraintCondition)
+    if (functions.size() == 1)
+        return functions.front();
+
+    // TODO: generate better/more precise diagnostic messages
+    if (functions.size() == 0)
     {
-        return constraintCondition;
-    }
-    else if (functionTemplate)
-    {
-        return m_instantiator.getFunctionInstantiation(
-            functionTemplate, functionTemplateTypeArgs
-        );
+        if (reason.has_value())
+        {
+            reason = "No matching function for call to "
+                + m_formatter.formatCallDescriptor(
+                    name, typeArgs, args, result
+                );
+        }
     }
     else
     {
-        reason = "No matching target for function call "
-            + m_formatter.formatCallDescriptor(name, typeArgs, args, result)
-            + ("\n  " + constraintConditionReason)
-            + ("\n  " + functionTemplateReason);
-
-        return nullptr;
+        if (reason.has_value())
+            reason = "Multiple matching functions for call to "
+                + m_formatter.formatCallDescriptor(
+                    name, typeArgs, args, result
+                );
     }
+
+    return nullptr;
 }
