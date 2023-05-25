@@ -235,7 +235,8 @@ IRNode* FunctionPopulationPass::visit(ASTIfStatement* node)
         ->make(IRIfStatement(
             (IRExpression*)dispatch(node->condition),
             (IRStatement*)dispatch(node->ifBody),
-            (IRStatement*)((node->elseBody) ? dispatch(node->elseBody) : nullptr)
+            (IRStatement*)((node->elseBody) ? dispatch(node->elseBody) : nullptr
+            )
         ))
         ->setLocation(node->location);
 }
@@ -287,7 +288,8 @@ IRNode* FunctionPopulationPass::visit(ASTFunctionDeclaration* node)
     {
         auto instantiation = (IRConstraintInstantiation*)dispatch(requirement);
 
-        if (function->requirements.contains(instantiation))
+        if (std::ranges::find(function->requirements, instantiation)
+            != function->requirements.end())
         {
             return m_logger.error(
                 requirement->location,
@@ -296,7 +298,7 @@ IRNode* FunctionPopulationPass::visit(ASTFunctionDeclaration* node)
             );
         }
 
-        function->requirements.emplace(instantiation);
+        function->requirements.push_back(instantiation);
     }
 
     function->body = node->body ? (IRStatement*)dispatch(node->body) : nullptr;
