@@ -6,7 +6,7 @@
 
 class IRConstraintTemplate;
 class IRStructTemplate;
-class IRFunctionTemplate;
+class IRNormalFunction;
 
 struct ASTDeclaration : public ASTNode
 {
@@ -138,5 +138,5 @@ struct ASTFunctionDeclaration : public ASTDeclaration
 
     IMPLEMENT_ACCEPT()
 
-    METADATA_PROP(irFunction, IRFunctionTemplate*, getIRFunction, setIRFunction)
+    METADATA_PROP(irFunction, IRNormalFunction*, getIRFunction, setIRFunction)
 };

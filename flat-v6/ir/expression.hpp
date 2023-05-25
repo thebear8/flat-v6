@@ -6,7 +6,7 @@
 #include "../data/operator.hpp"
 #include "ir_node.hpp"
 
-struct IRFunctionHead;
+struct IRFunction;
 
 struct IRExpression : public IRNode
 {
@@ -105,8 +105,6 @@ struct IRUnaryExpression : public IRExpression
     }
 
     IMPLEMENT_ACCEPT()
-
-    METADATA_PROP(target, IRFunctionHead*, getTarget, setTarget)
 };
 
 struct IRBinaryExpression : public IRExpression
@@ -122,8 +120,6 @@ struct IRBinaryExpression : public IRExpression
     }
 
     IMPLEMENT_ACCEPT()
-
-    METADATA_PROP(target, IRFunctionHead*, getTarget, setTarget)
 };
 
 struct IRCallExpression : public IRExpression
@@ -139,8 +135,6 @@ struct IRCallExpression : public IRExpression
     }
 
     IMPLEMENT_ACCEPT()
-
-    METADATA_PROP(target, IRFunctionHead*, getTarget, setTarget)
 };
 
 struct IRIndexExpression : public IRExpression
@@ -156,8 +150,6 @@ struct IRIndexExpression : public IRExpression
     }
 
     IMPLEMENT_ACCEPT()
-
-    METADATA_PROP(target, IRFunctionHead*, getTarget, setTarget)
 };
 
 struct IRFieldExpression : public IRExpression
@@ -175,11 +167,11 @@ struct IRFieldExpression : public IRExpression
 
 struct IRBoundCallExpression : public IRExpression
 {
-    IRFunctionHead* target;
+    IRFunction* target;
     std::vector<IRExpression*> args;
 
     IRBoundCallExpression(
-        IRFunctionHead* target, std::vector<IRExpression*> const& args
+        IRFunction* target, std::vector<IRExpression*> const& args
     )
         : target(target), args(args)
     {
