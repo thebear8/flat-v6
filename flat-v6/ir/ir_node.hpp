@@ -1,7 +1,7 @@
 #pragma once
 #include "../data/source_ref.hpp"
 #include "../util/metadata_prop.hpp"
-#include "../util/ref_visitor.hpp"
+#include "../util/visitor.hpp"
 
 using IRTripleDispatchVisitor = TDV::TripleDispatchVisitor<
     struct IRNode,
@@ -50,11 +50,8 @@ using IRTripleDispatchVisitor = TDV::TripleDispatchVisitor<
     struct IRStructTemplate,
     struct IRStructInstantiation>;
 
-template<typename TReturn>
-using IRVisitor = IRTripleDispatchVisitor::Visitor<TReturn>;
-
-template<typename TReturn>
-using IRRefVisitor = IRTripleDispatchVisitor::RefVisitor<TReturn>;
+template<typename TReturn, typename TRefBase = IRNode>
+using IRVisitor = IRTripleDispatchVisitor::Visitor<TReturn, TRefBase>;
 
 struct IRNode : IRTripleDispatchVisitor::NodeBase
 {
