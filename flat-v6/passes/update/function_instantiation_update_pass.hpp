@@ -31,7 +31,7 @@ public:
 
 public:
     void process(IRModule* node);
-    IRFunctionInstantiation* update(IRFunctionInstantiation* node);
+    IRNormalFunction* update(IRNormalFunction* node);
 
 private:
     IRNode* visit(IRIntegerExpression* node) override { return node; }
@@ -53,6 +53,6 @@ private:
     IRNode* visit(IRWhileStatement* node) override;
     IRNode* visit(IRIfStatement* node) override;
 
-    IRNode* visit(IRFunctionHead* node) override;
-    IRNode* visit(IRFunctionInstantiation* node) override;
+    IRNode* visit(IRConstraintFunction* node) override;
+    IRNode* visit(IRNormalFunction* node) override;
 };

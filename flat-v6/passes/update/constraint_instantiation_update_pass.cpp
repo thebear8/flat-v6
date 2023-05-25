@@ -67,7 +67,7 @@ IRConstraintInstantiation* ConstraintInstantiationUpdatePass::update(
             | range_utils::to_vector;
         auto result = m_instantiator.instantiateType(c->result, m_env, m_irCtx);
 
-        return m_irCtx->make(IRFunctionHead(c->name, params, result));
+        return m_irCtx->make(IRConstraintFunction(c->name, params, result));
           });
 
     constraintInstantiation->requirements =
