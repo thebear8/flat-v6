@@ -62,6 +62,13 @@ public:
     CompilationContext(std::ostream& logStream = std::cout);
     ~CompilationContext();
 
+private:
+    void addIntrinsicFunctions();
+    void addUnaryOperator(std::string const& name, IRType* a, IRType* result);
+    void addBinaryOperator(
+        std::string const& name, IRType* a, IRType* b, IRType* result
+    );
+
 public:
     void readSourceFiles(std::string const& sourceDir);
     void parseSourceFiles();

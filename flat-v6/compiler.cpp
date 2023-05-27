@@ -127,7 +127,7 @@ void CompilationContext::runPasses()
     Formatter formatter;
 
     Instantiator instantiator(envCtx);
-    CallTargetResolver callTargetResolver(instantiator, formatter);
+    CallTargetResolver callTargetResolver(instantiator);
     ASTTypeResolver astTypeResolver(instantiator);
 
     ModuleExtractionPass moduleExtractionPass(m_logger, *this, m_irCtx);
@@ -327,4 +327,102 @@ IRArrayType* CompilationContext::getArrayType(IRType* base)
     if (!m_arrayTypes.contains(base))
         m_arrayTypes.try_emplace(base, new IRArrayType(base));
     return m_arrayTypes.at(base);
+}
+
+void CompilationContext::addUnaryOperator(
+    std::string const& name, IRType* a, IRType* result
+)
+{
+    auto f = addFunction(m_irCtx.make(IRIntrinsicFunction(
+        nullptr, nullptr, name, {}, {}, { std::pair("a", a) }, result, {}
+    )));
+    FLC_ASSERT(f);
+}
+
+void CompilationContext::addBinaryOperator(
+    std::string const& name, IRType* a, IRType* b, IRType* result
+)
+{
+    auto f = addFunction(m_irCtx.make(IRIntrinsicFunction(
+        nullptr,
+        nullptr,
+        name,
+        {},
+        {},
+        { std::pair("a", a), std::pair("b", b) },
+        result,
+        {}
+    )));
+    FLC_ASSERT(f);
+}
+
+void CompilationContext::addIntrinsicFunctions()
+{
+    auto intTypes = { getU8(), getU16(), getU32(), getU64(),
+                      getI8(), getI16(), getI32(), getI64() };
+
+    for (auto a : intTypes)
+    {
+        addUnaryOperator("__pos__", a, a);
+        addUnaryOperator("__neg__", a, a);
+        addUnaryOperator("__not__", a, a);
+    }
+
+    addUnaryOperator("__lnot__", getBool(), getBool());
+
+    for (auto a : intTypes)
+    {
+        for (auto b : intTypes)
+        {
+            auto result = getIntegerType(
+                std::max(a->getBitSize(), b->getBitSize()), a->isSigned()
+            );
+
+            addBinaryOperator("__add__", a, b, result);
+            addBinaryOperator("__sub__", a, b, result);
+            addBinaryOperator("__mul__", a, b, result);
+            addBinaryOperator("__div__", a, b, result);
+            addBinaryOperator("__mod__", a, b, result);
+        }
+    }
+
+    for (auto a : intTypes)
+    {
+        addBinaryOperator("__and__", a, a, a);
+        addBinaryOperator("__or__", a, a, a);
+        addBinaryOperator("__xor__", a, a, a);
+        addBinaryOperator("__shl__", a, a, a);
+        addBinaryOperator("__shr__", a, a, a);
+    }
+
+    addBinaryOperator("__land__", getBool(), getBool(), getBool());
+    addBinaryOperator("__lor__", getBool(), getBool(), getBool());
+
+    for (auto a : intTypes)
+    {
+        for (auto b : intTypes)
+        {
+            addBinaryOperator("__eq__", a, b, getBool());
+            addBinaryOperator("__ne__", a, b, getBool());
+        }
+    }
+
+    for (auto a : intTypes)
+    {
+        for (auto b : intTypes)
+        {
+            addBinaryOperator("__lt__", a, b, getBool());
+            addBinaryOperator("__gt__", a, b, getBool());
+            addBinaryOperator("__lteq__", a, b, getBool());
+            addBinaryOperator("__gteq__", a, b, getBool());
+        }
+    }
+
+    for (auto a : intTypes)
+    {
+        for (auto b : intTypes)
+        {
+            addBinaryOperator("__assign__", a, b, a);
+        }
+    }
 }
