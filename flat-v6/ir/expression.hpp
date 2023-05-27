@@ -165,6 +165,22 @@ struct IRFieldExpression : public IRExpression
     IMPLEMENT_ACCEPT()
 };
 
+struct IRLoweredCallExpression : public IRExpression
+{
+    std::string name;
+    std::vector<IRType*> typeArgs;
+    std::vector<IRExpression*> args;
+
+    IRLoweredCallExpression(
+        std::string name,
+        std::vector<IRType*> const& typeArgs,
+        std::vector<IRExpression*> const& args
+    )
+        : name(name), typeArgs(typeArgs), args(args)
+    {
+    }
+};
+
 struct IRBoundCallExpression : public IRExpression
 {
     IRFunction* target;

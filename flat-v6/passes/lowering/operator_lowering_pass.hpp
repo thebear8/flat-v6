@@ -8,7 +8,7 @@
 #include "../../ir/ir.hpp"
 #include "../../util/error_logger.hpp"
 
-class OperatorLoweringPass : protected IRVisitor<IRNode*>
+class OperatorLoweringPass : protected IRVisitor<void>
 {
 private:
     ErrorLogger& m_logger;
@@ -24,28 +24,27 @@ public:
     }
 
 public:
-    void process(IRModule* mod);
+    void process(IRModule* node);
 
 private:
-    virtual IRNode* visit(IRIntegerExpression* node) override;
-    virtual IRNode* visit(IRBoolExpression* node) override;
-    virtual IRNode* visit(IRCharExpression* node) override;
-    virtual IRNode* visit(IRStringExpression* node) override;
-    virtual IRNode* visit(IRIdentifierExpression* node) override;
-    virtual IRNode* visit(IRStructExpression* node) override;
-    virtual IRNode* visit(IRUnaryExpression* node) override;
-    virtual IRNode* visit(IRBinaryExpression* node) override;
-    virtual IRNode* visit(IRCallExpression* node) override;
-    virtual IRNode* visit(IRIndexExpression* node) override;
-    virtual IRNode* visit(IRFieldExpression* node) override;
+    virtual void visit(IRIntegerExpression* node) override {}
+    virtual void visit(IRBoolExpression* node) override {}
+    virtual void visit(IRCharExpression* node) override {}
+    virtual void visit(IRStringExpression* node) override {}
+    virtual void visit(IRIdentifierExpression* node) override {}
+    virtual void visit(IRStructExpression* node) override;
+    virtual void visit(IRUnaryExpression* node, IRNode*& ref) override;
+    virtual void visit(IRBinaryExpression* node, IRNode*& ref) override;
+    virtual void visit(IRCallExpression* node, IRNode*& ref) override;
+    virtual void visit(IRIndexExpression* node, IRNode*& ref) override;
+    virtual void visit(IRFieldExpression* node) override;
 
-    virtual IRNode* visit(IRBlockStatement* node) override;
-    virtual IRNode* visit(IRExpressionStatement* node) override;
-    virtual IRNode* visit(IRVariableStatement* node) override;
-    virtual IRNode* visit(IRReturnStatement* node) override;
-    virtual IRNode* visit(IRWhileStatement* node) override;
-    virtual IRNode* visit(IRIfStatement* node) override;
+    virtual void visit(IRBlockStatement* node) override;
+    virtual void visit(IRExpressionStatement* node) override;
+    virtual void visit(IRVariableStatement* node) override;
+    virtual void visit(IRReturnStatement* node) override;
+    virtual void visit(IRWhileStatement* node) override;
+    virtual void visit(IRIfStatement* node) override;
 
-    virtual IRNode* visit(IRNormalFunction* node) override;
-    virtual IRNode* visit(IRModule* node) override;
+    virtual void visit(IRNormalFunction* node) override;
 };

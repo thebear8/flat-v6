@@ -18,6 +18,7 @@ using IRTripleDispatchVisitor = TDV::TripleDispatchVisitor<
     struct IRCallExpression,
     struct IRIndexExpression,
     struct IRFieldExpression,
+    struct IRLoweredCallExpression,
     struct IRBoundCallExpression,
 
     struct IRStatement,
