@@ -333,33 +333,27 @@ void CompilationContext::addUnaryOperator(
     std::string const& name, IRType* a, IRType* result
 )
 {
-    auto f = addFunction(m_irCtx.make(IRIntrinsicFunction(
-        nullptr, nullptr, name, {}, {}, { std::pair("a", a) }, result, {}
-    )));
-    FLC_ASSERT(f);
+    FLC_ASSERT(addFunction(m_irCtx.make(IRUnaryIntrinsic(name, a, result))));
 }
 
 void CompilationContext::addBinaryOperator(
     std::string const& name, IRType* a, IRType* b, IRType* result
 )
 {
-    auto f = addFunction(m_irCtx.make(IRIntrinsicFunction(
-        nullptr,
-        nullptr,
-        name,
-        {},
-        {},
-        { std::pair("a", a), std::pair("b", b) },
-        result,
-        {}
-    )));
-    FLC_ASSERT(f);
+    FLC_ASSERT(addFunction(m_irCtx.make(IRBinaryIntrinsic(name, a, b, result)))
+    );
 }
 
 void CompilationContext::addIntrinsicFunctions()
 {
     auto intTypes = { getU8(), getU16(), getU32(), getU64(),
                       getI8(), getI16(), getI32(), getI64() };
+
+    for (auto idx : intTypes)
+    {
+        auto t = m_irCtx.make(IRGenericType("T"));
+        addFunction(m_irCtx.make(IRIndexIntrinsic(t, getArrayType(t), idx)));
+    }
 
     for (auto a : intTypes)
     {

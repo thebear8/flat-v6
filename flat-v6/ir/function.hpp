@@ -23,6 +23,7 @@ struct IRFunction : public IRNode
     std::vector<std::pair<std::string, IRType*>> params = {};
     IRType* result = nullptr;
     std::vector<IRConstraintInstantiation*> requirements = {};
+    IRStatement* body = nullptr;
 
     IRFunction() {}
 
@@ -34,7 +35,8 @@ struct IRFunction : public IRNode
         std::vector<IRType*> const& typeArgs,
         std::vector<std::pair<std::string, IRType*>> const& params,
         IRType* result,
-        std::vector<IRConstraintInstantiation*> requirements
+        std::vector<IRConstraintInstantiation*> requirements,
+        IRStatement* body
     )
         : parent(parent),
           blueprint(blueprint),
@@ -43,15 +45,22 @@ struct IRFunction : public IRNode
           typeArgs(typeArgs),
           params(params),
           result(result),
-          requirements(requirements)
+          requirements(requirements),
+          body(body)
     {
     }
 
     virtual bool isConstraintFunction() { return false; }
-    virtual bool isIntrinsicFunction() { return false; }
+    virtual bool isUnaryIntrinsic() { return false; }
+    virtual bool isBinaryIntrinsic() { return false; }
+    virtual bool isIndexIntrinsic() { return false; }
     virtual bool isNormalFunction() { return false; }
 
     IMPLEMENT_ACCEPT()
+
+    METADATA_PROP(
+        llvmFunction, llvm::Function*, getLLVMFunction, setLLVMFunction
+    )
 };
 
 struct IRConstraintFunction : public IRFunction
@@ -61,7 +70,9 @@ struct IRConstraintFunction : public IRFunction
         std::vector<std::pair<std::string, IRType*>> const& params,
         IRType* result
     )
-        : IRFunction(nullptr, nullptr, name, {}, {}, params, result, {})
+        : IRFunction(
+            nullptr, nullptr, name, {}, {}, params, result, {}, nullptr
+        )
     {
     }
 
@@ -70,42 +81,72 @@ struct IRConstraintFunction : public IRFunction
     IMPLEMENT_ACCEPT()
 };
 
-struct IRIntrinsicFunction : public IRFunction
+struct IRUnaryIntrinsic : IRFunction
 {
-    IRIntrinsicFunction() {}
+    IRUnaryIntrinsic() {}
 
-    IRIntrinsicFunction(
-        IRModule* parent,
-        IRIntrinsicFunction* blueprint,
-        std::string const& name,
-        std::vector<IRGenericType*> const& typeParams,
-        std::vector<IRType*> const& typeArgs,
-        std::vector<std::pair<std::string, IRType*>> const& params,
-        IRType* result,
-        std::vector<IRConstraintInstantiation*> requirements
-    )
+    IRUnaryIntrinsic(std::string name, IRType* a, IRType* result)
         : IRFunction(
-            parent,
-            blueprint,
-            name,
-            typeParams,
-            typeArgs,
-            params,
-            result,
-            requirements
+            nullptr, nullptr, name, {}, {}, { { "a", a } }, result, {}, nullptr
         )
     {
     }
 
-    bool isIntrinsicFunction() override { return true; }
+    bool isUnaryIntrinsic() override { return true; }
+
+    IMPLEMENT_ACCEPT()
+};
+
+struct IRBinaryIntrinsic : public IRFunction
+{
+    IRBinaryIntrinsic() {}
+
+    IRBinaryIntrinsic(std::string name, IRType* a, IRType* b, IRType* result)
+        : IRFunction(
+            nullptr,
+            nullptr,
+            name,
+            {},
+            {},
+            { { "a", a }, { "b", b } },
+            result,
+            {},
+            nullptr
+        )
+    {
+    }
+
+    bool isBinaryIntrinsic() override { return true; }
+
+    IMPLEMENT_ACCEPT()
+};
+
+struct IRIndexIntrinsic : IRFunction
+{
+    IRIndexIntrinsic() {}
+
+    IRIndexIntrinsic(IRGenericType* t, IRArrayType* arrayOfT, IRType* idx)
+        : IRFunction(
+            nullptr,
+            nullptr,
+            "__index__",
+            { t },
+            {},
+            { { "array", (IRType*)arrayOfT }, { "index", (IRType*)idx } },
+            (IRType*)t,
+            {},
+            nullptr
+        )
+    {
+    }
+
+    bool isIndexIntrinsic() override { return true; }
 
     IMPLEMENT_ACCEPT()
 };
 
 struct IRNormalFunction : public IRFunction
 {
-    IRStatement* body = nullptr;
-
     IRNormalFunction() {}
 
     IRNormalFunction(
@@ -127,17 +168,13 @@ struct IRNormalFunction : public IRFunction
             typeArgs,
             params,
             result,
-            requirements
-        ),
-          body(body)
+            requirements,
+            body
+        )
     {
     }
 
     bool isNormalFunction() override { return true; }
 
     IMPLEMENT_ACCEPT()
-
-    METADATA_PROP(
-        llvmFunction, llvm::Function*, getLLVMFunction, setLLVMFunction
-    )
 };
