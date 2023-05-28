@@ -82,5 +82,6 @@
         "cinttypes": "cpp",
         "typeinfo": "cpp",
         "cassert": "cpp"
-    }
+    },
+    "cmake.configureOnOpen": false
 }
