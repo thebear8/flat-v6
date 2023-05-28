@@ -8,7 +8,51 @@
 
 void LLVMCodegenPass::process(IRModule* node)
 {
-    dispatch(node);
+    for (auto [functionTemplate, function] :
+         node->getEnv()->getFunctionInstantiationMap())
+    {
+        if (!function->isNormalFunction())
+            continue;
+
+        std::vector<IRType*> params;
+        for (auto& [name, type] : function->params)
+            params.push_back(type);
+
+        std::vector<llvm::Type*> llvmParams;
+        for (auto& param : params)
+            llvmParams.push_back(getLLVMType(param));
+
+        auto type = llvm::FunctionType::get(
+            getLLVMType(function->result), llvmParams, false
+        );
+        auto name =
+            ((function->body) ? getMangledFunctionName(function->name, params)
+                              : function->name);
+        auto llvmFunction = llvm::Function::Create(
+            type,
+            llvm::GlobalValue::LinkageTypes::ExternalLinkage,
+            name,
+            m_llvmModule
+        );
+        function->setLLVMFunction(llvmFunction);
+
+        if (!function->body)
+        {
+            llvmFunction->setCallingConv(llvm::CallingConv::Win64);
+            llvmFunction->setDLLStorageClass(
+                llvm::GlobalValue::DLLStorageClassTypes::DLLImportStorageClass
+            );
+        }
+    }
+
+    for (auto [functionTemplate, function] :
+         node->getEnv()->getFunctionInstantiationMap())
+    {
+        if (!(function->isNormalFunction() && function->body))
+            continue;
+
+        generateFunctionBody((IRNormalFunction*)function);
+    }
 }
 
 llvm::Value* LLVMCodegenPass::visit(IRIntegerExpression* node)
@@ -71,13 +115,14 @@ llvm::Value* LLVMCodegenPass::visit(IRStringExpression* node)
 
 llvm::Value* LLVMCodegenPass::visit(IRIdentifierExpression* node)
 {
+    FLC_ASSERT(!m_locals.empty());
     FLC_ASSERT(
-        m_localValues.contains(node->value),
+        m_locals.top().contains(node->value),
         "Undefined local Variable in identifier expression"
     );
     return m_builder.CreateLoad(
         getLLVMType(node->getType()),
-        m_localValues.at(node->value),
+        m_locals.top().at(node->value),
         node->value + "_"
     );
 }
@@ -111,230 +156,172 @@ llvm::Value* LLVMCodegenPass::visit(IRStructExpression* node)
     return m_builder.CreateLoad(getLLVMType(type), structPtr);
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRUnaryExpression* node)
+llvm::Value* LLVMCodegenPass::visit(IRBoundCallExpression* node)
 {
-    if (node->operation == UnaryOperator::Positive)
-    {
-        return dispatch(node->expression);
-    }
-    else if (node->operation == UnaryOperator::Negative)
-    {
-        return m_builder.CreateNeg(dispatch(node->expression));
-    }
-    else if (node->operation == UnaryOperator::BitwiseNot)
-    {
-        return m_builder.CreateNot(dispatch(node->expression));
-    }
-    else if (node->operation == UnaryOperator::LogicalNot)
-    {
-        return m_builder.CreateNot(dispatch(node->expression));
-    }
-    else
-    {
-        FLC_ASSERT(0, "Invalid operator in unary expression");
-        return nullptr;
-    }
+    FLC_ASSERT(node->target);
+
+    m_args.push({});
+    for (auto arg : node->args)
+        m_args.top().push_back(arg);
+
+    auto call = dispatch(node->target);
+    m_args.pop();
+    return call;
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRBinaryExpression* node)
+llvm::Value* LLVMCodegenPass::visit(IRNormalFunction* node)
 {
-    if (dynamic_cast<IRIdentifierExpression*>(node->left))
-    {
-        auto const& name = ((IRIdentifierExpression*)node->left)->value;
-        FLC_ASSERT(m_localValues.contains(name), "Undefined local variable");
-
-        m_builder.CreateStore(dispatch(node->right), m_localValues.at(name));
-        return m_builder.CreateLoad(
-            getLLVMType(node->getType()), m_localValues.at(name), name + "_"
-        );
-    }
-    else
-    {
-        auto left = dispatch(node->left);
-        auto right =
-            ((node->left->getType()->isSigned())
-                 ? m_builder.CreateSExtOrTrunc(
-                     dispatch(node->right), getLLVMType(node->left->getType())
-                 )
-                 : m_builder.CreateZExtOrTrunc(
-                     dispatch(node->right), getLLVMType(node->left->getType())
-                 ));
-
-        if (node->operation == BinaryOperator::Add)
-        {
-            return m_builder.CreateAdd(left, right);
-        }
-        else if (node->operation == BinaryOperator::Subtract)
-        {
-            return m_builder.CreateSub(left, right);
-        }
-        else if (node->operation == BinaryOperator::Multiply)
-        {
-            return m_builder.CreateMul(left, right);
-        }
-        else if (node->operation == BinaryOperator::Divide)
-        {
-            return (
-                node->left->getType()->isSigned()
-                    ? m_builder.CreateSDiv(left, right)
-                    : m_builder.CreateUDiv(left, right)
-            );
-        }
-        else if (node->operation == BinaryOperator::Modulo)
-        {
-            return (
-                node->left->getType()->isSigned()
-                    ? m_builder.CreateSRem(left, right)
-                    : m_builder.CreateURem(left, right)
-            );
-        }
-        else if (node->operation == BinaryOperator::BitwiseAnd)
-        {
-            return m_builder.CreateAnd(left, right);
-        }
-        else if (node->operation == BinaryOperator::BitwiseOr)
-        {
-            return m_builder.CreateOr(left, right);
-        }
-        else if (node->operation == BinaryOperator::BitwiseXor)
-        {
-            return m_builder.CreateXor(left, right);
-        }
-        else if (node->operation == BinaryOperator::ShiftLeft)
-        {
-            return m_builder.CreateShl(left, right);
-        }
-        else if (node->operation == BinaryOperator::ShiftRight)
-        {
-            return m_builder.CreateAShr(left, right);
-        }
-        else if (node->operation == BinaryOperator::LogicalAnd)
-        {
-            return m_builder.CreateLogicalAnd(left, right);
-        }
-        else if (node->operation == BinaryOperator::LogicalOr)
-        {
-            return m_builder.CreateLogicalOr(left, right);
-        }
-        else if (node->operation == BinaryOperator::Equal)
-        {
-            return m_builder.CreateCmp(
-                llvm::CmpInst::Predicate::ICMP_EQ, left, right
-            );
-        }
-        else if (node->operation == BinaryOperator::NotEqual)
-        {
-            return m_builder.CreateCmp(
-                llvm::CmpInst::Predicate::ICMP_NE, left, right
-            );
-        }
-        else if (node->operation == BinaryOperator::LessThan)
-        {
-            return (
-                node->left->getType()->isSigned()
-                    ? m_builder.CreateCmp(
-                        llvm::CmpInst::Predicate::ICMP_SLT, left, right
-                    )
-                    : m_builder.CreateCmp(
-                        llvm::CmpInst::Predicate::ICMP_ULT, left, right
-                    )
-            );
-        }
-        else if (node->operation == BinaryOperator::GreaterThan)
-        {
-            return (
-                node->left->getType()->isSigned()
-                    ? m_builder.CreateCmp(
-                        llvm::CmpInst::Predicate::ICMP_SGT, left, right
-                    )
-                    : m_builder.CreateCmp(
-                        llvm::CmpInst::Predicate::ICMP_UGT, left, right
-                    )
-            );
-        }
-        else if (node->operation == BinaryOperator::LessOrEqual)
-        {
-            return (
-                node->left->getType()->isSigned()
-                    ? m_builder.CreateCmp(
-                        llvm::CmpInst::Predicate::ICMP_SLE, left, right
-                    )
-                    : m_builder.CreateCmp(
-                        llvm::CmpInst::Predicate::ICMP_ULE, left, right
-                    )
-            );
-        }
-        else if (node->operation == BinaryOperator::GreaterOrEqual)
-        {
-            return (
-                node->left->getType()->isSigned()
-                    ? m_builder.CreateCmp(
-                        llvm::CmpInst::Predicate::ICMP_SGE, left, right
-                    )
-                    : m_builder.CreateCmp(
-                        llvm::CmpInst::Predicate::ICMP_UGE, left, right
-                    )
-            );
-        }
-        else
-        {
-            FLC_ASSERT(0, "Invalid operator in binary expression");
-            return nullptr;
-        }
-    }
-}
-
-llvm::Value* LLVMCodegenPass::visit(IRCallExpression* node)
-{
-    auto target = node->getTarget();
-    FLC_ASSERT(
-        target && target->isFunctionInstantiation(),
-        "Target of call expression is undefined"
-    );
-
-    auto function = ((IRFunctionInstantiation*)target)->getLLVMFunction();
-    FLC_ASSERT(
-        function,
-        "LLVM Function object for target of call expression is undefined"
-    );
+    FLC_ASSERT(!m_args.empty());
+    FLC_ASSERT(node->getLLVMFunction(nullptr));
 
     std::vector<llvm::Value*> args;
-    for (auto& arg : node->args)
+    for (auto arg : m_args.top())
         args.push_back(dispatch(arg));
 
-    return m_builder.CreateCall(function, args);
+    return m_builder.CreateCall(node->getLLVMFunction(), args);
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRIndexExpression* node)
+llvm::Value* LLVMCodegenPass::visit(IRUnaryIntrinsic* node)
 {
+    FLC_ASSERT(!m_args.empty());
+    FLC_ASSERT(m_args.top().size() == 1);
+
+    auto value = dispatch(m_args.top().front());
+
+    if (node->name == "__pos__")
+        return value;
+    else if (node->name == "__neg__")
+        return m_builder.CreateNeg(value);
+    else if (node->name == "__not__")
+        return m_builder.CreateNot(value);
+    else if (node->name == "__lnot__")
+        return m_builder.CreateNot(value);
+
+    FLC_ASSERT(false);
+    return nullptr;
+}
+
+llvm::Value* LLVMCodegenPass::visit(IRBinaryIntrinsic* node)
+{
+    FLC_ASSERT(!m_args.empty());
+    FLC_ASSERT(m_args.top().size() == 2);
+
+    auto left = dispatch(m_args.top().front());
+    auto right = (m_args.top().back()->getType()->isSigned())
+        ? m_builder.CreateSExtOrTrunc(
+            dispatch(m_args.top().back()),
+            getLLVMType(m_args.top().back()->getType())
+        )
+        : m_builder.CreateZExtOrTrunc(
+            dispatch(m_args.top().back()),
+            getLLVMType(m_args.top().back()->getType())
+        );
+
+    if (node->name == "__add__")
+        return m_builder.CreateAdd(left, right);
+    else if (node->name == "__subtract__")
+        return m_builder.CreateSub(left, right);
+    else if (node->name == "__mul__")
+        return m_builder.CreateMul(left, right);
+    else if (node->name == "__div__")
+        return (m_args.top().front()->getType()->isSigned())
+            ? m_builder.CreateSDiv(left, right)
+            : m_builder.CreateUDiv(left, right);
+    else if (node->name == "__mod__")
+        return (m_args.top().front()->getType()->isSigned())
+            ? m_builder.CreateSRem(left, right)
+            : m_builder.CreateURem(left, right);
+
+    if (node->name == "__and__")
+        return m_builder.CreateAnd(left, right);
+    else if (node->name == "__or__")
+        return m_builder.CreateOr(left, right);
+    else if (node->name == "__xor__")
+        return m_builder.CreateXor(left, right);
+    else if (node->name == "__shl__")
+        return m_builder.CreateShl(left, right);
+    else if (node->name == "__shr__")
+        return m_builder.CreateAShr(left, right);
+
+    if (node->name == "__land__")
+        return m_builder.CreateLogicalAnd(left, right);
+    else if (node->name == "__lor__")
+        return m_builder.CreateLogicalOr(left, right);
+
+    if (node->name == "__eq__")
+        return m_builder.CreateCmp(
+            llvm::CmpInst::Predicate::ICMP_EQ, left, right
+        );
+    else if (node->name == "__ne__")
+        return m_builder.CreateCmp(
+            llvm::CmpInst::Predicate::ICMP_NE, left, right
+        );
+
+    if (node->name == "__lt__")
+        return (m_args.top().front()->getType()->isSigned())
+            ? m_builder.CreateCmp(
+                llvm::CmpInst::Predicate::ICMP_SLT, left, right
+            )
+            : m_builder.CreateCmp(
+                llvm::CmpInst::Predicate::ICMP_ULT, left, right
+            );
+    else if (node->name == "__gt__")
+        return (m_args.top().front()->getType()->isSigned())
+            ? m_builder.CreateCmp(
+                llvm::CmpInst::Predicate::ICMP_SGT, left, right
+            )
+            : m_builder.CreateCmp(
+                llvm::CmpInst::Predicate::ICMP_SLT, left, right
+            );
+    else if (node->name == "__lteq__")
+        return (m_args.top().front()->getType()->isSigned())
+            ? m_builder.CreateCmp(
+                llvm::CmpInst::Predicate::ICMP_SLE, left, right
+            )
+            : m_builder.CreateCmp(
+                llvm::CmpInst::Predicate::ICMP_ULE, left, right
+            );
+    else if (node->name == "__gteq__")
+        return (m_args.top().front()->getType()->isSigned())
+            ? m_builder.CreateCmp(
+                llvm::CmpInst::Predicate::ICMP_SGE, left, right
+            )
+            : m_builder.CreateCmp(
+                llvm::CmpInst::Predicate::ICMP_SLE, left, right
+            );
+
+    FLC_ASSERT(false);
+    return nullptr;
+}
+
+llvm::Value* LLVMCodegenPass::visit(IRIndexIntrinsic* node)
+{
+    FLC_ASSERT(!m_args.empty());
+    FLC_ASSERT(m_args.size() == 2);
     FLC_ASSERT(
-        node->args.size() == 1, "Index expression must have exactly one operand"
+        m_args.top().front()->getType()->isArrayType()
+        || m_args.top().front()->getType()->isStringType()
     );
-    FLC_ASSERT(
-        node->args.front()->getType()->isIntegerType(),
-        "Index of index expression must be of integer type"
-    );
-    FLC_ASSERT(
-        (node->expression->getType()->isArrayType()
-         || node->expression->getType()->isStringType()),
-        "Operand of index expression must be of string or array type"
-    );
+    FLC_ASSERT(m_args.top().back()->getType()->isIntegerType());
+
+    auto array = dispatch(m_args.top().front());
+    auto index = dispatch(m_args.top().back());
 
     auto fieldTypes = std::vector<llvm::Type*>(
         { llvm::Type::getInt64Ty(m_llvmCtx),
-          llvm::ArrayType::get(getLLVMType(node->getType()), 0) }
+          llvm::ArrayType::get(getLLVMType(node->result), 0) }
     );
     auto arrayType = llvm::StructType::get(m_llvmCtx, fieldTypes);
 
-    auto indexes = std::vector<llvm::Value*>(
+    auto ptr = m_builder.CreateGEP(
+        arrayType,
+        array,
         { llvm::ConstantInt::get(llvm::Type::getInt64Ty(m_llvmCtx), 0),
           llvm::ConstantInt::get(llvm::Type::getInt32Ty(m_llvmCtx), 1),
-          dispatch(node->args.front()) }
+          index }
     );
 
-    auto ptr =
-        m_builder.CreateGEP(arrayType, dispatch(node->expression), indexes);
-    return m_builder.CreateLoad(getLLVMType(node->getType()), ptr);
+    return m_builder.CreateLoad(getLLVMType(node->result), ptr);
 }
 
 llvm::Value* LLVMCodegenPass::visit(IRFieldExpression* node)
@@ -365,13 +352,12 @@ llvm::Value* LLVMCodegenPass::visit(IRFieldExpression* node)
 
 llvm::Value* LLVMCodegenPass::visit(IRBlockStatement* node)
 {
-    auto prevLocalValues = m_localValues;
+    m_locals.push({});
 
     for (auto& statement : node->statements)
         dispatch(statement);
 
-    m_localValues = prevLocalValues;
-
+    m_locals.pop();
     return nullptr;
 }
 
@@ -383,17 +369,18 @@ llvm::Value* LLVMCodegenPass::visit(IRExpressionStatement* node)
 
 llvm::Value* LLVMCodegenPass::visit(IRVariableStatement* node)
 {
+    FLC_ASSERT(!m_locals.empty());
     for (auto& [name, value] : node->items)
     {
         FLC_ASSERT(
-            !m_localValues.contains(name), "Local variable already defined"
+            !m_locals.top().contains(name), "Local variable already defined"
         );
 
-        m_localValues.try_emplace(
+        m_locals.top().try_emplace(
             name,
             m_builder.CreateAlloca(getLLVMType(value->getType()), nullptr, name)
         );
-        m_builder.CreateStore(dispatch(value), m_localValues.at(name));
+        m_builder.CreateStore(dispatch(value), m_locals.top().at(name));
     }
 
     return nullptr;
@@ -469,7 +456,7 @@ llvm::Value* LLVMCodegenPass::visit(IRIfStatement* node)
     return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRFunctionInstantiation* node)
+void LLVMCodegenPass::generateFunctionBody(IRNormalFunction* node)
 {
     auto function = node->getLLVMFunction();
     FLC_ASSERT(
@@ -477,7 +464,7 @@ llvm::Value* LLVMCodegenPass::visit(IRFunctionInstantiation* node)
     );
 
     if (!node->body)
-        return nullptr;
+        return;
 
     auto entryBlock = llvm::BasicBlock::Create(m_llvmCtx, "entry");
     auto bodyBlock = llvm::BasicBlock::Create(m_llvmCtx, "body");
@@ -485,22 +472,24 @@ llvm::Value* LLVMCodegenPass::visit(IRFunctionInstantiation* node)
     function->getBasicBlockList().push_back(entryBlock);
     m_builder.SetInsertPoint(entryBlock);
 
-    m_localValues.clear();
+    m_locals.push({});
     for (int i = 0; i < node->params.size(); i++)
     {
         auto& [paramName, paramType] = node->params.at(i);
         FLC_ASSERT(
-            !m_localValues.contains(paramName),
+            !m_locals.top().contains(paramName),
             "Local variable for parameter already defined"
         );
 
-        m_localValues.try_emplace(
+        m_locals.top().try_emplace(
             paramName,
             m_builder.CreateAlloca(
                 getLLVMType(paramType), nullptr, paramName + "_"
             )
         );
-        m_builder.CreateStore(function->getArg(i), m_localValues.at(paramName));
+        m_builder.CreateStore(
+            function->getArg(i), m_locals.top().at(paramName)
+        );
     }
 
     m_builder.CreateBr(bodyBlock);
@@ -512,52 +501,7 @@ llvm::Value* LLVMCodegenPass::visit(IRFunctionInstantiation* node)
         && !m_builder.GetInsertBlock()->getTerminator())
         m_builder.CreateRetVoid();
 
-    return nullptr;
-}
-
-llvm::Value* LLVMCodegenPass::visit(IRModule* node)
-{
-    for (auto [functionTemplate, function] :
-         node->getEnv()->getFunctionInstantiationMap())
-    {
-        std::vector<IRType*> params;
-        for (auto& [name, type] : function->params)
-            params.push_back(type);
-
-        std::vector<llvm::Type*> llvmParams;
-        for (auto& param : params)
-            llvmParams.push_back(getLLVMType(param));
-
-        auto type = llvm::FunctionType::get(
-            getLLVMType(function->result), llvmParams, false
-        );
-        auto name =
-            ((function->body) ? getMangledFunctionName(function->name, params)
-                              : function->name);
-        auto llvmFunction = llvm::Function::Create(
-            type,
-            llvm::GlobalValue::LinkageTypes::ExternalLinkage,
-            name,
-            m_llvmModule
-        );
-        function->setLLVMFunction(llvmFunction);
-
-        if (!function->body)
-        {
-            llvmFunction->setCallingConv(llvm::CallingConv::Win64);
-            llvmFunction->setDLLStorageClass(
-                llvm::GlobalValue::DLLStorageClassTypes::DLLImportStorageClass
-            );
-        }
-    }
-
-    for (auto [functionTemplate, function] :
-         node->getEnv()->getFunctionInstantiationMap())
-    {
-        dispatch(function);
-    }
-
-    return nullptr;
+    m_locals.pop();
 }
 
 llvm::Type* LLVMCodegenPass::getLLVMType(IRType* type)
@@ -676,10 +620,9 @@ std::string LLVMCodegenPass::getMangledTypeName(IRType* type)
         auto arrType = (IRArrayType*)type;
         return "A_" + getMangledTypeName(arrType->base) + "_";
     }
-    else
-    {
-        throw std::exception();
-    }
+
+    FLC_ASSERT(false);
+    return nullptr;
 }
 
 std::string LLVMCodegenPass::getMangledFunctionName(

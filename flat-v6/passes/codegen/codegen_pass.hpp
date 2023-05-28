@@ -4,6 +4,7 @@
 #include <llvm/IR/Value.h>
 
 #include <ostream>
+#include <stack>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -25,7 +26,9 @@ private:
     llvm::IRBuilder<>& m_builder;
 
     std::unordered_map<IRType*, llvm::Type*> m_llvmTypes;
-    std::unordered_map<std::string, llvm::Value*> m_localValues;
+
+    std::stack<std::vector<IRExpression*>> m_args;
+    std::stack<std::unordered_map<std::string, llvm::Value*>> m_locals;
 
 public:
     LLVMCodegenPass(
@@ -55,10 +58,7 @@ private:
     virtual llvm::Value* visit(IRStringExpression* node) override;
     virtual llvm::Value* visit(IRIdentifierExpression* node) override;
     virtual llvm::Value* visit(IRStructExpression* node) override;
-    virtual llvm::Value* visit(IRUnaryExpression* node) override;
-    virtual llvm::Value* visit(IRBinaryExpression* node) override;
-    virtual llvm::Value* visit(IRCallExpression* node) override;
-    virtual llvm::Value* visit(IRIndexExpression* node) override;
+    virtual llvm::Value* visit(IRBoundCallExpression* node) override;
     virtual llvm::Value* visit(IRFieldExpression* node) override;
 
     virtual llvm::Value* visit(IRBlockStatement* node) override;
@@ -68,10 +68,14 @@ private:
     virtual llvm::Value* visit(IRWhileStatement* node) override;
     virtual llvm::Value* visit(IRIfStatement* node) override;
 
-    virtual llvm::Value* visit(IRFunctionInstantiation* node) override;
-    virtual llvm::Value* visit(IRModule* node) override;
+    virtual llvm::Value* visit(IRUnaryIntrinsic* node) override;
+    virtual llvm::Value* visit(IRBinaryIntrinsic* node) override;
+    virtual llvm::Value* visit(IRIndexIntrinsic* node) override;
+    virtual llvm::Value* visit(IRNormalFunction* node) override;
 
 private:
+    void generateFunctionBody(IRNormalFunction* function);
+
     llvm::Type* getLLVMType(IRType* type);
     std::string getMangledTypeName(IRType* type);
     std::string getMangledFunctionName(

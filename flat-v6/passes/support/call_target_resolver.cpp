@@ -10,7 +10,7 @@
 #include "../../util/zip_view.hpp"
 #include "instantiator.hpp"
 
-std::optional<std::pair<std::vector<IRType*>, IRFunction*>>
+std::pair<std::optional<std::vector<IRType*>>, IRFunction*>
 CallTargetResolver::matchFunction(
     IRFunction* function,
     std::vector<IRType*> const& typeArgs,
@@ -29,14 +29,14 @@ CallTargetResolver::matchFunction(
             && !Environment::inferTypeArgsAndMatch(
                 param, arg, typeArgMap, true
             ))
-            return std::nullopt;
+            return { std::nullopt, function };
     }
 
     std::vector<IRType*> typeArgList;
     for (auto typeParam : function->typeParams)
     {
         if (!typeArgMap.contains(typeParam))
-            return std::nullopt;
+            return { std::nullopt, function };
 
         typeArgList.push_back(typeArgMap.at(typeParam));
     }
@@ -72,28 +72,28 @@ std::vector<IRFunction*> CallTargetResolver::getMatchingFunctions(
 )
 {
     auto [it, end] = env->getFunctionMap().equal_range(name);
-    auto candidates =
-        std::ranges::subrange(it, end) | std::views::values
+    auto candidates = std::ranges::subrange(it, end) | std::views::values
         | std::views::filter([&](IRFunction* f) {
-              return (typeArgs.size() <= f->typeParams.size())
-                  && (args.size() == f->params.size());
-          })
+                          return (typeArgs.size() <= f->typeParams.size())
+                              && (args.size() == f->params.size());
+                      })
         | std::views::transform([&](IRFunction* f) {
-              return matchFunction(f, typeArgs, args, result);
-          })
+                          return matchFunction(f, typeArgs, args, result);
+                      })
         | std::views::filter([&](auto const& f) {
-              (!f && argRejected && (argRejected->emplace(f), true));
-              return f.has_value();
-          })
+                          (!f.first && argRejected
+                           && (argRejected->emplace(f.second), true));
+                          return f.first.has_value();
+                      })
         | std::views::transform([&](auto const& f) {
-              return f.value();
-          })
+                          return std::pair(f.first.value(), f.second);
+                      })
         | std::views::filter([&](auto const& f) {
-              auto r = checkRequirements(env, f.second, f.first);
-              (!r && requirementRejected
-               && (requirementRejected->emplace(f), true));
-              return r;
-          })
+                          auto r = checkRequirements(env, f.second, f.first);
+                          (!r && requirementRejected
+                           && (requirementRejected->emplace(f.second), true));
+                          return r;
+                      })
         | range_utils::to_vector;
 
     std::ranges::sort(candidates, [](auto const& a, auto const& b) {

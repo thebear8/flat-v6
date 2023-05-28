@@ -40,7 +40,7 @@ private:
         Environment* env, IRConstraintInstantiation* constraint
     );
 
-    std::optional<std::pair<std::vector<IRType*>, IRFunction*>> matchFunction(
+    std::pair<std::optional<std::vector<IRType*>>, IRFunction*> matchFunction(
         IRFunction* function,
         std::vector<IRType*> const& typeArgs,
         std::vector<IRType*> const& args,
