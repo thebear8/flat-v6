@@ -13,6 +13,7 @@
 #include "../../util/zip_view.hpp"
 #include "../support/call_target_resolver.hpp"
 #include "../support/instantiator.hpp"
+#include "../update/struct_instantiation_update_pass.hpp"
 
 void SemanticPass::process(IRModule* node)
 {
@@ -166,6 +167,8 @@ IRType* SemanticPass::visit(IRStructExpression* node)
 
     auto instantiation =
         m_instantiator.getStructInstantiation(structTemplate, typeArgList);
+    m_structUpdatePass.update(instantiation);
+    FLC_ASSERT(instantiation->fields.size() != 0);
 
     node->setType(instantiation);
     return node->getType();

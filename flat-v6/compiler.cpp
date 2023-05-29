@@ -204,13 +204,21 @@ void CompilationContext::runPasses()
     );
 
     OperatorLoweringPass operatorLoweringPass(m_logger, *this);
-    SemanticPass semanticPass(
-        m_logger, *this, envCtx, instantiator, callTargetResolver, formatter
-    );
 
     StructInstantiationUpdatePass structInstantiationUpdatePass(
         envCtx, instantiator
     );
+
+    SemanticPass semanticPass(
+        m_logger,
+        *this,
+        envCtx,
+        instantiator,
+        callTargetResolver,
+        formatter,
+        structInstantiationUpdatePass
+    );
+
     ConstraintInstantiationUpdatePass constraintInstantiationUpdatePass(
         envCtx, instantiator
     );
