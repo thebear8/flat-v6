@@ -339,7 +339,7 @@ llvm::Value* LLVMCodegenPass::visit(IRFieldExpression* node)
     m_builder.CreateStore(dispatch(node->expression), value);
 
     auto idx = std::distance(
-        structType->fields.find(node->fieldName), structType->fields.begin()
+        structType->fields.begin(), structType->fields.find(node->fieldName)
     );
     auto ptr = m_builder.CreateStructGEP(getLLVMType(structType), value, idx);
 
