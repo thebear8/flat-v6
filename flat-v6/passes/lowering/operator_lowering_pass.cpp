@@ -5,7 +5,7 @@ void OperatorLoweringPass::process(IRModule* node)
     m_module = node;
     m_irCtx = node->getIrCtx();
 
-    for (auto& function : node->functions)
+    for (auto& [name, function] : node->getEnv()->getFunctionMap())
         dispatchRef(function);
 
     m_irCtx = nullptr;
