@@ -85,9 +85,11 @@ struct IRUnaryIntrinsic : IRFunction
 {
     IRUnaryIntrinsic() {}
 
-    IRUnaryIntrinsic(std::string name, IRType* a, IRType* result)
+    IRUnaryIntrinsic(
+        IRModule* parent, std::string name, IRType* a, IRType* result
+    )
         : IRFunction(
-            nullptr, nullptr, name, {}, {}, { { "a", a } }, result, {}, nullptr
+            parent, nullptr, name, {}, {}, { { "a", a } }, result, {}, nullptr
         )
     {
     }
@@ -101,9 +103,11 @@ struct IRBinaryIntrinsic : public IRFunction
 {
     IRBinaryIntrinsic() {}
 
-    IRBinaryIntrinsic(std::string name, IRType* a, IRType* b, IRType* result)
+    IRBinaryIntrinsic(
+        IRModule* parent, std::string name, IRType* a, IRType* b, IRType* result
+    )
         : IRFunction(
-            nullptr,
+            parent,
             nullptr,
             name,
             {},
@@ -125,9 +129,11 @@ struct IRIndexIntrinsic : IRFunction
 {
     IRIndexIntrinsic() {}
 
-    IRIndexIntrinsic(IRGenericType* t, IRArrayType* arrayOfT, IRType* idx)
+    IRIndexIntrinsic(
+        IRModule* parent, IRGenericType* t, IRArrayType* arrayOfT, IRType* idx
+    )
         : IRFunction(
-            nullptr,
+            parent,
             nullptr,
             "__index__",
             { t },

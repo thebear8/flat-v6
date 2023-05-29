@@ -82,7 +82,9 @@ int main(int argc, char* argv[])
 
     std::error_code ec;
     llvm::raw_fd_ostream outStream(outputName, ec);
-    CompilationContext ctx(std::cout);
+
+    GraphContext astCtx, irCtx;
+    CompilationContext ctx(astCtx, irCtx, std::cout);
     ctx.readSourceFiles(sourceDir);
     ctx.parseSourceFiles();
     ctx.runPasses();
