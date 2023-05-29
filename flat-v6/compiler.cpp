@@ -151,6 +151,7 @@ void CompilationContext::runPasses()
         m_logger, *this, envCtx, astTypeResolver, instantiator
     );
 
+    OperatorLoweringPass operatorLoweringPass(m_logger, *this);
     SemanticPass semanticPass(
         m_logger, *this, envCtx, instantiator, callTargetResolver, formatter
     );
@@ -164,8 +165,6 @@ void CompilationContext::runPasses()
     FunctionInstantiationUpdatePass functionInstantiationUpdatePass(
         envCtx, instantiator, callTargetResolver
     );
-
-    OperatorLoweringPass operatorLoweringPass(m_logger, *this);
 
     for (auto sf : m_parsedSourceFiles)
         moduleExtractionPass.process(sf);
@@ -198,13 +197,13 @@ void CompilationContext::runPasses()
         constraintInstantiationUpdatePass.process(module);
 
     for (auto const& [name, module] : m_modules)
+        operatorLoweringPass.process(module);
+
+    for (auto const& [name, module] : m_modules)
         semanticPass.process(module);
 
     for (auto const& [name, module] : m_modules)
         functionInstantiationUpdatePass.process(module);
-
-    for (auto const& [name, module] : m_modules)
-        operatorLoweringPass.process(module);
 }
 
 void CompilationContext::generateCode(
