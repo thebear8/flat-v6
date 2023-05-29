@@ -115,14 +115,14 @@ llvm::Value* LLVMCodegenPass::visit(IRStringExpression* node)
 
 llvm::Value* LLVMCodegenPass::visit(IRIdentifierExpression* node)
 {
-    FLC_ASSERT(!m_locals.empty());
+    FLC_ASSERT(m_env);
     FLC_ASSERT(
-        m_locals.top().contains(node->value),
+        m_env->findVariableValue(node->value),
         "Undefined local Variable in identifier expression"
     );
     return m_builder.CreateLoad(
         getLLVMType(node->getType()),
-        m_locals.top().at(node->value),
+        m_env->findVariableValue(node->value),
         node->value + "_"
     );
 }
@@ -352,12 +352,14 @@ llvm::Value* LLVMCodegenPass::visit(IRFieldExpression* node)
 
 llvm::Value* LLVMCodegenPass::visit(IRBlockStatement* node)
 {
-    m_locals.push({});
+    m_env = m_envCtx.make(
+        Environment("BlockStatement@" + std::to_string((size_t)node), m_env)
+    );
 
     for (auto& statement : node->statements)
         dispatch(statement);
 
-    m_locals.pop();
+    m_env = m_env->getParent();
     return nullptr;
 }
 
@@ -369,18 +371,18 @@ llvm::Value* LLVMCodegenPass::visit(IRExpressionStatement* node)
 
 llvm::Value* LLVMCodegenPass::visit(IRVariableStatement* node)
 {
-    FLC_ASSERT(!m_locals.empty());
+    FLC_ASSERT(m_env);
     for (auto& [name, value] : node->items)
     {
         FLC_ASSERT(
-            !m_locals.top().contains(name), "Local variable already defined"
+            m_env->findVariableValue(name), "Local variable already defined"
         );
 
-        m_locals.top().try_emplace(
+        m_env->setVariableValue(
             name,
             m_builder.CreateAlloca(getLLVMType(value->getType()), nullptr, name)
         );
-        m_builder.CreateStore(dispatch(value), m_locals.top().at(name));
+        m_builder.CreateStore(dispatch(value), m_env->findVariableValue(name));
     }
 
     return nullptr;
@@ -472,23 +474,23 @@ void LLVMCodegenPass::generateFunctionBody(IRNormalFunction* node)
     function->getBasicBlockList().push_back(entryBlock);
     m_builder.SetInsertPoint(entryBlock);
 
-    m_locals.push({});
+    m_env = m_envCtx.make(Environment(node->name, m_env));
     for (int i = 0; i < node->params.size(); i++)
     {
         auto& [paramName, paramType] = node->params.at(i);
         FLC_ASSERT(
-            !m_locals.top().contains(paramName),
+            !m_env->findVariableValue(paramName),
             "Local variable for parameter already defined"
         );
 
-        m_locals.top().try_emplace(
+        m_env->setVariableValue(
             paramName,
             m_builder.CreateAlloca(
                 getLLVMType(paramType), nullptr, paramName + "_"
             )
         );
         m_builder.CreateStore(
-            function->getArg(i), m_locals.top().at(paramName)
+            function->getArg(i), m_env->findVariableValue(paramName)
         );
     }
 
@@ -501,7 +503,7 @@ void LLVMCodegenPass::generateFunctionBody(IRNormalFunction* node)
         && !m_builder.GetInsertBlock()->getTerminator())
         m_builder.CreateRetVoid();
 
-    m_locals.pop();
+    m_env = m_env->getParent();
 }
 
 llvm::Type* LLVMCodegenPass::getLLVMType(IRType* type)

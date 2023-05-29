@@ -28,7 +28,7 @@ private:
     std::unordered_map<IRType*, llvm::Type*> m_llvmTypes;
 
     std::stack<std::vector<IRExpression*>> m_args;
-    std::stack<std::unordered_map<std::string, llvm::Value*>> m_locals;
+    Environment* m_env = nullptr;
 
 public:
     LLVMCodegenPass(
