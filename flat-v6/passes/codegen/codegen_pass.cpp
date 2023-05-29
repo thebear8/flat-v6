@@ -150,7 +150,6 @@ llvm::Value* LLVMCodegenPass::visit(IRStructExpression* node)
             type->name + "." + fieldName + "_"
         );
         m_builder.CreateStore(fieldValue, fieldPtr);
-        break;
     }
 
     return m_builder.CreateLoad(getLLVMType(type), structPtr);
