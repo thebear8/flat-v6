@@ -67,7 +67,11 @@ template<
 struct VisitorBase<TVisitInvoker, TReturn, TRefBase, TNode>
     : virtual VisitorBase<TVisitInvoker, TReturn, TRefBase>
 {
-    virtual TReturn visit(TNode* node) { FLC_ASSERT(false); }
+    virtual TReturn visit(TNode* node)
+    {
+        FLC_ASSERT(false);
+        return {};
+    }
     virtual TReturn visit(TNode* node, TRefBase*& ref) { return visit(node); }
 
     virtual void invoke(TNode* node) override
