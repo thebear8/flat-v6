@@ -40,10 +40,7 @@ private:
     IRNode* visit(IRStringExpression* node) override { return node; }
     IRNode* visit(IRIdentifierExpression* node) override;
     IRNode* visit(IRStructExpression* node) override;
-    IRNode* visit(IRUnaryExpression* node) override;
-    IRNode* visit(IRBinaryExpression* node) override;
-    IRNode* visit(IRCallExpression* node) override;
-    IRNode* visit(IRIndexExpression* node) override;
+    IRNode* visit(IRBoundCallExpression* node) override;
     IRNode* visit(IRFieldExpression* node) override;
 
     IRNode* visit(IRBlockStatement* node) override;
@@ -53,6 +50,9 @@ private:
     IRNode* visit(IRWhileStatement* node) override;
     IRNode* visit(IRIfStatement* node) override;
 
+    IRNode* visit(IRUnaryIntrinsic* node) override;
+    IRNode* visit(IRBinaryIntrinsic* node) override;
+    IRNode* visit(IRIndexIntrinsic* node) override;
     IRNode* visit(IRConstraintFunction* node) override;
     IRNode* visit(IRNormalFunction* node) override;
 };

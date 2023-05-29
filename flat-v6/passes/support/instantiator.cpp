@@ -73,20 +73,15 @@ IRFunction* Instantiator::getFunctionInstantiation(
     IRFunction* function, std::vector<IRType*> const& typeArgs
 )
 {
-    if (typeArgs.size() == 0
-        && function->typeArgs.size() == function->typeParams.size())
+    if (function->isConstraintFunction())
     {
-        if (!function->isConstraintFunction())
-        {
-            function->parent->getEnv()->addFunctionInstantiation(
-                function, function
-            );
-        }
+        FLC_ASSERT(typeArgs.size() == 0);
+        FLC_ASSERT(function->typeParams.size() == 0);
+        FLC_ASSERT(function->typeArgs.size() == function->typeParams.size());
 
         return function;
     }
 
-    FLC_ASSERT(!function->isConstraintFunction());
     FLC_ASSERT(
         function->isUnaryIntrinsic() || function->isBinaryIntrinsic()
         || function->isIndexIntrinsic() || function->isNormalFunction()
