@@ -333,6 +333,7 @@ void CompilationContext::generateCode(
     );
 
     passManager.run(llvmModule);
+    llvmModule.dump();
     output.flush();
 }
 
