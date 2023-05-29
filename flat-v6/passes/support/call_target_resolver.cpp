@@ -66,7 +66,6 @@ std::vector<IRFunction*> CallTargetResolver::getMatchingFunctions(
     std::vector<IRType*> const& typeArgs,
     std::vector<IRType*> const& args,
     IRType* result,
-    optional_ref<std::vector<IRType*>> inferredTypeArgs,
     optional_ref<std::set<IRFunction*>> argRejected,
     optional_ref<std::set<IRFunction*>> requirementRejected
 )
@@ -114,7 +113,6 @@ std::vector<IRFunction*> CallTargetResolver::findMatchingFunctions(
     std::vector<IRType*> const& typeArgs,
     std::vector<IRType*> const& args,
     IRType* result,
-    optional_ref<std::vector<IRType*>> inferredTypeArgs,
     optional_ref<std::set<IRFunction*>> argRejected,
     optional_ref<std::set<IRFunction*>> requirementRejected
 )
@@ -169,10 +167,6 @@ bool CallTargetResolver::isConstraintSatisfied(
     Environment* env, IRConstraintInstantiation* constraint
 )
 {
-    std::vector<IRType*> inferredTypeArgs;
-    std::set<IRFunction*> argRejected;
-    std::set<IRFunction*> requirementRejected;
-
     for (auto requirement : constraint->requirements)
     {
         if (!isConstraintSatisfied(env, requirement))
@@ -181,19 +175,12 @@ bool CallTargetResolver::isConstraintSatisfied(
 
     for (auto condition : constraint->conditions)
     {
-        inferredTypeArgs.clear();
-        argRejected.clear();
-        requirementRejected.clear();
-
         auto candidates = getMatchingFunctions(
             env,
             condition->name,
             {},
             condition->params | std::views::values | range_utils::to_vector,
-            condition->result,
-            inferredTypeArgs,
-            argRejected,
-            requirementRejected
+            condition->result
         );
 
         if (candidates.size() != 1)

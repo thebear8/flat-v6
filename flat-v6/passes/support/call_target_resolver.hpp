@@ -23,7 +23,6 @@ public:
         std::vector<IRType*> const& typeArgs,
         std::vector<IRType*> const& args,
         IRType* result,
-        optional_ref<std::vector<IRType*>> inferredTypeArgs = std::nullopt,
         optional_ref<std::set<IRFunction*>> argRejected = std::nullopt,
         optional_ref<std::set<IRFunction*>> requirementRejected = std::nullopt
     );
@@ -34,7 +33,6 @@ public:
         std::vector<IRType*> const& typeArgs,
         std::vector<IRType*> const& args,
         IRType* result,
-        optional_ref<std::vector<IRType*>> inferredTypeArgs = std::nullopt,
         optional_ref<std::set<IRFunction*>> argRejected = std::nullopt,
         optional_ref<std::set<IRFunction*>> requirementRejected = std::nullopt
     );
