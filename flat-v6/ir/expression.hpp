@@ -179,6 +179,8 @@ struct IRLoweredCallExpression : public IRExpression
         : name(name), typeArgs(typeArgs), args(args)
     {
     }
+
+    IMPLEMENT_ACCEPT()
 };
 
 struct IRBoundCallExpression : public IRExpression
