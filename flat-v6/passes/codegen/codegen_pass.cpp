@@ -219,7 +219,7 @@ llvm::Value* LLVMCodegenPass::visit(IRBinaryIntrinsic* node)
 
     if (node->name == "__add__")
         return m_builder.CreateAdd(left, right);
-    else if (node->name == "__subtract__")
+    else if (node->name == "__sub__")
         return m_builder.CreateSub(left, right);
     else if (node->name == "__mul__")
         return m_builder.CreateMul(left, right);
