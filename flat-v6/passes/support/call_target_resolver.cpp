@@ -100,13 +100,79 @@ std::vector<IRFunction*> CallTargetResolver::getMatchingFunctions(
         return a.first.size() > b.first.size();
     });
 
-    return candidates | std::views::values | range_utils::to_vector;
+    return candidates | std::views::transform([&](auto const& f) {
+               return m_instantiator.getFunctionInstantiation(
+                   f.second, f.first
+               );
+           })
+        | range_utils::to_vector;
+}
+
+std::vector<IRFunction*> CallTargetResolver::findMatchingFunctions(
+    Environment* env,
+    std::string const& name,
+    std::vector<IRType*> const& typeArgs,
+    std::vector<IRType*> const& args,
+    IRType* result,
+    optional_ref<std::vector<IRType*>> inferredTypeArgs,
+    optional_ref<std::set<IRFunction*>> argRejected,
+    optional_ref<std::set<IRFunction*>> requirementRejected
+)
+{
+    std::vector<std::pair<std::vector<IRType*>, IRFunction*>> candidates;
+    while (env != nullptr)
+    {
+        auto [it, end] = env->getFunctionMap().equal_range(name);
+        std::ranges::for_each(
+            std::ranges::subrange(it, end) | std::views::values
+                | std::views::filter([&](IRFunction* f) {
+                      return (typeArgs.size() <= f->typeParams.size())
+                          && (args.size() == f->params.size());
+                  })
+                | std::views::transform([&](IRFunction* f) {
+                      return matchFunction(f, typeArgs, args, result);
+                  })
+                | std::views::filter([&](auto const& f) {
+                      (!f.first && argRejected
+                       && (argRejected->emplace(f.second), true));
+                      return f.first.has_value();
+                  })
+                | std::views::transform([&](auto const& f) {
+                      return std::pair(f.first.value(), f.second);
+                  })
+                | std::views::filter([&](auto const& f) {
+                      auto r = checkRequirements(env, f.second, f.first);
+                      (!r && requirementRejected
+                       && (requirementRejected->emplace(f.second), true));
+                      return r;
+                  }),
+            [&](auto const& f) {
+            candidates.push_back(f);
+            });
+
+        env = env->getParent();
+    }
+
+    std::ranges::sort(candidates, [](auto const& a, auto const& b) {
+        return a.first.size() > b.first.size();
+    });
+
+    return candidates | std::views::transform([&](auto const& f) {
+               return m_instantiator.getFunctionInstantiation(
+                   f.second, f.first
+               );
+           })
+        | range_utils::to_vector;
 }
 
 bool CallTargetResolver::isConstraintSatisfied(
     Environment* env, IRConstraintInstantiation* constraint
 )
 {
+    std::vector<IRType*> inferredTypeArgs;
+    std::set<IRFunction*> argRejected;
+    std::set<IRFunction*> requirementRejected;
+
     for (auto requirement : constraint->requirements)
     {
         if (!isConstraintSatisfied(env, requirement))
@@ -115,12 +181,19 @@ bool CallTargetResolver::isConstraintSatisfied(
 
     for (auto condition : constraint->conditions)
     {
+        inferredTypeArgs.clear();
+        argRejected.clear();
+        requirementRejected.clear();
+
         auto candidates = getMatchingFunctions(
             env,
             condition->name,
             {},
             condition->params | std::views::values | range_utils::to_vector,
-            condition->result
+            condition->result,
+            inferredTypeArgs,
+            argRejected,
+            requirementRejected
         );
 
         if (candidates.size() != 1)

@@ -238,7 +238,7 @@ IRNode* FunctionInstantiationUpdatePass::visit(IRConstraintFunction* node)
     auto result = m_instantiator.instantiateType(node->result, m_env, m_irCtx);
 
     std::vector<IRType*> typeArgs;
-    auto functions = m_callTargetResolver.getMatchingFunctions(
+    auto functions = m_callTargetResolver.findMatchingFunctions(
         m_env, node->name, {}, args, result, typeArgs
     );
     FLC_ASSERT(

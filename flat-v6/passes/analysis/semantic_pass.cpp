@@ -390,12 +390,17 @@ IRFunction* SemanticPass::findCallTarget(
 )
 {
     std::vector<IRType*> inferredTypeArgs;
-    // std::set<IRFunction*> argRejected;
-    // std::set<IRFunction*> requirementRejected;
-    auto functions = m_callTargetResolver.getMatchingFunctions(
-        m_env, name, typeArgs, args, result, inferredTypeArgs
-        // argRejected,
-        // requirementRejected
+    std::set<IRFunction*> argRejected;
+    std::set<IRFunction*> requirementRejected;
+    auto functions = m_callTargetResolver.findMatchingFunctions(
+        m_env,
+        name,
+        typeArgs,
+        args,
+        result,
+        inferredTypeArgs,
+        argRejected,
+        requirementRejected
     );
 
     if (functions.size() == 1)
