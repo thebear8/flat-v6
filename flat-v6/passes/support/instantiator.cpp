@@ -76,9 +76,13 @@ IRFunction* Instantiator::getFunctionInstantiation(
     if (typeArgs.size() == 0
         && function->typeArgs.size() == function->typeParams.size())
     {
-        function->parent->getEnv()->addFunctionInstantiation(
-            function, function
-        );
+        if (!function->isConstraintFunction())
+        {
+            function->parent->getEnv()->addFunctionInstantiation(
+                function, function
+            );
+        }
+
         return function;
     }
 
