@@ -8,51 +8,91 @@
 
 void LLVMCodegenPass::process(IRModule* node)
 {
-    for (auto [functionTemplate, function] :
-         node->getEnv()->getFunctionInstantiationMap())
+    for (auto const& [name, function] : node->getEnv()->getFunctionMap())
     {
         if (!function->isNormalFunction())
             continue;
 
-        std::vector<IRType*> params;
-        for (auto& [name, type] : function->params)
-            params.push_back(type);
-
-        std::vector<llvm::Type*> llvmParams;
-        for (auto& param : params)
-            llvmParams.push_back(getLLVMType(param));
-
-        auto type = llvm::FunctionType::get(
-            getLLVMType(function->result), llvmParams, false
-        );
-        auto name =
-            ((function->body) ? getMangledFunctionName(function->name, params)
-                              : function->name);
-        auto llvmFunction = llvm::Function::Create(
-            type,
-            llvm::GlobalValue::LinkageTypes::ExternalLinkage,
-            name,
-            m_llvmModule
-        );
-        function->setLLVMFunction(llvmFunction);
-
-        if (!function->body)
+        if (function->typeParams.size() == 0)
         {
-            llvmFunction->setCallingConv(llvm::CallingConv::Win64);
-            llvmFunction->setDLLStorageClass(
-                llvm::GlobalValue::DLLStorageClassTypes::DLLImportStorageClass
-            );
+            generateFunctionHead(function);
+        }
+        else
+        {
+            auto [it, end] =
+                node->getEnv()->getFunctionInstantiationMap().equal_range(
+                    function
+                );
+            for (auto [f, instantiation] : std::ranges::subrange(it, end))
+            {
+                if (instantiation->typeArgs.size()
+                    == instantiation->typeParams.size())
+                    generateFunctionHead(instantiation);
+            }
         }
     }
 
-    for (auto [functionTemplate, function] :
-         node->getEnv()->getFunctionInstantiationMap())
+    for (auto const& [name, function] : node->getEnv()->getFunctionMap())
     {
-        if (!(function->isNormalFunction() && function->body))
+        if (!function->isNormalFunction())
             continue;
 
-        generateFunctionBody((IRNormalFunction*)function);
+        if (function->typeParams.size() == 0)
+        {
+            generateFunctionBody(function);
+        }
+        else
+        {
+            auto [it, end] =
+                node->getEnv()->getFunctionInstantiationMap().equal_range(
+                    function
+                );
+            for (auto [f, instantiation] : std::ranges::subrange(it, end))
+            {
+                if (instantiation->typeArgs.size()
+                    == instantiation->typeParams.size())
+                    generateFunctionBody(instantiation);
+            }
+        }
     }
+}
+
+void LLVMCodegenPass::generateFunctionHead(IRFunction* function)
+{
+    FLC_ASSERT(function->isNormalFunction());
+
+    std::vector<IRType*> params;
+    for (auto& [name, type] : function->params)
+        params.push_back(type);
+
+    std::vector<llvm::Type*> llvmParams;
+    for (auto& param : params)
+        llvmParams.push_back(getLLVMType(param));
+
+    auto type = llvm::FunctionType::get(
+        getLLVMType(function->result), llvmParams, false
+    );
+    auto name =
+        ((function->getNoMangle(false))
+             ? function->name
+             : getMangledFunctionName(function->name, params));
+    auto llvmFunction = llvm::Function::Create(
+        type,
+        llvm::GlobalValue::LinkageTypes::ExternalLinkage,
+        name,
+        m_llvmModule
+    );
+    function->setLLVMFunction(llvmFunction);
+
+    /*
+    if (!function->body)
+    {
+        llvmFunction->setCallingConv(llvm::CallingConv::Win64);
+        llvmFunction->setDLLStorageClass(
+            llvm::GlobalValue::DLLStorageClassTypes::DLLImportStorageClass
+        );
+    }
+    */
 }
 
 llvm::Value* LLVMCodegenPass::visit(IRIntegerExpression* node)
@@ -374,7 +414,7 @@ llvm::Value* LLVMCodegenPass::visit(IRVariableStatement* node)
     for (auto& [name, value] : node->items)
     {
         FLC_ASSERT(
-            m_env->findVariableValue(name), "Local variable already defined"
+            !m_env->findVariableValue(name), "Local variable already defined"
         );
 
         m_env->setVariableValue(
@@ -457,8 +497,10 @@ llvm::Value* LLVMCodegenPass::visit(IRIfStatement* node)
     return nullptr;
 }
 
-void LLVMCodegenPass::generateFunctionBody(IRNormalFunction* node)
+void LLVMCodegenPass::generateFunctionBody(IRFunction* node)
 {
+    FLC_ASSERT(node->isNormalFunction());
+
     auto function = node->getLLVMFunction();
     FLC_ASSERT(
         function, "No matching llvm function object for function declaration"

@@ -74,7 +74,8 @@ private:
     virtual llvm::Value* visit(IRNormalFunction* node) override;
 
 private:
-    void generateFunctionBody(IRNormalFunction* function);
+    void generateFunctionHead(IRFunction* function);
+    void generateFunctionBody(IRFunction* function);
 
     llvm::Type* getLLVMType(IRType* type);
     std::string getMangledTypeName(IRType* type);
