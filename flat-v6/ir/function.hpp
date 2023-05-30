@@ -61,6 +61,9 @@ struct IRFunction : public IRNode
     METADATA_PROP(
         llvmFunction, llvm::Function*, getLLVMFunction, setLLVMFunction
     )
+
+    METADATA_PROP(noMangle, bool, getNoMangle, setNoMangle)
+    METADATA_PROP(extern_, bool, getExtern, setExtern)
 };
 
 struct IRConstraintFunction : public IRFunction

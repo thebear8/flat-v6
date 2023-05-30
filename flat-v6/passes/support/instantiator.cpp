@@ -144,6 +144,8 @@ IRFunction* Instantiator::getFunctionInstantiation(
         | range_utils::to_vector;
 
     instantiation->setLocation(function->getLocation(SourceRef()));
+    instantiation->setNoMangle(function->getNoMangle(false));
+    instantiation->setExtern(function->getExtern(false));
     function->parent->getEnv()->addFunctionInstantiation(
         function, instantiation
     );

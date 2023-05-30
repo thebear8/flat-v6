@@ -48,8 +48,20 @@ void FunctionExtractionPass::visit(ASTFunctionDeclaration* node)
         nullptr
     ));
 
-    function->setLocation(node->location);
     node->setIRFunction(function);
+    function->setLocation(node->location);
+
+    for (auto attribute : node->attributes)
+    {
+        if (attribute->name == "no_mangle")
+            function->setNoMangle(true);
+        else if (attribute->name == "extern")
+            function->setExtern(true);
+        else if (attribute->name == "test")
+            (void)0;
+        else
+            FLC_ASSERT(false);
+    }
 
     if (!m_module->getEnv()->addFunction(function))
     {
