@@ -35,19 +35,19 @@ public:
     ASTExpression* l10();
     ASTExpression* expression();
 
-    ASTStatement* expressionStatement(std::size_t begin);
-    ASTStatement* blockStatement(std::size_t begin);
-    ASTStatement* variableStatement(std::size_t begin);
-    ASTStatement* returnStatement(std::size_t begin);
-    ASTStatement* whileStatement(std::size_t begin);
-    ASTStatement* ifStatement(std::size_t begin);
+    ASTStatement* expressionStatement();
+    ASTStatement* blockStatement();
+    ASTStatement* variableStatement();
+    ASTStatement* returnStatement();
+    ASTStatement* whileStatement();
+    ASTStatement* ifStatement();
     ASTStatement* statement();
 
-    ASTConstraintCondition* constraintCondition(std::size_t begin);
-    ASTConstraintDeclaration* constraintDeclaration(std::size_t begin);
-    ASTStructDeclaration* structDeclaration(std::size_t begin);
-    ASTFunctionDeclaration* functionDeclaration(std::size_t begin);
-    ASTFunctionDeclaration* externFunctionDeclaration(std::size_t begin);
+    ASTConstraintCondition* constraintCondition();
+    ASTConstraintDeclaration* constraintDeclaration();
+    ASTStructDeclaration* structDeclaration();
+    ASTFunctionDeclaration* functionDeclaration();
+    ASTFunctionDeclaration* externFunctionDeclaration();
 
     ASTSourceFile* sourceFile();
 

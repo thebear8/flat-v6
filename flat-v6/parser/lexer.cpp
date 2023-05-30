@@ -245,6 +245,27 @@ std::size_t Lexer::trim()
     return position;
 }
 
+bool Lexer::peek(Token expected)
+{
+    std::size_t before = position;
+    Token token = advance();
+    position = before;
+
+    if (token == expected)
+        return true;
+
+    trim();
+    token = advance();
+    position = before;
+
+    if (token == expected)
+        return true;
+    else if (token == Token::Error)
+        logger.error(SourceRef(id, position), "Invalid Token");
+
+    return false;
+}
+
 bool Lexer::match(Token expected)
 {
     std::size_t before = position;

@@ -81,7 +81,8 @@
         "thread": "cpp",
         "cinttypes": "cpp",
         "typeinfo": "cpp",
-        "cassert": "cpp"
+        "cassert": "cpp",
+        "complex": "cpp"
     },
     "cmake.configureOnOpen": false
 }

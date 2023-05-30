@@ -12,8 +12,8 @@ private:
     static constexpr std::pair<Token, std::string_view> tokens[] = {
         { Token::NewLine, "\n" },     { Token::NewLine, "\r\n" },
 
-        { Token::Dot, "." },          { Token::Comma, "," },
-        { Token::Colon, ":" },
+        { Token::At, "@" },           { Token::Dot, "." },
+        { Token::Comma, "," },        { Token::Colon, ":" },
 
         { Token::ParenOpen, "(" },    { Token::ParenClose, ")" },
         { Token::BracketOpen, "[" },  { Token::BracketClose, "]" },
@@ -33,13 +33,22 @@ private:
     };
 
     static constexpr std::pair<Token, std::string_view> keywords[] = {
-        { Token::True, "true" },     { Token::False, "false" },
-        { Token::Let, "let" },       { Token::Return, "return" },
-        { Token::While, "while" },   { Token::If, "if" },
-        { Token::Else, "else" },     { Token::Struct, "struct" },
-        { Token::Function, "fn" },   { Token::Constraint, "constraint" },
-        { Token::Import, "import" }, { Token::Module, "module" },
-        { Token::Function, "fn" },   { Token::Extern, "extern" },
+        { Token::True, "true" },
+        { Token::False, "false" },
+        { Token::Let, "let" },
+        { Token::Return, "return" },
+        { Token::While, "while" },
+        { Token::If, "if" },
+        { Token::Else, "else" },
+        { Token::Struct, "struct" },
+        { Token::Function, "fn" },
+        { Token::Constraint, "constraint" },
+        { Token::Import, "import" },
+        { Token::Module, "module" },
+        { Token::Function, "fn" },
+        { Token::Extern, "extern" },
+        { Token::NoMangle, "no_mangle" },
+        { Token::Test, "test" }
     };
 
 protected:
@@ -63,6 +72,7 @@ private:
 
 public:
     std::size_t trim();
+    bool peek(Token expected);
     bool match(Token expected);
     bool expect(Token expected);
 

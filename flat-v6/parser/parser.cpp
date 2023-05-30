@@ -406,15 +406,19 @@ ASTExpression* Parser::expression()
     return l10();
 }
 
-ASTStatement* Parser::expressionStatement(size_t begin)
+ASTStatement* Parser::expressionStatement()
 {
+    auto begin = trim();
     auto e = expression();
     expect(Token::NewLine);
     return ctx.make(ASTExpressionStatement(SourceRef(id, begin, position), e));
 }
 
-ASTStatement* Parser::blockStatement(std::size_t begin)
+ASTStatement* Parser::blockStatement()
 {
+    auto begin = trim();
+    expect(Token::BraceOpen);
+
     std::vector<ASTStatement*> statements;
     while (!match(Token::BraceClose) && !match(Token::Eof))
     {
@@ -425,8 +429,11 @@ ASTStatement* Parser::blockStatement(std::size_t begin)
     );
 }
 
-ASTStatement* Parser::variableStatement(std::size_t begin)
+ASTStatement* Parser::variableStatement()
 {
+    auto begin = trim();
+    expect(Token::Let);
+
     std::vector<std::pair<std::string, ASTExpression*>> items;
     while (!match(Token::NewLine) && match(Token::Identifier))
     {
@@ -443,8 +450,11 @@ ASTStatement* Parser::variableStatement(std::size_t begin)
     );
 }
 
-ASTStatement* Parser::returnStatement(std::size_t begin)
+ASTStatement* Parser::returnStatement()
 {
+    auto begin = trim();
+    expect(Token::Return);
+
     if (match(Token::NewLine))
     {
         return ctx.make(
@@ -459,22 +469,30 @@ ASTStatement* Parser::returnStatement(std::size_t begin)
     }
 }
 
-ASTStatement* Parser::whileStatement(std::size_t begin)
+ASTStatement* Parser::whileStatement()
 {
+    auto begin = trim();
+    expect(Token::While);
     expect(Token::ParenOpen);
+
     auto condition = expression();
     expect(Token::ParenClose);
+
     auto body = statement();
     return ctx.make(
         ASTWhileStatement(SourceRef(id, begin, position), condition, body)
     );
 }
 
-ASTStatement* Parser::ifStatement(std::size_t begin)
+ASTStatement* Parser::ifStatement()
 {
+    auto begin = trim();
+    expect(Token::If);
     expect(Token::ParenOpen);
+
     auto condition = expression();
     expect(Token::ParenClose);
+
     auto ifBody = statement();
     if (match(Token::Else))
     {
@@ -493,35 +511,24 @@ ASTStatement* Parser::ifStatement(std::size_t begin)
 
 ASTStatement* Parser::statement()
 {
-    auto begin = trim();
-    if (match(Token::BraceOpen))
-    {
-        return blockStatement(begin);
-    }
-    else if (match(Token::Let))
-    {
-        return variableStatement(begin);
-    }
-    else if (match(Token::Return))
-    {
-        return returnStatement(begin);
-    }
-    else if (match(Token::While))
-    {
-        return whileStatement(begin);
-    }
-    else if (match(Token::If))
-    {
-        return ifStatement(begin);
-    }
-    else
-    {
-        return expressionStatement(begin);
-    }
+    if (peek(Token::BraceOpen))
+        return blockStatement();
+    else if (peek(Token::Let))
+        return variableStatement();
+    else if (peek(Token::Return))
+        return returnStatement();
+    else if (peek(Token::While))
+        return whileStatement();
+    else if (peek(Token::If))
+        return ifStatement();
+
+    return expressionStatement();
 }
 
-ASTConstraintCondition* Parser::constraintCondition(std::size_t begin)
+ASTConstraintCondition* Parser::constraintCondition()
 {
+    auto begin = trim();
+    expect(Token::Function);
     expect(Token::Identifier);
     auto name = getTokenValue();
 
@@ -548,8 +555,10 @@ ASTConstraintCondition* Parser::constraintCondition(std::size_t begin)
     ));
 }
 
-ASTConstraintDeclaration* Parser::constraintDeclaration(std::size_t begin)
+ASTConstraintDeclaration* Parser::constraintDeclaration()
 {
+    auto begin = trim();
+    expect(Token::Constraint);
     expect(Token::Identifier);
     auto constraintName = getTokenValue();
     auto typeParams = typeParamList();
@@ -559,9 +568,7 @@ ASTConstraintDeclaration* Parser::constraintDeclaration(std::size_t begin)
     std::vector<ASTConstraintCondition*> conditions;
     while (!match(Token::BraceClose) && !match(Token::Eof))
     {
-        auto conditionBegin = trim();
-        expect(Token::Function);
-        conditions.push_back(constraintCondition(conditionBegin));
+        conditions.push_back(constraintCondition());
         if (!match(Token::Comma))
         {
             expect(Token::BraceClose);
@@ -578,8 +585,10 @@ ASTConstraintDeclaration* Parser::constraintDeclaration(std::size_t begin)
     ));
 }
 
-ASTStructDeclaration* Parser::structDeclaration(std::size_t begin)
+ASTStructDeclaration* Parser::structDeclaration()
 {
+    auto begin = trim();
+    expect(Token::Struct);
     expect(Token::Identifier);
     auto structName = getTokenValue();
     auto typeParams = typeParamList();
@@ -604,12 +613,53 @@ ASTStructDeclaration* Parser::structDeclaration(std::size_t begin)
     ));
 }
 
-ASTFunctionDeclaration* Parser::functionDeclaration(std::size_t begin)
+ASTFunctionDeclaration* Parser::functionDeclaration()
 {
+    auto begin = trim();
+    auto isExtern = false;
+
+    std::vector<ASTFunctionAttribute*> attributes;
+    while (match(Token::At))
+    {
+        if (match(Token::NoMangle))
+        {
+            attributes.push_back(ctx.make(ASTFunctionAttribute(
+                SourceRef(id, begin, position), getTokenValue(), {}
+            )));
+        }
+        else if (match(Token::Test))
+        {
+            attributes.push_back(ctx.make(ASTFunctionAttribute(
+                SourceRef(id, begin, position), getTokenValue(), {}
+            )));
+        }
+        else if (match(Token::Extern))
+        {
+            isExtern = true;
+            auto attribute = getTokenValue();
+            expect(Token::ParenOpen);
+            expect(Token::StringLiteral);
+            auto library = getTokenValue();
+
+            attributes.push_back(ctx.make(ASTFunctionAttribute(
+                SourceRef(id, begin, position), attribute, { library }
+            )));
+        }
+        else
+        {
+            logger.error(
+                SourceRef(id, position),
+                "Expected eiter no_mangle, test or extern"
+            );
+        }
+    }
+
+    expect(Token::Function);
     expect(Token::Identifier);
     auto name = getTokenValue();
-    auto typeParams = typeParamList();
-    auto requirements = requirementList();
+    auto typeParams = (isExtern ? std::vector<std::string>() : typeParamList());
+    auto requirements =
+        (isExtern ? std::vector<ASTRequirement*>() : requirementList());
 
     std::vector<std::pair<std::string, ASTType*>> parameters;
     expect(Token::ParenOpen);
@@ -627,61 +677,19 @@ ASTFunctionDeclaration* Parser::functionDeclaration(std::size_t begin)
         }
     }
 
-    auto result = (match(Token::Colon) ? typeName() : nullptr);
-
-    auto bodyBegin = trim();
-    expect(Token::BraceOpen);
-    auto body = blockStatement(bodyBegin);
+    auto result =
+        (isExtern ? (expect(Token::Colon), typeName())
+                  : (match(Token::Colon) ? typeName() : nullptr));
+    auto body = (isExtern ? nullptr : blockStatement());
     return ctx.make(ASTFunctionDeclaration(
         SourceRef(id, begin, position),
-        "",
         name,
+        attributes,
         typeParams,
         parameters,
         result,
         requirements,
         body
-    ));
-}
-
-ASTFunctionDeclaration* Parser::externFunctionDeclaration(std::size_t begin)
-{
-    expect(Token::ParenOpen);
-    expect(Token::Identifier);
-    auto lib = getTokenValue();
-    expect(Token::ParenClose);
-
-    expect(Token::Function);
-    expect(Token::Identifier);
-    auto name = getTokenValue();
-
-    std::vector<std::pair<std::string, ASTType*>> parameters;
-    expect(Token::ParenOpen);
-    while (!match(Token::ParenClose) && !match(Token::Eof))
-    {
-        expect(Token::Identifier);
-        auto paramName = getTokenValue();
-        expect(Token::Colon);
-        auto type = typeName();
-        parameters.push_back({ paramName, type });
-        if (!match(Token::Comma))
-        {
-            expect(Token::ParenClose);
-            break;
-        }
-    }
-
-    auto result = (match(Token::Colon) ? typeName() : nullptr);
-
-    return ctx.make(ASTFunctionDeclaration(
-        SourceRef(id, begin, position),
-        lib,
-        name,
-        {},
-        parameters,
-        result,
-        {},
-        nullptr
     ));
 }
 
@@ -720,23 +728,12 @@ ASTSourceFile* Parser::sourceFile()
     std::vector<ASTDeclaration*> declarations;
     while (!match(Token::Eof))
     {
-        auto declBegin = trim();
-        if (match(Token::Constraint))
-        {
-            declarations.push_back(constraintDeclaration(declBegin));
-        }
-        else if (match(Token::Struct))
-        {
-            declarations.push_back(structDeclaration(declBegin));
-        }
-        else if (match(Token::Function))
-        {
-            declarations.push_back(functionDeclaration(declBegin));
-        }
-        else if (match(Token::Extern))
-        {
-            declarations.push_back(externFunctionDeclaration(declBegin));
-        }
+        if (peek(Token::Constraint))
+            declarations.push_back(constraintDeclaration());
+        else if (peek(Token::Struct))
+            declarations.push_back(structDeclaration());
+        else if (peek(Token::Function) || peek(Token::At))
+            declarations.push_back(functionDeclaration());
         else
         {
             logger.error(
