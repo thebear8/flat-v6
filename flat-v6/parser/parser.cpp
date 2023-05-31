@@ -636,13 +636,8 @@ ASTFunctionDeclaration* Parser::functionDeclaration()
         else if (match(Token::Extern))
         {
             isExtern = true;
-            auto attribute = getTokenValue();
-            expect(Token::ParenOpen);
-            expect(Token::StringLiteral);
-            auto library = getTokenValue();
-
             attributes.push_back(ctx.make(ASTFunctionAttribute(
-                SourceRef(id, begin, position), attribute, { library }
+                SourceRef(id, begin, position), getTokenValue(), {}
             )));
         }
         else
