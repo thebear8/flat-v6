@@ -91,6 +91,9 @@ IRFunction* Instantiator::getFunctionInstantiation(
     FLC_ASSERT(function->typeArgs.size() == 0);
     FLC_ASSERT(typeArgs.size() == function->typeParams.size());
 
+    if (typeArgs.size() == 0)
+        return function;
+
     auto instantiation = function->parent->getEnv()->getFunctionInstantiation(
         function, typeArgs
     );

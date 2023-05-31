@@ -14,7 +14,8 @@ void FunctionInstantiationUpdatePass::process(IRModule* node)
          node->getEnv()->getFunctionInstantiationMap())
     {
         FLC_ASSERT(instantiation->isNormalFunction());
-        update((IRNormalFunction*)instantiation);
+        if (!function->getExtern(false))
+            update((IRNormalFunction*)instantiation);
     }
 }
 
@@ -207,8 +208,10 @@ IRNode* FunctionInstantiationUpdatePass::visit(IRUnaryIntrinsic* node)
         })
         | range_utils::to_vector;
 
-    FLC_ASSERT(node->blueprint);
-    return m_instantiator.getFunctionInstantiation(node->blueprint, typeArgs);
+    FLC_ASSERT(node->blueprint || node->typeParams.size() == 0);
+    return m_instantiator.getFunctionInstantiation(
+        node->blueprint ? node->blueprint : node, typeArgs
+    );
 }
 
 IRNode* FunctionInstantiationUpdatePass::visit(IRBinaryIntrinsic* node)
@@ -219,8 +222,10 @@ IRNode* FunctionInstantiationUpdatePass::visit(IRBinaryIntrinsic* node)
         })
         | range_utils::to_vector;
 
-    FLC_ASSERT(node->blueprint);
-    return m_instantiator.getFunctionInstantiation(node->blueprint, typeArgs);
+    FLC_ASSERT(node->blueprint || node->typeParams.size() == 0);
+    return m_instantiator.getFunctionInstantiation(
+        node->blueprint ? node->blueprint : node, typeArgs
+    );
 }
 
 IRNode* FunctionInstantiationUpdatePass::visit(IRIndexIntrinsic* node)

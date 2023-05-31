@@ -126,5 +126,6 @@ void OperatorLoweringPass::visit(IRIfStatement* node)
 
 void OperatorLoweringPass::visit(IRNormalFunction* node)
 {
-    dispatchRef(node->body);
+    if (!node->getExtern(false))
+        dispatchRef(node->body);
 }
