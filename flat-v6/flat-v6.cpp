@@ -19,7 +19,7 @@ int main(int argc, char* argv[])
     std::vector<std::string> additionalObjectFiles;
     bool optimize;
 
-    app.add_option("source-dir, -s, --source-dir", sourceDir)
+    app.add_option("source, -s, --source-dir", sourceDir)
         ->type_name("DIRECTORY")
         ->description("Directory in which the source files are located")
         ->required()
@@ -41,11 +41,11 @@ int main(int argc, char* argv[])
             return "";
         });
 
-    app.add_option("lib, -L, --library", additionalLibraryPaths)
+    app.add_option("-L, --library", additionalLibraryPaths)
         ->type_name("DIRECTORY")
         ->description("Additional library paths to pass to the linker");
 
-    app.add_option("lib, -l, --object", additionalObjectFiles)
+    app.add_option("-l, --object", additionalObjectFiles)
         ->type_name("FILENAME")
         ->description("Additional object file names to pass to the linker");
 
@@ -86,7 +86,14 @@ int main(int argc, char* argv[])
         ->default_val(false)
         ->description("Optimize generated LLVM IR");
 
-    CLI11_PARSE(app, argc, argv);
+    try
+    {
+        app.parse(argc, argv);
+    }
+    catch (const CLI::ParseError& e)
+    {
+        return app.exit(CLI::CallForHelp());
+    }
 
     TargetDescriptor targetDesc = {};
     targetDesc.cpuDesc = cpuDesc;
