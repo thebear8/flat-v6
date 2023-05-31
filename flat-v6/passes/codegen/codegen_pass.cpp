@@ -173,8 +173,7 @@ llvm::Value* LLVMCodegenPass::visit(IRIdentifierExpression* node)
 llvm::Value* LLVMCodegenPass::visit(IRStructExpression* node)
 {
     auto type = dynamic_cast<IRStruct*>(node->getType());
-    auto structPtr =
-        m_builder.CreateAlloca(getLLVMType(type), nullptr, type->name + "_");
+    auto structPtr = m_builder.CreateAlloca(getLLVMType(type), nullptr);
 
     size_t idx = 0;
     for (auto [fieldName, fieldType] : type->fields)
@@ -186,12 +185,8 @@ llvm::Value* LLVMCodegenPass::visit(IRStructExpression* node)
         }
 
         auto fieldValue = dispatch(node->fields.at(fieldName));
-        auto fieldPtr = m_builder.CreateStructGEP(
-            getLLVMType(type),
-            structPtr,
-            idx++,
-            type->name + "." + fieldName + "_"
-        );
+        auto fieldPtr =
+            m_builder.CreateStructGEP(getLLVMType(type), structPtr, idx++);
         m_builder.CreateStore(fieldValue, fieldPtr);
     }
 
@@ -447,11 +442,7 @@ llvm::Value* LLVMCodegenPass::visit(IRFieldExpression* node)
     );
     auto ptr = m_builder.CreateStructGEP(getLLVMType(structType), value, idx);
 
-    return m_builder.CreateLoad(
-        getLLVMType(node->getType()),
-        ptr,
-        structType->toString() + "." + node->fieldName + "_"
-    );
+    return m_builder.CreateLoad(getLLVMType(node->getType()), ptr);
 }
 
 llvm::Value* LLVMCodegenPass::visit(IRBlockStatement* node)
