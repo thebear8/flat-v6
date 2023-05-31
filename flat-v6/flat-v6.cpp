@@ -78,7 +78,7 @@ int main(int argc, char* argv[])
     auto outputName = output;
     if (outputName.empty())
         outputName =
-            std::filesystem::path(sourceDir).replace_extension(".obj").string();
+            std::filesystem::path(sourceDir).replace_extension(".o").string();
 
     std::error_code ec;
     llvm::raw_fd_ostream outStream(outputName, ec);
