@@ -268,7 +268,9 @@ void CompilationContext::runPasses()
 }
 
 void CompilationContext::generateCode(
-    TargetDescriptor const& targetDesc, llvm::raw_pwrite_stream& output
+    TargetDescriptor const& targetDesc,
+    llvm::raw_pwrite_stream& output,
+    bool optimize
 )
 {
     llvm::InitializeAllTargetInfos();
@@ -323,7 +325,8 @@ void CompilationContext::generateCode(
     pb.crossRegisterProxies(lam, fam, cgam, mam);
 
     auto mpm = pb.buildPerModuleDefaultPipeline(llvm::OptimizationLevel::O1);
-    mpm.run(llvmModule, mam);
+    if (optimize)
+        mpm.run(llvmModule, mam);
 
     llvm::legacy::PassManager passManager;
     FLC_ASSERT(

@@ -16,6 +16,7 @@ int main(int argc, char* argv[])
     std::string sourceDir, output, target, cpuDesc, featureDesc;
     std::vector<std::string> additionalLibraryPaths;
     std::vector<std::string> additionalObjectFiles;
+    bool optimize;
 
     app.add_option("source-dir, -s, --source-dir", sourceDir)
         ->type_name("DIRECTORY")
@@ -80,6 +81,10 @@ int main(int argc, char* argv[])
             return "";
         });
 
+    app.add_option("--optimize", optimize)
+        ->default_val(false)
+        ->description("Optimize generated LLVM IR");
+
     CLI11_PARSE(app, argc, argv);
 
     TargetDescriptor targetDesc = {};
@@ -99,7 +104,7 @@ int main(int argc, char* argv[])
     ctx.readSourceFiles(sourceDir);
     ctx.parseSourceFiles();
     ctx.runPasses();
-    ctx.generateCode(targetDesc, objectStream);
+    ctx.generateCode(targetDesc, objectStream, optimize);
     ctx.linkWithGCC(
         output, objectFile, additionalLibraryPaths, additionalObjectFiles
     );

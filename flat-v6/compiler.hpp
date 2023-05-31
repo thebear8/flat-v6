@@ -74,7 +74,9 @@ public:
     void parseSourceFiles();
     void runPasses();
     void generateCode(
-        TargetDescriptor const& targetDesc, llvm::raw_pwrite_stream& output
+        TargetDescriptor const& targetDesc,
+        llvm::raw_pwrite_stream& output,
+        bool optimize
     );
     void linkWithGCC(
         std::string const& executableFileName,
