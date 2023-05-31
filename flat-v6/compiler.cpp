@@ -139,6 +139,42 @@ CompilationContext::CompilationContext(
         for (auto b : integers)
             addBinaryOperator("__assign__", a, b, a);
     }
+
+    {
+        auto t = m_irCtx.make(IRGenericType("T"));
+        addBuiltinFunction(m_irCtx.make(IRIntrinsicFunction(
+            m_builtins,
+            "__u64_to_ptr",
+            { t },
+            { { "u", getU64() } },
+            getPointerType(t),
+            {}
+        )));
+    }
+
+    {
+        auto t = m_irCtx.make(IRGenericType("T"));
+        addBuiltinFunction(m_irCtx.make(IRIntrinsicFunction(
+            m_builtins,
+            "__ptr_to_u64",
+            { t },
+            { { "p", getPointerType(t) } },
+            getU64(),
+            {}
+        )));
+    }
+
+    {
+        auto t = m_irCtx.make(IRGenericType(""));
+        addBuiltinFunction(m_irCtx.make(IRIntrinsicFunction(
+            m_builtins,
+            "__arr_to_ptr",
+            { t },
+            { { "a", getArrayType(t) } },
+            getPointerType(t),
+            {}
+        )));
+    }
 }
 
 CompilationContext::~CompilationContext()

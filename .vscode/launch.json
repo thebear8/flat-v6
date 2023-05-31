@@ -6,7 +6,7 @@
             "request": "launch",
             "program": "${command:cmake.launchTargetPath}",
             "args": [
-                "tests/vec3"
+                "tests/output"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

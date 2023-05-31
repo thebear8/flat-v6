@@ -343,7 +343,7 @@ llvm::Value* LLVMCodegenPass::visit(IRIntrinsicFunction* node)
     if (node->name == "__index__")
     {
         FLC_ASSERT(!m_args.empty());
-        FLC_ASSERT(m_args.size() == 2);
+        FLC_ASSERT(m_args.top().size() == 2);
         FLC_ASSERT(
             m_args.top().front()->getType()->isArrayType()
             || m_args.top().front()->getType()->isStringType()
@@ -368,6 +368,40 @@ llvm::Value* LLVMCodegenPass::visit(IRIntrinsicFunction* node)
         );
 
         return m_builder.CreateLoad(getLLVMType(node->result), ptr);
+    }
+    else if (node->name == "__u64_to_ptr")
+    {
+        FLC_ASSERT(!m_args.empty());
+        FLC_ASSERT(m_args.top().size() == 1);
+        FLC_ASSERT(m_args.top().front()->getType() == m_compCtx.getU64());
+
+        auto value = dispatch(m_args.top().front());
+        return m_builder.CreateIntToPtr(value, getLLVMType(node->result));
+    }
+    else if (node->name == "__ptr_to_u64")
+    {
+        FLC_ASSERT(!m_args.empty());
+        FLC_ASSERT(m_args.top().size() == 1);
+        FLC_ASSERT(m_args.top().front()->getType()->isPointerType());
+
+        auto value = dispatch(m_args.top().front());
+        return m_builder.CreatePtrToInt(value, getLLVMType(node->result));
+    }
+    else if (node->name == "__arr_to_ptr")
+    {
+        FLC_ASSERT(!m_args.empty());
+        FLC_ASSERT(m_args.top().size() == 1);
+        FLC_ASSERT(m_args.top().front()->getType()->isArrayType());
+
+        auto value = dispatch(m_args.top().front());
+
+        auto fieldTypes = std::vector<llvm::Type*>(
+            { llvm::Type::getInt64Ty(m_llvmCtx),
+              llvm::ArrayType::get(getLLVMType(node->result), 0) }
+        );
+        auto arrayType = llvm::StructType::get(m_llvmCtx, fieldTypes);
+
+        return m_builder.CreateStructGEP(arrayType, value, 1);
     }
 
     FLC_ASSERT(false);
