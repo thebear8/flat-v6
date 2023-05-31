@@ -175,6 +175,17 @@ CompilationContext::CompilationContext(
             {}
         )));
     }
+
+    {
+        addBuiltinFunction(m_irCtx.make(IRIntrinsicFunction(
+            m_builtins,
+            "__str_to_ptr",
+            {},
+            { { "s", getString() } },
+            getPointerType(getU8()),
+            {}
+        )));
+    }
 }
 
 CompilationContext::~CompilationContext()
@@ -328,7 +339,7 @@ void CompilationContext::generateCode(
         m_logger.fatal(error);
 
     auto targetOptions = llvm::TargetOptions();
-    auto relocModel = llvm::Optional<llvm::Reloc::Model>();
+    auto relocModel = llvm::Reloc::PIC_;
     auto targetMachine = target->createTargetMachine(
         targetDesc.targetTriple,
         targetDesc.cpuDesc,
