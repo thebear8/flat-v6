@@ -68,18 +68,30 @@ private:
     virtual llvm::Value* visit(IRWhileStatement* node) override;
     virtual llvm::Value* visit(IRIfStatement* node) override;
 
-    virtual llvm::Value* visit(IRUnaryIntrinsic* node) override;
-    virtual llvm::Value* visit(IRBinaryIntrinsic* node) override;
-    virtual llvm::Value* visit(IRIndexIntrinsic* node) override;
+    virtual llvm::Value* visit(IRIntrinsicFunction* node) override;
     virtual llvm::Value* visit(IRNormalFunction* node) override;
 
 private:
     void generateFunctionHead(IRFunction* function);
     void generateFunctionBody(IRFunction* function);
 
+    llvm::Value* generateUnaryIntrinsic(IRIntrinsicFunction* node);
+    llvm::Value* generateBinaryIntrinsic(IRIntrinsicFunction* node);
+
     llvm::Type* getLLVMType(IRType* type);
     std::string getMangledTypeName(IRType* type);
     std::string getMangledFunctionName(
         std::string const& function, std::vector<IRType*> const& params
     );
+
+private:
+    const std::set<std::string> UNARY_INTRINSICS = {
+        "__pos__", "__neg__", "__not__", "__lnot__"
+    };
+
+    const std::set<std::string> BINARY_INTRINSICS = {
+        "__add__", "__sub__", "__mul__", "__div__", "__mod__",  "__and__",
+        "__or__",  "__xor__", "__shl__", "__shr__", "__land__", "__lor__",
+        "__eq__",  "__ne__",  "__lt__",  "__gt__",  "__lteq__", "__gteq__"
+    };
 };

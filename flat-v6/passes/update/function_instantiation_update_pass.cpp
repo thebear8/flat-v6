@@ -200,7 +200,7 @@ IRNode* FunctionInstantiationUpdatePass::visit(IRConstraintFunction* node)
     return functions.front();
 }
 
-IRNode* FunctionInstantiationUpdatePass::visit(IRUnaryIntrinsic* node)
+IRNode* FunctionInstantiationUpdatePass::visit(IRIntrinsicFunction* node)
 {
     auto typeArgs =
         node->typeArgs | std::views::transform([&](auto arg) {
@@ -212,32 +212,6 @@ IRNode* FunctionInstantiationUpdatePass::visit(IRUnaryIntrinsic* node)
     return m_instantiator.getFunctionInstantiation(
         node->blueprint ? node->blueprint : node, typeArgs
     );
-}
-
-IRNode* FunctionInstantiationUpdatePass::visit(IRBinaryIntrinsic* node)
-{
-    auto typeArgs =
-        node->typeArgs | std::views::transform([&](auto arg) {
-            return m_instantiator.instantiateType(arg, m_env, m_irCtx);
-        })
-        | range_utils::to_vector;
-
-    FLC_ASSERT(node->blueprint || node->typeParams.size() == 0);
-    return m_instantiator.getFunctionInstantiation(
-        node->blueprint ? node->blueprint : node, typeArgs
-    );
-}
-
-IRNode* FunctionInstantiationUpdatePass::visit(IRIndexIntrinsic* node)
-{
-    auto typeArgs =
-        node->typeArgs | std::views::transform([&](auto arg) {
-            return m_instantiator.instantiateType(arg, m_env, m_irCtx);
-        })
-        | range_utils::to_vector;
-
-    FLC_ASSERT(node->blueprint);
-    return m_instantiator.getFunctionInstantiation(node->blueprint, typeArgs);
 }
 
 IRNode* FunctionInstantiationUpdatePass::visit(IRNormalFunction* node)

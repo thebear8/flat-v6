@@ -50,9 +50,7 @@ private:
     IRNode* visit(IRWhileStatement* node) override;
     IRNode* visit(IRIfStatement* node) override;
 
-    IRNode* visit(IRUnaryIntrinsic* node) override;
-    IRNode* visit(IRBinaryIntrinsic* node) override;
-    IRNode* visit(IRIndexIntrinsic* node) override;
     IRNode* visit(IRConstraintFunction* node) override;
+    IRNode* visit(IRIntrinsicFunction* node) override;
     IRNode* visit(IRNormalFunction* node) override;
 };

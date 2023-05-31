@@ -66,9 +66,15 @@ CompilationContext::CompilationContext(
     for (auto idx : integers)
     {
         auto t = m_irCtx.make(IRGenericType("T"));
-        addBuiltinFunction(
-            m_irCtx.make(IRIndexIntrinsic(m_builtins, t, getArrayType(t), idx))
-        );
+
+        addBuiltinFunction(m_irCtx.make(IRIntrinsicFunction(
+            m_builtins,
+            "__index__",
+            { t },
+            { { "array", getArrayType(t) }, { "index", idx } },
+            t,
+            {}
+        )));
     }
 
     for (auto a : integers)
@@ -390,9 +396,10 @@ void CompilationContext::addUnaryOperator(
 
     FLC_ASSERT(m_builtins);
     FLC_ASSERT(m_builtins->getEnv());
-    FLC_ASSERT(m_builtins->getEnv()->addFunction(
-        m_irCtx.make(IRUnaryIntrinsic(m_builtins, name, a, result))
-    ));
+
+    FLC_ASSERT(m_builtins->getEnv()->addFunction(m_irCtx.make(
+        IRIntrinsicFunction(m_builtins, name, {}, { { "a", a } }, result, {})
+    )));
 }
 
 void CompilationContext::addBinaryOperator(
@@ -405,9 +412,12 @@ void CompilationContext::addBinaryOperator(
 
     FLC_ASSERT(m_builtins);
     FLC_ASSERT(m_builtins->getEnv());
-    FLC_ASSERT(m_builtins->getEnv()->addFunction(
-        m_irCtx.make(IRBinaryIntrinsic(m_builtins, name, a, b, result))
-    ));
+
+    FLC_ASSERT(
+        m_builtins->getEnv()->addFunction(m_irCtx.make(IRIntrinsicFunction(
+            m_builtins, name, {}, { { "a", a }, { "b", b } }, result, {}
+        )))
+    );
 }
 
 IRModule* CompilationContext::addModule(IRModule* mod)

@@ -34,9 +34,7 @@ using IRTripleDispatchVisitor = TDV::TripleDispatchVisitor<
     struct IRConstraintInstantiation,
     struct IRFunction,
     struct IRConstraintFunction,
-    struct IRUnaryIntrinsic,
-    struct IRBinaryIntrinsic,
-    struct IRIndexIntrinsic,
+    struct IRIntrinsicFunction,
     struct IRNormalFunction,
     struct IRModule,
 

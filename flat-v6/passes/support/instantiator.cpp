@@ -82,10 +82,8 @@ IRFunction* Instantiator::getFunctionInstantiation(
         return function;
     }
 
-    FLC_ASSERT(
-        function->isUnaryIntrinsic() || function->isBinaryIntrinsic()
-        || function->isIndexIntrinsic() || function->isNormalFunction()
-    );
+    FLC_ASSERT(function->isIntrinsicFunction() || function->isNormalFunction());
+
     FLC_ASSERT(function->parent);
     FLC_ASSERT(!function->blueprint);
     FLC_ASSERT(function->typeArgs.size() == 0);
@@ -104,12 +102,8 @@ IRFunction* Instantiator::getFunctionInstantiation(
     auto prevIrCtx = m_irCtx;
     m_irCtx = function->parent->getIrCtx();
 
-    if (function->isUnaryIntrinsic())
-        instantiation = m_irCtx->make(IRUnaryIntrinsic());
-    else if (function->isBinaryIntrinsic())
-        instantiation = m_irCtx->make(IRBinaryIntrinsic());
-    else if (function->isIndexIntrinsic())
-        instantiation = m_irCtx->make(IRIndexIntrinsic());
+    if (function->isIntrinsicFunction())
+        instantiation = m_irCtx->make(IRIntrinsicFunction());
     else if (function->isNormalFunction())
         instantiation = m_irCtx->make(IRNormalFunction());
     else

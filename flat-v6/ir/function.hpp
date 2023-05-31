@@ -51,9 +51,7 @@ struct IRFunction : public IRNode
     }
 
     virtual bool isConstraintFunction() { return false; }
-    virtual bool isUnaryIntrinsic() { return false; }
-    virtual bool isBinaryIntrinsic() { return false; }
-    virtual bool isIndexIntrinsic() { return false; }
+    virtual bool isIntrinsicFunction() { return false; }
     virtual bool isNormalFunction() { return false; }
 
     IMPLEMENT_ACCEPT()
@@ -84,72 +82,33 @@ struct IRConstraintFunction : public IRFunction
     IMPLEMENT_ACCEPT()
 };
 
-struct IRUnaryIntrinsic : IRFunction
+struct IRIntrinsicFunction : public IRFunction
 {
-    IRUnaryIntrinsic() {}
+    IRIntrinsicFunction() {}
 
-    IRUnaryIntrinsic(
-        IRModule* parent, std::string name, IRType* a, IRType* result
-    )
-        : IRFunction(
-            parent, nullptr, name, {}, {}, { { "a", a } }, result, {}, nullptr
-        )
-    {
-    }
-
-    bool isUnaryIntrinsic() override { return true; }
-
-    IMPLEMENT_ACCEPT()
-};
-
-struct IRBinaryIntrinsic : public IRFunction
-{
-    IRBinaryIntrinsic() {}
-
-    IRBinaryIntrinsic(
-        IRModule* parent, std::string name, IRType* a, IRType* b, IRType* result
+    IRIntrinsicFunction(
+        IRModule* parent,
+        std::string const& name,
+        std::vector<IRGenericType*> const& typeParams,
+        std::vector<std::pair<std::string, IRType*>> const& params,
+        IRType* result,
+        std::vector<IRConstraintInstantiation*> requirements
     )
         : IRFunction(
             parent,
             nullptr,
             name,
+            typeParams,
             {},
-            {},
-            { { "a", a }, { "b", b } },
+            params,
             result,
-            {},
+            requirements,
             nullptr
         )
     {
     }
 
-    bool isBinaryIntrinsic() override { return true; }
-
-    IMPLEMENT_ACCEPT()
-};
-
-struct IRIndexIntrinsic : IRFunction
-{
-    IRIndexIntrinsic() {}
-
-    IRIndexIntrinsic(
-        IRModule* parent, IRGenericType* t, IRArrayType* arrayOfT, IRType* idx
-    )
-        : IRFunction(
-            parent,
-            nullptr,
-            "__index__",
-            { t },
-            {},
-            { { "array", (IRType*)arrayOfT }, { "index", (IRType*)idx } },
-            (IRType*)t,
-            {},
-            nullptr
-        )
-    {
-    }
-
-    bool isIndexIntrinsic() override { return true; }
+    bool isIntrinsicFunction() override { return true; }
 
     IMPLEMENT_ACCEPT()
 };

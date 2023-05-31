@@ -220,7 +220,7 @@ llvm::Value* LLVMCodegenPass::visit(IRNormalFunction* node)
     return m_builder.CreateCall(node->getLLVMFunction(), args);
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRUnaryIntrinsic* node)
+llvm::Value* LLVMCodegenPass::generateUnaryIntrinsic(IRIntrinsicFunction* node)
 {
     FLC_ASSERT(!m_args.empty());
     FLC_ASSERT(m_args.top().size() == 1);
@@ -240,7 +240,7 @@ llvm::Value* LLVMCodegenPass::visit(IRUnaryIntrinsic* node)
     return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRBinaryIntrinsic* node)
+llvm::Value* LLVMCodegenPass::generateBinaryIntrinsic(IRIntrinsicFunction* node)
 {
     FLC_ASSERT(!m_args.empty());
     FLC_ASSERT(m_args.top().size() == 2);
@@ -333,34 +333,45 @@ llvm::Value* LLVMCodegenPass::visit(IRBinaryIntrinsic* node)
     return nullptr;
 }
 
-llvm::Value* LLVMCodegenPass::visit(IRIndexIntrinsic* node)
+llvm::Value* LLVMCodegenPass::visit(IRIntrinsicFunction* node)
 {
-    FLC_ASSERT(!m_args.empty());
-    FLC_ASSERT(m_args.size() == 2);
-    FLC_ASSERT(
-        m_args.top().front()->getType()->isArrayType()
-        || m_args.top().front()->getType()->isStringType()
-    );
-    FLC_ASSERT(m_args.top().back()->getType()->isIntegerType());
+    if (UNARY_INTRINSICS.contains(node->name))
+        return generateUnaryIntrinsic(node);
+    else if (BINARY_INTRINSICS.contains(node->name))
+        return generateBinaryIntrinsic(node);
 
-    auto array = dispatch(m_args.top().front());
-    auto index = dispatch(m_args.top().back());
+    if (node->name == "__index__")
+    {
+        FLC_ASSERT(!m_args.empty());
+        FLC_ASSERT(m_args.size() == 2);
+        FLC_ASSERT(
+            m_args.top().front()->getType()->isArrayType()
+            || m_args.top().front()->getType()->isStringType()
+        );
+        FLC_ASSERT(m_args.top().back()->getType()->isIntegerType());
 
-    auto fieldTypes = std::vector<llvm::Type*>(
-        { llvm::Type::getInt64Ty(m_llvmCtx),
-          llvm::ArrayType::get(getLLVMType(node->result), 0) }
-    );
-    auto arrayType = llvm::StructType::get(m_llvmCtx, fieldTypes);
+        auto array = dispatch(m_args.top().front());
+        auto index = dispatch(m_args.top().back());
 
-    auto ptr = m_builder.CreateGEP(
-        arrayType,
-        array,
-        { llvm::ConstantInt::get(llvm::Type::getInt64Ty(m_llvmCtx), 0),
-          llvm::ConstantInt::get(llvm::Type::getInt32Ty(m_llvmCtx), 1),
-          index }
-    );
+        auto fieldTypes = std::vector<llvm::Type*>(
+            { llvm::Type::getInt64Ty(m_llvmCtx),
+              llvm::ArrayType::get(getLLVMType(node->result), 0) }
+        );
+        auto arrayType = llvm::StructType::get(m_llvmCtx, fieldTypes);
 
-    return m_builder.CreateLoad(getLLVMType(node->result), ptr);
+        auto ptr = m_builder.CreateGEP(
+            arrayType,
+            array,
+            { llvm::ConstantInt::get(llvm::Type::getInt64Ty(m_llvmCtx), 0),
+              llvm::ConstantInt::get(llvm::Type::getInt32Ty(m_llvmCtx), 1),
+              index }
+        );
+
+        return m_builder.CreateLoad(getLLVMType(node->result), ptr);
+    }
+
+    FLC_ASSERT(false);
+    return nullptr;
 }
 
 llvm::Value* LLVMCodegenPass::visit(IRFieldExpression* node)
