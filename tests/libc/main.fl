@@ -1,0 +1,11 @@
+module libc_tests
+
+@extern
+@no_mangle
+fn putchar(c: char): char
+
+@no_mangle
+fn main(argc: i32, argv: char**): i32 {
+    putchar('a')
+    return 0
+}

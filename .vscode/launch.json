@@ -6,7 +6,7 @@
             "request": "launch",
             "program": "${command:cmake.launchTargetPath}",
             "args": [
-                "tests/generics"
+                "tests/libc"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
