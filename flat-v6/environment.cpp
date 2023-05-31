@@ -314,6 +314,11 @@ llvm::Value* Environment::setVariableValue(
     std::string const& name, llvm::Value* value
 )
 {
+    if (getVariableValue(name))
+        return (m_llvmVariableValues[name] = value);
+    else if (m_parent && m_parent->getVariableValue(name))
+        return m_parent->setVariableValue(name, value);
+
     return (m_llvmVariableValues[name] = value);
 }
 
