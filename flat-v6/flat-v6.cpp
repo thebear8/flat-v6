@@ -14,9 +14,12 @@ int main(int argc, char* argv[])
 {
     CLI::App app("flat compiler v6", "flat-v6");
     std::string sourceDir, output, target, cpuDesc, featureDesc;
+    std::vector<std::string> additionalLibraryPaths;
+    std::vector<std::string> additionalObjectFiles;
 
     app.add_option("source-dir, -s, --source-dir", sourceDir)
         ->type_name("DIRECTORY")
+        ->description("Directory in which the source files are located")
         ->required()
         ->check([](std::string const& value) -> std::string {
             std::filesystem::directory_entry dir(value);
@@ -25,8 +28,9 @@ int main(int argc, char* argv[])
             return "";
         });
 
-    app.add_option("-o, --output", output)
+    app.add_option("output, -o, --output", output)
         ->type_name("FILENAME")
+        ->description("File to which the compiled executable is written to")
         ->check([](std::string const& value) -> std::string {
             std::ofstream ofs(value);
             if (ofs.fail() || ofs.bad() || !ofs.is_open())
@@ -34,6 +38,14 @@ int main(int argc, char* argv[])
             ofs.close();
             return "";
         });
+
+    app.add_option("lib, -L, --library", additionalLibraryPaths)
+        ->type_name("DIRECTORY")
+        ->description("Additional library paths to pass to the linker");
+
+    app.add_option("lib, -l, --object", additionalObjectFiles)
+        ->type_name("FILENAME")
+        ->description("Additional object file names to pass to the linker");
 
     app.add_option("--target", target)
         ->type_name("TARGET TRIPLE")
@@ -75,18 +87,22 @@ int main(int argc, char* argv[])
     targetDesc.featureDesc = featureDesc;
     targetDesc.targetTriple = target;
 
-    auto outputName = output;
-    if (outputName.empty())
-        outputName =
-            std::filesystem::path(sourceDir).replace_extension(".o").string();
+    if (output.empty())
+        output = std::filesystem::path(sourceDir).replace_extension(".out");
 
     std::error_code ec;
-    llvm::raw_fd_ostream outStream(outputName, ec);
+    auto objectFile = output + ".o";
+    llvm::raw_fd_ostream objectStream(objectFile, ec);
 
     GraphContext astCtx, irCtx;
     CompilationContext ctx(astCtx, irCtx, std::cout);
     ctx.readSourceFiles(sourceDir);
     ctx.parseSourceFiles();
     ctx.runPasses();
-    ctx.generateCode(targetDesc, outStream);
+    ctx.generateCode(targetDesc, objectStream);
+    ctx.linkWithGCC(
+        output, objectFile, additionalLibraryPaths, additionalObjectFiles
+    );
+
+    std::filesystem::remove(objectFile);
 }

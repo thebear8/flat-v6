@@ -76,6 +76,12 @@ public:
     void generateCode(
         TargetDescriptor const& targetDesc, llvm::raw_pwrite_stream& output
     );
+    void linkWithGCC(
+        std::string const& executableFileName,
+        std::string const& objectFileName,
+        std::vector<std::string> const& libaryPaths,
+        std::vector<std::string> const& objectNames
+    );
 
 public:
     /// @brief Add a module to this compilation context

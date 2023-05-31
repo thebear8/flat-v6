@@ -14,6 +14,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <ranges>
 
 #include "ast/ast.hpp"
 #include "parser/parser.hpp"
@@ -335,6 +336,28 @@ void CompilationContext::generateCode(
     passManager.run(llvmModule);
     llvmModule.dump();
     output.flush();
+}
+
+void CompilationContext::linkWithGCC(
+    std::string const& executableFileName,
+    std::string const& objectFileName,
+    std::vector<std::string> const& additionalLibaryPaths,
+    std::vector<std::string> const& additionalObjectNames
+)
+{
+    std::string libString;
+    for (auto const& lib : additionalLibaryPaths)
+        libString += "-L\"" + lib + "\"";
+
+    std::string objString;
+    for (auto const& obj : additionalObjectNames)
+        objString += "-l\"" + obj + "\"";
+
+    auto command = "gcc -o " + executableFileName + " " + libString + " "
+        + objString + objectFileName;
+
+    std::cout << "Linker Command: " << command << "\n";
+    std::system(command.c_str());
 }
 
 void CompilationContext::addBuiltinType(std::string const& name, IRType* type)
