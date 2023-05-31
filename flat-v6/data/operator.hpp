@@ -60,9 +60,9 @@ static const inline std::unordered_map<UnaryOperator, OperatorInfo>
         { UnaryOperator::Negative,
           { "__neg__", "-", OperatorCategory::UnaryArithmetic } },
         { UnaryOperator::BitwiseNot,
-          { "__not__", "!", OperatorCategory::UnaryBitwise } },
+          { "__not__", "~", OperatorCategory::UnaryBitwise } },
         { UnaryOperator::LogicalNot,
-          { "__lnot__", "~", OperatorCategory::UnaryLogic } },
+          { "__lnot__", "!", OperatorCategory::UnaryLogic } },
     };
 
 static const inline std::unordered_map<BinaryOperator, OperatorInfo>
