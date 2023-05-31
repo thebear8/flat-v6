@@ -9,6 +9,7 @@
 #include "../../environment.hpp"
 #include "../../support/formatter.hpp"
 #include "../../util/assert.hpp"
+#include "../../util/graph_context.hpp"
 #include "../../util/to_vector.hpp"
 #include "../../util/zip_view.hpp"
 #include "../support/call_target_resolver.hpp"

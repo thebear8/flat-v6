@@ -1,5 +1,8 @@
 #include "operator_lowering_pass.hpp"
 
+#include "../../environment.hpp"
+#include "../../util/graph_context.hpp"
+
 void OperatorLoweringPass::process(IRModule* node)
 {
     m_module = node;

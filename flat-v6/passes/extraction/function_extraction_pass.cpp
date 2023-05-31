@@ -1,7 +1,10 @@
 #include "function_extraction_pass.hpp"
 
 #include "../../compiler.hpp"
+#include "../../environment.hpp"
 #include "../../ir/ir.hpp"
+#include "../../util/graph_context.hpp"
+#include "../support/ast_type_resolver.hpp"
 
 void FunctionExtractionPass::process(ASTSourceFile* sourceFile)
 {

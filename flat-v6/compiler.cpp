@@ -17,6 +17,7 @@
 #include <ranges>
 
 #include "ast/ast.hpp"
+#include "environment.hpp"
 #include "parser/parser.hpp"
 #include "passes/analysis/semantic_pass.hpp"
 #include "passes/codegen/codegen_pass.hpp"
@@ -36,6 +37,7 @@
 #include "passes/update/function_instantiation_update_pass.hpp"
 #include "passes/update/struct_instantiation_update_pass.hpp"
 #include "support/formatter.hpp"
+#include "util/graph_context.hpp"
 #include "util/string_switch.hpp"
 
 CompilationContext::CompilationContext(

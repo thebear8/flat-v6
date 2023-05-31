@@ -1,5 +1,7 @@
 #include "lexer.hpp"
 
+#include "../util/error_logger.hpp"
+
 Token Lexer::advance()
 {
     if (position >= input.length())

@@ -1,7 +1,9 @@
 #pragma once
 #include "../ast/ast.hpp"
-#include "../util/graph_context.hpp"
 #include "lexer.hpp"
+
+class ErrorLogger;
+class GraphContext;
 
 class Parser : protected Lexer
 {

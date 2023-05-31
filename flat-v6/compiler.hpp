@@ -1,14 +1,10 @@
 #pragma once
 
-#include <llvm/Support/raw_ostream.h>
-
 #include <iostream>
 
 #include "ast/ast.hpp"
-#include "environment.hpp"
 #include "ir/ir.hpp"
 #include "util/error_logger.hpp"
-#include "util/graph_context.hpp"
 
 struct TargetDescriptor
 {
@@ -27,6 +23,14 @@ struct TargetDescriptor
     {
     }
 };
+
+class GraphContext;
+class IRModule;
+
+namespace llvm
+{
+class raw_pwrite_stream;
+}
 
 class CompilationContext
 {

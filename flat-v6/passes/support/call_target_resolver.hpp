@@ -1,3 +1,7 @@
+#pragma once
+#include <set>
+#include <vector>
+
 #include "../../ir/ir.hpp"
 #include "../../util/optional_ref.hpp"
 

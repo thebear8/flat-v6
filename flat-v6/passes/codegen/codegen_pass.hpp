@@ -1,7 +1,6 @@
 #pragma once
+
 #include <llvm/IR/IRBuilder.h>
-#include <llvm/IR/LLVMContext.h>
-#include <llvm/IR/Value.h>
 
 #include <ostream>
 #include <stack>
@@ -9,10 +8,23 @@
 #include <string_view>
 #include <unordered_map>
 
-#include "../../compiler.hpp"
 #include "../../data/operator.hpp"
 #include "../../ir/ir.hpp"
-#include "../../util/error_logger.hpp"
+
+class ErrorLogger;
+class CompilationContext;
+class GraphContext;
+class Environment;
+
+namespace llvm
+{
+class LLVMContext;
+class Module;
+class Value;
+class Type;
+
+// llvm::IRBuilder<> can't be forward declared because of default template args
+}
 
 class LLVMCodegenPass : protected IRVisitor<llvm::Value*>
 {

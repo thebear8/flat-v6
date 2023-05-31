@@ -3,8 +3,6 @@
 
 class ErrorLogger;
 class CompilationContext;
-class GraphContext;
-class Environment;
 
 class ModuleImportPopulationPass : ASTVisitor<void>
 {

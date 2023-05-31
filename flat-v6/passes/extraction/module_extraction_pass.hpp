@@ -1,6 +1,9 @@
 #pragma once
 #include "../../ast/ast.hpp"
-#include "../../compiler.hpp"
+
+class ErrorLogger;
+class CompilationContext;
+class GraphContext;
 
 class ModuleExtractionPass : ASTVisitor<void>
 {

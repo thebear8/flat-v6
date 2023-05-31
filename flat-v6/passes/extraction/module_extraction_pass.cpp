@@ -2,6 +2,10 @@
 
 #include <set>
 
+#include "../../compiler.hpp"
+#include "../../environment.hpp"
+#include "../../util/graph_context.hpp"
+
 void ModuleExtractionPass::process(ASTSourceFile* node)
 {
     return dispatch(node);

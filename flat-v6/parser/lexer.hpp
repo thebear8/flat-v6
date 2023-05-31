@@ -4,7 +4,8 @@
 #include <string_view>
 
 #include "../data/token.hpp"
-#include "../util/error_logger.hpp"
+
+class ErrorLogger;
 
 class Lexer
 {

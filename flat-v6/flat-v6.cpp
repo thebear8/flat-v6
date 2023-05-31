@@ -8,6 +8,7 @@
 
 #include "compiler.hpp"
 #include "parser/parser.hpp"
+#include "util/graph_context.hpp"
 #include "util/string_switch.hpp"
 
 int main(int argc, char* argv[])

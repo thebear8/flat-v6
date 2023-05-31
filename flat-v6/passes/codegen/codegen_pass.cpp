@@ -4,7 +4,10 @@
 #include <llvm/Analysis/LoopAnalysisManager.h>
 #include <llvm/Passes/PassBuilder.h>
 
+#include "../../compiler.hpp"
+#include "../../environment.hpp"
 #include "../../util/assert.hpp"
+#include "../../util/graph_context.hpp"
 
 void LLVMCodegenPass::process(IRModule* node)
 {

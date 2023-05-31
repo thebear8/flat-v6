@@ -3,10 +3,11 @@
 #include <string>
 #include <string_view>
 
-#include "../../compiler.hpp"
-#include "../../data/operator.hpp"
 #include "../../ir/ir.hpp"
-#include "../../util/error_logger.hpp"
+
+class ErrorLogger;
+class CompilationContext;
+class GraphContext;
 
 class OperatorLoweringPass : protected IRVisitor<void>
 {

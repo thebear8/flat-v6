@@ -1,11 +1,11 @@
 #pragma once
 #include "../../ast/ast.hpp"
-#include "../support/ast_type_resolver.hpp"
 
 class ErrorLogger;
 class CompilationContext;
 class GraphContext;
 class Environment;
+class ASTTypeResolver;
 
 class StructPopulationPass : ASTVisitor<void>
 {

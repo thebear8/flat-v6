@@ -1,5 +1,8 @@
 #include "parser.hpp"
 
+#include "../util/error_logger.hpp"
+#include "../util/graph_context.hpp"
+
 ASTExpression* Parser::l0()
 {
     auto begin = trim();

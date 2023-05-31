@@ -1,13 +1,17 @@
 #pragma once
+#include <unordered_map>
+#include <vector>
+
 #include "../../ast/ast.hpp"
 
-class IRNode;
 class ErrorLogger;
 class CompilationContext;
 class GraphContext;
 class ASTTypeResolver;
 class Instantiator;
 class Environment;
+class IRNode;
+class IRModule;
 
 class FunctionPopulationPass : ASTVisitor<IRNode*>
 {
