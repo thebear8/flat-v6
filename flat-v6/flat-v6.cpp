@@ -82,7 +82,7 @@ int main(int argc, char* argv[])
             return "";
         });
 
-    app.add_option("--optimize", optimize)
+    app.add_flag("--optimize", optimize)
         ->default_val(false)
         ->description("Optimize generated LLVM IR");
 
