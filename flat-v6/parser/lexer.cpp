@@ -230,21 +230,24 @@ std::string_view Lexer::advanceChar()
 
 std::size_t Lexer::trim()
 {
-    while (position < input.length() && isWhitespace(input[position]))
-        position++;
-
-    if ((position < input.length() && input[position] == '/')
-        && ((position + 1) < input.length() && input[position + 1] == '/'))
+    while (true)
     {
-        while (position < input.length() && input[position] != '\n')
+        if (position < input.length() && isWhitespace(input[position]))
+        {
             position++;
-        position++;
+        }
+        else if ((position < input.length() && input[position] == '/')
+            && ((position + 1) < input.length() && input[position + 1] == '/'))
+        {
+            while (position < input.length() && input[position] != '\n')
+                position++;
+            position++;
+        }
+        else
+        {
+            return position;
+        }
     }
-
-    while (position < input.length() && isWhitespace(input[position]))
-        position++;
-
-    return position;
 }
 
 bool Lexer::peek(Token expected)
