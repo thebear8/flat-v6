@@ -12,38 +12,23 @@ fn print(str: string): void {
     }
 }
 
-constraint Integer<T> {
-    fn __add__(a: T, b: T): T,
-    fn __sub__(a: T, b: T): T,
-    fn __div__(a: T, b: T): T,
-    fn __mod__(a: T, b: T): T,
-
-    fn __eq__(a: T, b: i32): bool,
-    fn __ne__(a: T, b: i32): bool,
-}
-
-fn print<T>[Integer<T>](int: T): void {
-    while(int != 0) {
-        let rem = int % 10
-
-        if(rem == 0) print("0")
-        else if(rem == 1) print("1")
-        else if(rem == 2) print("2")
-        else if(rem == 3) print("3")
-        else if(rem == 4) print("4")
-        else if(rem == 5) print("5")
-        else if(rem == 6) print("6")
-        else if(rem == 7) print("7")
-        else if(rem == 8) print("8")
-        else if(rem == 9) print("9")
-
-        int = int / 10
+fn print(value: i32): void {
+    if ((value) < 0) {
+        print("-")
+        print(-value)
+        return
     }
+
+    let remainder = value % 10
+    if((remainder) > 0 && (value / 10) > 0)
+        print(value / 10)
+
+    putchar("0123456789"[remainder])
 }
 
 @no_mangle
 fn main(): i32 {
     print("Hello World")
-    print(12345)
+    print(-12345)
     return 0
 }
