@@ -418,6 +418,31 @@ llvm::Value* LLVMCodegenPass::visit(IRIntrinsicFunction* node)
 
         return m_builder.CreateStructGEP(arrayType, value, 1);
     }
+    else if (node->name == "__length")
+    {
+        FLC_ASSERT(!m_args.empty());
+        FLC_ASSERT(m_args.top().size() == 1);
+        FLC_ASSERT(
+            m_args.top().front()->getType()->isStringType()
+            || m_args.top().front()->getType()->isArrayType()
+        );
+
+        auto value = dispatch(m_args.top().front());
+        auto elementType = (m_args.top().front()->getType()->isArrayType())
+            ? ((IRArrayType*)m_args.top().front()->getType())->base
+            : m_compCtx.getU8();
+
+        auto fieldTypes = std::vector<llvm::Type*>(
+            { llvm::Type::getInt64Ty(m_llvmCtx),
+              llvm::ArrayType::get(getLLVMType(elementType), 0) }
+        );
+        auto arrayType = llvm::StructType::get(m_llvmCtx, fieldTypes);
+
+        return m_builder.CreateLoad(
+            llvm::Type::getInt64Ty(m_llvmCtx),
+            m_builder.CreateStructGEP(arrayType, value, 0)
+        );
+    }
 
     FLC_ASSERT(false);
     return nullptr;

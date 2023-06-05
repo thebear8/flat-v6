@@ -167,7 +167,7 @@ CompilationContext::CompilationContext(
     }
 
     {
-        auto t = m_irCtx.make(IRGenericType(""));
+        auto t = m_irCtx.make(IRGenericType("T"));
         addBuiltinFunction(m_irCtx.make(IRIntrinsicFunction(
             m_builtins,
             "__arr_to_ptr",
@@ -185,6 +185,24 @@ CompilationContext::CompilationContext(
             {},
             { { "s", getString() } },
             getPointerType(getU8()),
+            {}
+        )));
+    }
+
+    {
+        addBuiltinFunction(m_irCtx.make(IRIntrinsicFunction(
+            m_builtins, "__length", {}, { { "s", getString() } }, getU64(), {}
+        )));
+    }
+
+    {
+        auto t = m_irCtx.make(IRGenericType("T"));
+        addBuiltinFunction(m_irCtx.make(IRIntrinsicFunction(
+            m_builtins,
+            "__length",
+            { t },
+            { { "s", getArrayType(t) } },
+            getU64(),
             {}
         )));
     }
