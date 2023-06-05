@@ -222,6 +222,8 @@ IRNode* FunctionInstantiationUpdatePass::visit(IRNormalFunction* node)
         })
         | range_utils::to_vector;
 
-    FLC_ASSERT(node->blueprint);
-    return m_instantiator.getFunctionInstantiation(node->blueprint, typeArgs);
+    FLC_ASSERT(node->blueprint || node->typeParams.size() == 0);
+    return m_instantiator.getFunctionInstantiation(
+        node->blueprint ? node->blueprint : node, typeArgs
+    );
 }

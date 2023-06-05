@@ -6,7 +6,7 @@
             "request": "launch",
             "program": "${command:cmake.launchTargetPath}",
             "args": [
-                "tests/output"
+                "tests/int2string"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
