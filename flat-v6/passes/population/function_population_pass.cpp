@@ -215,7 +215,10 @@ IRNode* FunctionPopulationPass::visit(ASTVariableStatement* node)
 IRNode* FunctionPopulationPass::visit(ASTReturnStatement* node)
 {
     return m_irCtx
-        ->make(IRReturnStatement((IRExpression*)dispatch(node->expression)))
+        ->make(IRReturnStatement(
+            (node->expression) ? (IRExpression*)dispatch(node->expression)
+                               : nullptr
+        ))
         ->setLocation(node->location);
 }
 

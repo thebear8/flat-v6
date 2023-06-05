@@ -272,7 +272,8 @@ IRType* SemanticPass::visit(IRVariableStatement* node)
 
 IRType* SemanticPass::visit(IRReturnStatement* node)
 {
-    m_result = dispatchRef(node->expression);
+    m_result = (node->expression) ? dispatchRef(node->expression)
+                                  : m_compCtx.getVoid();
     if (m_result != m_expectedResult)
     {
         m_result = nullptr;
