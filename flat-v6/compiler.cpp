@@ -77,6 +77,15 @@ CompilationContext::CompilationContext(
             t,
             {}
         )));
+
+        addBuiltinFunction(m_irCtx.make(IRIntrinsicFunction(
+            m_builtins,
+            "__index__",
+            {},
+            { { "str", getString() }, { "index", idx } },
+            getU8(),
+            {}
+        )));
     }
 
     for (auto a : integers)
