@@ -206,7 +206,7 @@ bool CallTargetResolver::isConstraintSatisfied(
 
     for (auto condition : constraint->conditions)
     {
-        auto candidates = getMatchingFunctions(
+        auto candidates = findMatchingFunctions(
             env,
             condition->name,
             {},
