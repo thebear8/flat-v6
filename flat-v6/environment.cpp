@@ -347,11 +347,8 @@ bool Environment::inferTypeArgsAndMatch(
     optional_ref<std::string> reason
 )
 {
-    if (actualType == genericType)
-    {
-        return true;
-    }
-    else if (genericType->isGenericType() && (!actualType->isGenericType() || allowGenericSubstitution))
+    if (genericType->isGenericType()
+        && (!actualType->isGenericType() || allowGenericSubstitution))
     {
         if (!typeArgs.contains((IRGenericType*)genericType))
             typeArgs.try_emplace((IRGenericType*)genericType, actualType);
@@ -369,6 +366,10 @@ bool Environment::inferTypeArgsAndMatch(
             return false;
         }
 
+        return true;
+    }
+    else if (actualType == genericType)
+    {
         return true;
     }
     else if (genericType->isStructInstantiation())

@@ -26,10 +26,7 @@ CallTargetResolver::matchFunction(
     auto zippedArgs = zip(function->params | std::views::values, args);
     for (auto [param, arg] : zippedArgs)
     {
-        if (param != arg
-            && !Environment::inferTypeArgsAndMatch(
-                param, arg, typeArgMap, true
-            ))
+        if (!Environment::inferTypeArgsAndMatch(param, arg, typeArgMap, true))
             return { std::nullopt, function };
     }
 
@@ -132,10 +129,11 @@ std::vector<IRFunction*> CallTargetResolver::findMatchingFunctions(
     optional_ref<std::set<IRFunction*>> requirementRejected
 )
 {
+    Environment* currentEnv = env;
     std::vector<std::pair<std::vector<IRType*>, IRFunction*>> candidates;
-    while (env != nullptr)
+    while (currentEnv != nullptr)
     {
-        auto [it, end] = env->getFunctionMap().equal_range(name);
+        auto [it, end] = currentEnv->getFunctionMap().equal_range(name);
         std::ranges::for_each(
             std::ranges::subrange(it, end) | std::views::values
                 | std::views::filter([&](IRFunction* f) {
@@ -163,33 +161,36 @@ std::vector<IRFunction*> CallTargetResolver::findMatchingFunctions(
             candidates.push_back(f);
             });
 
-        env = env->getParent();
+        currentEnv = currentEnv->getParent();
     }
 
     std::ranges::sort(candidates, [](auto const& a, auto const& b) {
         return a.first.size() > b.first.size();
     });
 
-    return candidates | std::views::transform([&](auto const& f) {
-               auto function = f.second;
-               auto functionInstantiation =
-                   m_instantiator.getFunctionInstantiation(function, f.first);
+    auto functions =
+        candidates | std::views::transform([&](auto const& f) {
+            auto function = f.second;
+            auto functionInstantiation =
+                m_instantiator.getFunctionInstantiation(function, f.first);
 
-               // We have to add the function instantiation to the parent env
-               // here, as we
-               // only now know that the instantiation is legal.
-               // If we do so in the instantiator, we are going to get errors
-               // later
-               if (functionInstantiation != function)
-               {
-                   function->parent->getEnv()->addFunctionInstantiation(
-                       function, functionInstantiation
-                   );
-               }
+            // We have to add the function instantiation to the parent env
+            // here, as we
+            // only now know that the instantiation is legal.
+            // If we do so in the instantiator, we are going to get errors
+            // later
+            if (functionInstantiation != function)
+            {
+                function->parent->getEnv()->addFunctionInstantiation(
+                    function, functionInstantiation
+                );
+            }
 
-               return functionInstantiation;
-           })
+            return functionInstantiation;
+        })
         | range_utils::to_vector;
+
+    return functions;
 }
 
 bool CallTargetResolver::isConstraintSatisfied(
