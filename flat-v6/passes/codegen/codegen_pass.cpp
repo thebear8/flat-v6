@@ -428,13 +428,9 @@ llvm::Value* LLVMCodegenPass::visit(IRIntrinsicFunction* node)
         );
 
         auto value = dispatch(m_args.top().front());
-        auto elementType = (m_args.top().front()->getType()->isArrayType())
-            ? ((IRArrayType*)m_args.top().front()->getType())->base
-            : m_compCtx.getU8();
-
         auto fieldTypes = std::vector<llvm::Type*>(
             { llvm::Type::getInt64Ty(m_llvmCtx),
-              llvm::ArrayType::get(getLLVMType(elementType), 0) }
+              llvm::ArrayType::get(getLLVMType(node->result), 0) }
         );
         auto arrayType = llvm::StructType::get(m_llvmCtx, fieldTypes);
 
