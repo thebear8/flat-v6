@@ -102,7 +102,7 @@ ASTExpression* Parser::l1()
                 args.push_back(expression());
                 if (!match(Token::Comma))
                 {
-                    expect(Token::ParenClose);
+                    expect(Token::BracketClose);
                     break;
                 }
             }
