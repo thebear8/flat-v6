@@ -129,11 +129,10 @@ std::vector<IRFunction*> CallTargetResolver::findMatchingFunctions(
     optional_ref<std::set<IRFunction*>> requirementRejected
 )
 {
-    Environment* currentEnv = env;
     std::vector<std::pair<std::vector<IRType*>, IRFunction*>> candidates;
-    while (currentEnv != nullptr)
+    while (env != nullptr)
     {
-        auto [it, end] = currentEnv->getFunctionMap().equal_range(name);
+        auto [it, end] = env->getFunctionMap().equal_range(name);
         std::ranges::for_each(
             std::ranges::subrange(it, end) | std::views::values
                 | std::views::filter([&](IRFunction* f) {
@@ -161,7 +160,7 @@ std::vector<IRFunction*> CallTargetResolver::findMatchingFunctions(
             candidates.push_back(f);
             });
 
-        currentEnv = currentEnv->getParent();
+        env = env->getParent();
     }
 
     std::ranges::sort(candidates, [](auto const& a, auto const& b) {
