@@ -8,6 +8,7 @@
 #include "../../util/graph_context.hpp"
 #include "../../util/to_vector.hpp"
 #include "../../util/zip_view.hpp"
+#include "../update/constraint_instantiation_update_pass.hpp"
 #include "instantiator.hpp"
 
 std::pair<std::optional<std::vector<IRType*>>, IRFunction*>
@@ -100,9 +101,23 @@ std::vector<IRFunction*> CallTargetResolver::getMatchingFunctions(
     });
 
     return candidates | std::views::transform([&](auto const& f) {
-               return m_instantiator.getFunctionInstantiation(
-                   f.second, f.first
-               );
+               auto function = f.second;
+               auto functionInstantiation =
+                   m_instantiator.getFunctionInstantiation(function, f.first);
+
+               // We have to add the function instantiation to the parent env
+               // here, as we
+               // only now know that the instantiation is legal.
+               // If we do so in the instantiator, we are going to get errors
+               // later
+               if (functionInstantiation != function)
+               {
+                   function->parent->getEnv()->addFunctionInstantiation(
+                       function, functionInstantiation
+                   );
+               }
+
+               return functionInstantiation;
            })
         | range_utils::to_vector;
 }
@@ -156,9 +171,23 @@ std::vector<IRFunction*> CallTargetResolver::findMatchingFunctions(
     });
 
     return candidates | std::views::transform([&](auto const& f) {
-               return m_instantiator.getFunctionInstantiation(
-                   f.second, f.first
-               );
+               auto function = f.second;
+               auto functionInstantiation =
+                   m_instantiator.getFunctionInstantiation(function, f.first);
+
+               // We have to add the function instantiation to the parent env
+               // here, as we
+               // only now know that the instantiation is legal.
+               // If we do so in the instantiator, we are going to get errors
+               // later
+               if (functionInstantiation != function)
+               {
+                   function->parent->getEnv()->addFunctionInstantiation(
+                       function, functionInstantiation
+                   );
+               }
+
+               return functionInstantiation;
            })
         | range_utils::to_vector;
 }
@@ -167,6 +196,8 @@ bool CallTargetResolver::isConstraintSatisfied(
     Environment* env, IRConstraintInstantiation* constraint
 )
 {
+    m_constraintUpdatePass.update(constraint);
+
     for (auto requirement : constraint->requirements)
     {
         if (!isConstraintSatisfied(env, requirement))

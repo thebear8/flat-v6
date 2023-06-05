@@ -9,15 +9,21 @@ class GraphContext;
 class Instantiator;
 class Formatter;
 class Environment;
+class ConstraintInstantiationUpdatePass;
 
 class CallTargetResolver
 {
 private:
     Instantiator& m_instantiator;
+    ConstraintInstantiationUpdatePass& m_constraintUpdatePass;
 
 public:
-    CallTargetResolver(Instantiator& instantiator)
-        : m_instantiator(instantiator)
+    CallTargetResolver(
+        Instantiator& instantiator,
+        ConstraintInstantiationUpdatePass& constraintUpdatePass
+    )
+        : m_instantiator(instantiator),
+          m_constraintUpdatePass(constraintUpdatePass)
     {
     }
 

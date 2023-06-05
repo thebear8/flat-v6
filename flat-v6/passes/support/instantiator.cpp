@@ -143,9 +143,14 @@ IRFunction* Instantiator::getFunctionInstantiation(
     instantiation->setLocation(function->getLocation(SourceRef()));
     instantiation->setNoMangle(function->getNoMangle(false));
     instantiation->setExtern(function->getExtern(false));
-    function->parent->getEnv()->addFunctionInstantiation(
-        function, instantiation
-    );
+
+    // We can't add the function instantiation to the parent env right here,
+    // because we don't yet know if the instantiation is legal. If it is not, we
+    // are going to get errors later on.
+
+    // function->parent->getEnv()->addFunctionInstantiation(
+    //     function, instantiation
+    // );
 
     m_irCtx = prevIrCtx;
     return instantiation;

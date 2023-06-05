@@ -269,7 +269,17 @@ void CompilationContext::runPasses()
     Formatter formatter;
 
     Instantiator instantiator(envCtx);
-    CallTargetResolver callTargetResolver(instantiator);
+
+    StructInstantiationUpdatePass structInstantiationUpdatePass(
+        envCtx, instantiator
+    );
+    ConstraintInstantiationUpdatePass constraintInstantiationUpdatePass(
+        envCtx, instantiator
+    );
+
+    CallTargetResolver callTargetResolver(
+        instantiator, constraintInstantiationUpdatePass
+    );
     ASTTypeResolver astTypeResolver(instantiator);
 
     ModuleExtractionPass moduleExtractionPass(m_logger, *this, m_irCtx);
@@ -295,8 +305,8 @@ void CompilationContext::runPasses()
 
     OperatorLoweringPass operatorLoweringPass(m_logger, *this);
 
-    StructInstantiationUpdatePass structInstantiationUpdatePass(
-        envCtx, instantiator
+    FunctionInstantiationUpdatePass functionInstantiationUpdatePass(
+        envCtx, instantiator, callTargetResolver
     );
 
     SemanticPass semanticPass(
@@ -307,13 +317,6 @@ void CompilationContext::runPasses()
         callTargetResolver,
         formatter,
         structInstantiationUpdatePass
-    );
-
-    ConstraintInstantiationUpdatePass constraintInstantiationUpdatePass(
-        envCtx, instantiator
-    );
-    FunctionInstantiationUpdatePass functionInstantiationUpdatePass(
-        envCtx, instantiator, callTargetResolver
     );
 
     for (auto sf : m_parsedSourceFiles)
