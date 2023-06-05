@@ -398,10 +398,32 @@ IRFunction* SemanticPass::findCallTarget(
     );
 
     if (functions.size() == 1)
+    {
         return functions.front();
+    }
+    else if (functions.size() > 1)
+    {
+        auto candidate = functions.front();
+        for (auto f : functions)
+        {
+            if ((f != candidate)
+                && (f->typeArgs.size() == candidate->typeArgs.size()))
+            {
+                if (reason.has_value())
+                {
+                    reason = "Ambiguous function call to "
+                        + m_formatter.formatCallDescriptor(
+                            name, typeArgs, args, result
+                        );
+                }
 
-    // TODO: generate better/more precise diagnostic messages
-    if (functions.size() == 0)
+                return nullptr;
+            }
+        }
+
+        return candidate;
+    }
+    else if (functions.size() == 0)
     {
         if (reason.has_value())
         {
@@ -410,14 +432,8 @@ IRFunction* SemanticPass::findCallTarget(
                     name, typeArgs, args, result
                 );
         }
-    }
-    else
-    {
-        if (reason.has_value())
-            reason = "Multiple matching functions for call to "
-                + m_formatter.formatCallDescriptor(
-                    name, typeArgs, args, result
-                );
+
+        return nullptr;
     }
 
     return nullptr;

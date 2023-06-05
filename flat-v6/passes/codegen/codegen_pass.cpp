@@ -244,14 +244,14 @@ llvm::Value* LLVMCodegenPass::generateBinaryIntrinsic(IRIntrinsicFunction* node)
     FLC_ASSERT(m_args.top().size() == 2);
 
     auto left = dispatch(m_args.top().front());
-    auto right = (m_args.top().back()->getType()->isSigned())
+    auto right = (m_args.top().front()->getType()->isSigned())
         ? m_builder.CreateSExtOrTrunc(
             dispatch(m_args.top().back()),
-            getLLVMType(m_args.top().back()->getType())
+            getLLVMType(m_args.top().front()->getType())
         )
         : m_builder.CreateZExtOrTrunc(
             dispatch(m_args.top().back()),
-            getLLVMType(m_args.top().back()->getType())
+            getLLVMType(m_args.top().front()->getType())
         );
 
     if (node->name == "__add__")
@@ -366,6 +366,23 @@ llvm::Value* LLVMCodegenPass::visit(IRIntrinsicFunction* node)
         );
 
         return m_builder.CreateLoad(getLLVMType(node->result), ptr);
+    }
+    else if (node->name == "__assign__")
+    {
+        FLC_ASSERT(!m_args.empty());
+        FLC_ASSERT(m_args.top().size() == 2);
+
+        auto identifier =
+            dynamic_cast<IRIdentifierExpression*>(m_args.top().front());
+        FLC_ASSERT(identifier);
+
+        auto variable = m_env->findVariableValue(identifier->value);
+        FLC_ASSERT(variable);
+
+        m_builder.CreateStore(dispatch(m_args.top().back()), variable);
+        return m_builder.CreateLoad(
+            getLLVMType(node->result), variable, identifier->value + "_"
+        );
     }
     else if (node->name == "__u64_to_ptr")
     {

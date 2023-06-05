@@ -154,6 +154,13 @@ CompilationContext::CompilationContext(
     {
         auto t = m_irCtx.make(IRGenericType("T"));
         addBuiltinFunction(m_irCtx.make(IRIntrinsicFunction(
+            m_builtins, "__assign__", { t }, { { "a", t }, { "b", t } }, t, {}
+        )));
+    }
+
+    {
+        auto t = m_irCtx.make(IRGenericType("T"));
+        addBuiltinFunction(m_irCtx.make(IRIntrinsicFunction(
             m_builtins,
             "__u64_to_ptr",
             { t },
