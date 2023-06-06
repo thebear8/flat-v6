@@ -10,44 +10,45 @@
 
 void FunctionInstantiationUpdatePass::process(IRModule* node)
 {
-    for (auto [functionTemplate, functionInstantiation] :
+    for (auto [function, instantiation] :
          node->getEnv()->getFunctionInstantiationMap())
     {
-        update(functionInstantiation);
+        FLC_ASSERT(instantiation->isNormalFunction());
+        if (!function->getExtern(false))
+            update((IRNormalFunction*)instantiation);
     }
 }
 
-IRFunctionInstantiation* FunctionInstantiationUpdatePass::update(
-    IRFunctionInstantiation* functionInstantiation
+IRNormalFunction* FunctionInstantiationUpdatePass::update(
+    IRNormalFunction* instantiation
 )
 {
-    auto functionTemplate = functionInstantiation->getInstantiatedFrom();
+    FLC_ASSERT(instantiation->blueprint);
+    FLC_ASSERT(instantiation->blueprint->isNormalFunction());
+
+    auto functionTemplate = (IRNormalFunction*)instantiation->blueprint;
 
     FLC_ASSERT(
-        functionInstantiation->typeArgs.size()
-            == functionTemplate->typeParams.size(),
+        instantiation->typeArgs.size() == functionTemplate->typeParams.size(),
         "Number of type args has to match number of type params"
     );
 
-    m_env = m_envCtx.make(Environment(
-        functionTemplate->name, functionTemplate->getParent()->getEnv()
-    ));
-    m_irCtx = functionTemplate->getParent()->getIrCtx();
-
-    auto zippedTypeArgs = zip_view(
-        std::views::all(functionTemplate->typeParams),
-        std::views::all(functionInstantiation->typeArgs)
+    m_env = m_envCtx.make(
+        Environment(functionTemplate->name, functionTemplate->parent->getEnv())
     );
+    m_irCtx = functionTemplate->parent->getIrCtx();
+
+    auto zippedTypeArgs =
+        zip(functionTemplate->typeParams, instantiation->typeArgs);
 
     for (auto [typeParam, typeArg] : zippedTypeArgs)
         m_env->addTypeParamValue(typeParam, typeArg);
 
-    functionInstantiation->body =
-        (IRStatement*)dispatch(functionTemplate->body);
+    instantiation->body = (IRStatement*)dispatch(functionTemplate->body);
 
     m_env = nullptr;
     m_irCtx = nullptr;
-    return functionInstantiation;
+    return instantiation;
 }
 
 IRNode* FunctionInstantiationUpdatePass::visit(IRIdentifierExpression* node)
@@ -76,7 +77,7 @@ IRNode* FunctionInstantiationUpdatePass::visit(IRStructExpression* node)
             return m_instantiator.instantiateType(a, m_env, m_irCtx);
         });
     auto fields =
-        node->fields | std::views::transform([&](auto const& f) {
+        node->fields | std::views::transform([&](auto& f) {
             return std::pair(f.first, (IRExpression*)dispatch(f.second));
         });
 
@@ -90,67 +91,17 @@ IRNode* FunctionInstantiationUpdatePass::visit(IRStructExpression* node)
         ->setLocation(location);
 }
 
-IRNode* FunctionInstantiationUpdatePass::visit(IRUnaryExpression* node)
+IRNode* FunctionInstantiationUpdatePass::visit(IRBoundCallExpression* node)
 {
     auto type = m_instantiator.instantiateType(node->getType(), m_env, m_irCtx);
     auto location = node->getLocation(SourceRef());
-    auto expression = (IRExpression*)dispatch(node->expression);
-    auto target = (IRFunctionInstantiation*)dispatch(node->getTarget());
+    auto target = (IRFunction*)dispatch(node->target);
+    auto args = node->args | std::views::transform([&](auto arg) {
+                    return (IRExpression*)dispatch(arg);
+                })
+        | range_utils::to_vector;
 
-    return m_irCtx->make(IRUnaryExpression(node->operation, expression))
-        ->setTarget(target)
-        ->setType(type)
-        ->setLocation(location);
-}
-
-IRNode* FunctionInstantiationUpdatePass::visit(IRBinaryExpression* node)
-{
-    auto type = m_instantiator.instantiateType(node->getType(), m_env, m_irCtx);
-    auto location = node->getLocation(SourceRef());
-    auto left = (IRExpression*)dispatch(node->left);
-    auto right = (IRExpression*)dispatch(node->right);
-    auto target = (IRFunctionInstantiation*)dispatch(node->getTarget());
-
-    return m_irCtx->make(IRBinaryExpression(node->operation, left, right))
-        ->setTarget(target)
-        ->setType(type)
-        ->setLocation(location);
-}
-
-IRNode* FunctionInstantiationUpdatePass::visit(IRCallExpression* node)
-{
-    auto type = m_instantiator.instantiateType(node->getType(), m_env, m_irCtx);
-    auto location = node->getLocation(SourceRef());
-    auto expression = (IRExpression*)dispatch(node->expression);
-    auto args = node->args | std::views::transform([&](auto a) {
-                    return (IRExpression*)dispatch(a);
-                });
-    auto target = (IRFunctionInstantiation*)dispatch(node->getTarget());
-
-    return m_irCtx
-        ->make(
-            IRCallExpression(expression, std::vector(args.begin(), args.end()))
-        )
-        ->setTarget(target)
-        ->setType(type)
-        ->setLocation(location);
-}
-
-IRNode* FunctionInstantiationUpdatePass::visit(IRIndexExpression* node)
-{
-    auto type = m_instantiator.instantiateType(node->getType(), m_env, m_irCtx);
-    auto location = node->getLocation(SourceRef());
-    auto expression = (IRExpression*)dispatch(node->expression);
-    auto args = node->args | std::views::transform([&](auto a) {
-                    return (IRExpression*)dispatch(a);
-                });
-    auto target = (IRFunctionInstantiation*)dispatch(node->getTarget());
-
-    return m_irCtx
-        ->make(
-            IRIndexExpression(expression, std::vector(args.begin(), args.end()))
-        )
-        ->setTarget(target)
+    return m_irCtx->make(IRBoundCallExpression(target, args))
         ->setType(type)
         ->setLocation(location);
 }
@@ -226,7 +177,7 @@ IRNode* FunctionInstantiationUpdatePass::visit(IRIfStatement* node)
         ->setLocation(node->getLocation(SourceRef()));
 }
 
-IRNode* FunctionInstantiationUpdatePass::visit(IRFunctionHead* node)
+IRNode* FunctionInstantiationUpdatePass::visit(IRConstraintFunction* node)
 {
     auto args =
         node->params | std::views::transform([&](auto const& p) {
@@ -235,16 +186,21 @@ IRNode* FunctionInstantiationUpdatePass::visit(IRFunctionHead* node)
         | range_utils::to_vector;
     auto result = m_instantiator.instantiateType(node->result, m_env, m_irCtx);
 
-    std::vector<IRType*> typeArgs;
-    auto target = m_callTargetResolver.findMatchingFunctionTemplate(
-        m_env, node->name, {}, args, result, typeArgs
+    auto functions = m_callTargetResolver.findMatchingFunctions(
+        m_env, node->name, {}, args, result
     );
-    FLC_ASSERT(target, "Target for constraint condition has to exist.");
+    FLC_ASSERT(
+        functions.size() != 0, "Target for constraint condition has to exist."
+    );
+    FLC_ASSERT(
+        functions.size() <= 1,
+        "Target for constraint condition has to be unambiguous"
+    );
 
-    return m_instantiator.getFunctionInstantiation(target, typeArgs);
+    return functions.front();
 }
 
-IRNode* FunctionInstantiationUpdatePass::visit(IRFunctionInstantiation* node)
+IRNode* FunctionInstantiationUpdatePass::visit(IRIntrinsicFunction* node)
 {
     auto typeArgs =
         node->typeArgs | std::views::transform([&](auto arg) {
@@ -252,7 +208,22 @@ IRNode* FunctionInstantiationUpdatePass::visit(IRFunctionInstantiation* node)
         })
         | range_utils::to_vector;
 
+    FLC_ASSERT(node->blueprint || node->typeParams.size() == 0);
     return m_instantiator.getFunctionInstantiation(
-        node->getInstantiatedFrom(), typeArgs
+        node->blueprint ? node->blueprint : node, typeArgs
+    );
+}
+
+IRNode* FunctionInstantiationUpdatePass::visit(IRNormalFunction* node)
+{
+    auto typeArgs =
+        node->typeArgs | std::views::transform([&](auto arg) {
+            return m_instantiator.instantiateType(arg, m_env, m_irCtx);
+        })
+        | range_utils::to_vector;
+
+    FLC_ASSERT(node->blueprint || node->typeParams.size() == 0);
+    return m_instantiator.getFunctionInstantiation(
+        node->blueprint ? node->blueprint : node, typeArgs
     );
 }

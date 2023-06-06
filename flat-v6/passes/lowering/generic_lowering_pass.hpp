@@ -45,7 +45,7 @@ private:
     virtual IRNode* visit(IRWhileStatement* node) override;
     virtual IRNode* visit(IRIfStatement* node) override;
 
-    virtual IRNode* visit(IRFunctionHead* node) override;
+    virtual IRNode* visit(IRNormalFunction* node) override;
     virtual IRNode* visit(IRModule* node) override;
 
 private:

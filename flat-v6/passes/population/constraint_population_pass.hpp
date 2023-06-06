@@ -8,6 +8,8 @@ class GraphContext;
 class ASTTypeResolver;
 class Instantiator;
 class Environment;
+class IRNode;
+class IRModule;
 
 class ConstraintPopulationPass : ASTVisitor<IRNode*>
 {

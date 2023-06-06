@@ -92,7 +92,7 @@ IRNode* GenericLoweringPass::visit(IRIfStatement* node)
     return node;
 }
 
-IRNode* GenericLoweringPass::visit(IRFunctionHead* node)
+IRNode* GenericLoweringPass::visit(IRNormalFunction* node)
 {
     return node;
 }

@@ -4,6 +4,7 @@
 #include "../../ir/ir.hpp"
 #include "../../util/error_logger.hpp"
 #include "../../util/graph_context.hpp"
+#include "../support/ast_type_resolver.hpp"
 
 void StructPopulationPass::visit(ASTStructDeclaration* node)
 {

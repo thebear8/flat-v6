@@ -62,3 +62,6 @@ target_sources(flc PRIVATE
     flat-v6/support/formatter.cpp
     flat-v6/util/error_logger.cpp
 )
+
+# Create symbolic link to flc executable in /usr/local/bin
+add_custom_command(TARGET flc POST_BUILD COMMAND sudo cp -f -s $$PWD/flc /usr/local/bin/flc)

@@ -11,97 +11,138 @@ class Function;
 
 struct IRModule;
 struct IRType;
+struct IRConstraintInstantiation;
 
-struct IRFunctionHead : public IRNode
+struct IRFunction : public IRNode
 {
-    std::string name;
-    std::vector<std::pair<std::string, IRType*>> params;
-    IRType* result;
+    IRModule* parent = nullptr;
+    IRFunction* blueprint = nullptr;
+    std::string name = {};
+    std::vector<IRGenericType*> typeParams = {};
+    std::vector<IRType*> typeArgs = {};
+    std::vector<std::pair<std::string, IRType*>> params = {};
+    IRType* result = nullptr;
+    std::vector<IRConstraintInstantiation*> requirements = {};
+    IRStatement* body = nullptr;
 
-    IRFunctionHead(
-        std::string const& name,
-        std::vector<std::pair<std::string, IRType*>> const& params,
-        IRType* result
-    )
-        : name(name), params(params), result(result)
-    {
-    }
+    IRFunction() {}
 
-    virtual bool isFunctionHead() { return true; }
-    virtual bool isFunctionTemplate() { return false; }
-    virtual bool isFunctionInstantiation() { return false; }
-
-    IMPLEMENT_ACCEPT()
-
-    METADATA_PROP(
-        libraryNameForImport,
-        std::string,
-        getLibraryNameForImport,
-        setLibraryNameForImport
-    )
-};
-
-struct IRFunctionTemplate : IRFunctionHead
-{
-    std::vector<IRGenericType*> typeParams;
-    std::set<IRConstraintInstantiation*> requirements;
-    IRStatement* body;
-
-    IRFunctionTemplate(
+    IRFunction(
+        IRModule* parent,
+        IRFunction* blueprint,
         std::string const& name,
         std::vector<IRGenericType*> const& typeParams,
-        std::vector<std::pair<std::string, IRType*>> const& params,
-        IRType* result,
-        std::set<IRConstraintInstantiation*> const& requirements,
-        IRStatement* body
-    )
-        : IRFunctionHead(name, params, result),
-          typeParams(typeParams),
-          requirements(requirements),
-          body(body)
-    {
-    }
-
-    virtual bool isFunctionTemplate() override { return true; }
-
-    IMPLEMENT_ACCEPT()
-
-    METADATA_PROP(parent, IRModule*, getParent, setParent)
-};
-
-struct IRFunctionInstantiation : IRFunctionHead
-{
-    std::vector<IRType*> typeArgs;
-    std::set<IRConstraintInstantiation*> requirements;
-    IRStatement* body;
-
-    IRFunctionInstantiation(
-        std::string const& name,
         std::vector<IRType*> const& typeArgs,
         std::vector<std::pair<std::string, IRType*>> const& params,
         IRType* result,
-        std::set<IRConstraintInstantiation*> const& requirements,
+        std::vector<IRConstraintInstantiation*> requirements,
         IRStatement* body
     )
-        : IRFunctionHead(name, params, result),
+        : parent(parent),
+          blueprint(blueprint),
+          name(name),
+          typeParams(typeParams),
           typeArgs(typeArgs),
+          params(params),
+          result(result),
           requirements(requirements),
           body(body)
     {
     }
 
-    virtual bool isFunctionInstantiation() override { return true; }
+    virtual bool isConstraintFunction() { return false; }
+    virtual bool isIntrinsicFunction() { return false; }
+    virtual bool isNormalFunction() { return false; }
 
     IMPLEMENT_ACCEPT()
-
-    METADATA_PROP(
-        instantiatedFrom,
-        IRFunctionTemplate*,
-        getInstantiatedFrom,
-        setInstantiatedFrom
-    )
 
     METADATA_PROP(
         llvmFunction, llvm::Function*, getLLVMFunction, setLLVMFunction
     )
+
+    METADATA_PROP(noMangle, bool, getNoMangle, setNoMangle)
+    METADATA_PROP(extern_, bool, getExtern, setExtern)
+};
+
+struct IRConstraintFunction : public IRFunction
+{
+    IRConstraintFunction(
+        std::string const& name,
+        std::vector<std::pair<std::string, IRType*>> const& params,
+        IRType* result
+    )
+        : IRFunction(
+            nullptr, nullptr, name, {}, {}, params, result, {}, nullptr
+        )
+    {
+    }
+
+    bool isConstraintFunction() override { return true; }
+
+    IMPLEMENT_ACCEPT()
+};
+
+struct IRIntrinsicFunction : public IRFunction
+{
+    IRIntrinsicFunction() {}
+
+    IRIntrinsicFunction(
+        IRModule* parent,
+        std::string const& name,
+        std::vector<IRGenericType*> const& typeParams,
+        std::vector<std::pair<std::string, IRType*>> const& params,
+        IRType* result,
+        std::vector<IRConstraintInstantiation*> requirements
+    )
+        : IRFunction(
+            parent,
+            nullptr,
+            name,
+            typeParams,
+            {},
+            params,
+            result,
+            requirements,
+            nullptr
+        )
+    {
+    }
+
+    bool isIntrinsicFunction() override { return true; }
+
+    IMPLEMENT_ACCEPT()
+};
+
+struct IRNormalFunction : public IRFunction
+{
+    IRNormalFunction() {}
+
+    IRNormalFunction(
+        IRModule* parent,
+        IRNormalFunction* blueprint,
+        std::string const& name,
+        std::vector<IRGenericType*> const& typeParams,
+        std::vector<IRType*> const& typeArgs,
+        std::vector<std::pair<std::string, IRType*>> const& params,
+        IRType* result,
+        std::vector<IRConstraintInstantiation*> requirements,
+        IRStatement* body
+    )
+        : IRFunction(
+            parent,
+            blueprint,
+            name,
+            typeParams,
+            typeArgs,
+            params,
+            result,
+            requirements,
+            body
+        )
+    {
+    }
+
+    bool isNormalFunction() override { return true; }
+
+    IMPLEMENT_ACCEPT()
 };

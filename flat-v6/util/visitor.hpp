@@ -1,119 +1,23 @@
 #pragma once
+#include <concepts>
 #include <new>
-#include <stdexcept>
 #include <type_traits>
-#include <typeinfo>
 
-namespace triple_dispatch_visitor
-{
-namespace detail
+#include "assert.hpp"
+
+namespace TDV
 {
 template<typename... TNodes>
-struct VisitInvoker;
-
-template<typename TFirst>
-struct VisitInvoker<TFirst>
+struct VisitInvoker : VisitInvoker<TNodes>...
 {
-    virtual void invoke(TFirst* node) = 0;
+    using VisitInvoker<TNodes>::invoke...;
 };
 
-template<typename TFirst, typename... TRest>
-struct VisitInvoker<TFirst, TRest...> : public VisitInvoker<TRest...>
+template<typename TNode>
+struct VisitInvoker<TNode>
 {
-    using VisitInvoker<TRest...>::invoke;
-    virtual void invoke(TFirst* node) = 0;
-};
-
-template<typename TVisitInvoker, typename TReturn, typename... TNodes>
-struct VisitorBase;
-
-template<typename TVisitInvoker, typename TReturn, typename TFirst>
-struct VisitorBase<TVisitInvoker, TReturn, TFirst> : public TVisitInvoker
-{
-protected:
-    bool valid_ = false;
-    std::aligned_storage<sizeof(TReturn), alignof(TReturn)>::type result_ = {};
-
-public:
-    VisitorBase() {}
-
-    VisitorBase(VisitorBase&&) = delete;
-    VisitorBase(VisitorBase const&) = delete;
-    VisitorBase& operator=(VisitorBase const&) = delete;
-
-    ~VisitorBase()
-    {
-        if (valid_)
-            std::launder((TReturn*)&this->result_)->~TReturn();
-    }
-
-public:
-    virtual TReturn visit(TFirst* node)
-    {
-        throw std::runtime_error((std::string("visit(") + typeid(TFirst).name()
-                                  + ") unimplemented")
-                                     .c_str());
-    }
-    virtual void invoke(TFirst* node)
-    {
-        this->valid_ = true;
-        ::new (&this->result_) TReturn(visit(node));
-    }
-};
-
-template<typename TVisitInvoker, typename TFirst>
-struct VisitorBase<TVisitInvoker, void, TFirst> : public TVisitInvoker
-{
-public:
-    virtual void visit(TFirst* node)
-    {
-        throw std::runtime_error((std::string("visit(") + typeid(TFirst).name()
-                                  + ") unimplemented")
-                                     .c_str());
-    }
-    virtual void invoke(TFirst* node) { return visit(node); }
-};
-
-template<
-    typename TVisitInvoker,
-    typename TReturn,
-    typename TFirst,
-    typename... TRest>
-struct VisitorBase<TVisitInvoker, TReturn, TFirst, TRest...>
-    : public VisitorBase<TVisitInvoker, TReturn, TRest...>
-{
-public:
-    using VisitorBase<TVisitInvoker, TReturn, TRest...>::visit;
-    virtual TReturn visit(TFirst* node)
-    {
-        throw std::runtime_error((std::string("visit(") + typeid(TFirst).name()
-                                  + ") unimplemented")
-                                     .c_str());
-    }
-
-    using VisitorBase<TVisitInvoker, TReturn, TRest...>::invoke;
-    virtual void invoke(TFirst* node)
-    {
-        this->valid_ = true;
-        ::new (std::launder((TReturn*)&this->result_)) TReturn(visit(node));
-    }
-};
-
-template<typename TVisitInvoker, typename TFirst, typename... TRest>
-struct VisitorBase<TVisitInvoker, void, TFirst, TRest...>
-    : VisitorBase<TVisitInvoker, void, TRest...>
-{
-public:
-    using VisitorBase<TVisitInvoker, void, TRest...>::visit;
-    virtual void visit(TFirst* node)
-    {
-        throw std::runtime_error((std::string("visit(") + typeid(TFirst).name()
-                                  + ") unimplemented")
-                                     .c_str());
-    }
-
-    using VisitorBase<TVisitInvoker, void, TRest...>::invoke;
-    virtual void invoke(TFirst* node) { return visit(node); }
+    virtual void invoke(TNode* node) = 0;
+    virtual void invoke(TNode* node, void** ref) = 0;
 };
 
 template<typename... TNodes>
@@ -121,43 +25,140 @@ struct NodeBase
 {
     virtual ~NodeBase() {}
 
-    using VisitInvoker = detail::VisitInvoker<TNodes...>;
+    using VisitInvoker = ::TDV::VisitInvoker<TNodes...>;
     virtual void accept(VisitInvoker* visitor) = 0;
+    virtual void accept(VisitInvoker* visitor, void** ref) = 0;
 };
 
-template<typename TReturn, typename... TNodes>
-struct Visitor
-    : public detail::
-          VisitorBase<detail::VisitInvoker<TNodes...>, TReturn, TNodes...>
+//
+
+template<
+    typename TVisitInvoker,
+    typename TReturn,
+    typename TRefBase,
+    typename... TNodes>
+struct VisitorBase : VisitorBase<TVisitInvoker, TReturn, TRefBase, TNodes>...
 {
-    TReturn dispatch(NodeBase<TNodes...>* node)
+    VisitorBase() {}
+
+    VisitorBase(VisitorBase&&) = delete;
+    VisitorBase(VisitorBase const&) = delete;
+    VisitorBase& operator=(VisitorBase const&) = delete;
+};
+
+template<typename TVisitInvoker, typename TReturn, typename TRefBase>
+    requires std::movable<TReturn>
+struct VisitorBase<TVisitInvoker, TReturn, TRefBase> : TVisitInvoker
+{
+protected:
+    std::aligned_storage<sizeof(TReturn), alignof(TReturn)>::type m_result = {};
+};
+
+template<typename TVisitInvoker, typename TRefBase>
+struct VisitorBase<TVisitInvoker, void, TRefBase> : TVisitInvoker
+{
+};
+
+template<
+    typename TVisitInvoker,
+    typename TReturn,
+    typename TRefBase,
+    typename TNode>
+struct VisitorBase<TVisitInvoker, TReturn, TRefBase, TNode>
+    : virtual VisitorBase<TVisitInvoker, TReturn, TRefBase>
+{
+    virtual TReturn visit(TNode* node)
     {
-        node->accept(this);
-        return *std::launder((TReturn*)&this->result_);
+        FLC_ASSERT(false);
+        return {};
+    }
+    virtual TReturn visit(TNode* node, TRefBase*& ref) { return visit(node); }
+
+    virtual void invoke(TNode* node) override
+    {
+        ::new (&this->m_result) TReturn(std::forward<TReturn>(visit(node)));
+    }
+
+    virtual void invoke(TNode* node, void** ref) override
+    {
+        ::new (&this->m_result)
+            TReturn(std::forward<TReturn>(visit(node, *((TRefBase**)ref))));
     }
 };
 
-template<typename... TNodes>
-struct Visitor<void, TNodes...>
-    : public detail::
-          VisitorBase<detail::VisitInvoker<TNodes...>, void, TNodes...>
+template<typename TVisitInvoker, typename TRefBase, typename TNode>
+struct VisitorBase<TVisitInvoker, void, TRefBase, TNode>
+    : virtual VisitorBase<TVisitInvoker, void, TRefBase>
 {
-    void dispatch(NodeBase<TNodes...>* node) { return node->accept(this); }
+    virtual void visit(TNode* node) { FLC_ASSERT(false); }
+    virtual void visit(TNode* node, TRefBase*& ref) { return visit(node); }
+
+    virtual void invoke(TNode* node) override { return visit(node); }
+
+    virtual void invoke(TNode* node, void** ref) override
+    {
+        return visit(node, *((TRefBase**)ref));
+    }
 };
-}
+
+template<typename TReturn, typename TRefBase, typename... TNodes>
+struct Visitor
+    : VisitorBase<VisitInvoker<TNodes...>, TReturn, TRefBase, TNodes...>
+{
+    template<typename TNode>
+        requires std::derived_from<TNode, NodeBase<TNodes...>>
+    TReturn dispatch(TNode* node)
+    {
+        node->accept(this);
+        return std::move(*std::launder((TReturn*)&this->m_result));
+    }
+
+    template<typename TNode>
+        requires std::derived_from<TNode, TRefBase>
+    TReturn dispatchRef(TNode*& node)
+    {
+        node->accept(this, (void**)&node);
+        return std::move(*std::launder((TReturn*)&this->m_result));
+    }
+};
+
+template<typename TRefBase, typename... TNodes>
+struct Visitor<void, TRefBase, TNodes...>
+    : VisitorBase<VisitInvoker<TNodes...>, void, TRefBase, TNodes...>
+{
+    template<typename TNode>
+        requires std::derived_from<TNode, NodeBase<TNodes...>>
+    void dispatch(TNode* node)
+    {
+        return node->accept(this);
+    }
+
+    template<typename TNode>
+        requires std::derived_from<TNode, TRefBase>
+    void dispatchRef(TNode*& node)
+    {
+        return node->accept(this, (void**)&node);
+    }
+};
+
+//
 
 template<typename... TNodes>
 struct TripleDispatchVisitor
 {
-    using NodeBase = detail::NodeBase<TNodes...>;
+    using NodeBase = ::TDV::NodeBase<TNodes...>;
 
-    template<typename TReturn>
-    using Visitor = detail::Visitor<TReturn, TNodes...>;
+    template<typename TReturn, typename TRefBase>
+    using Visitor = ::TDV::Visitor<TReturn, TRefBase, TNodes...>;
 };
 }
 
-#define IMPLEMENT_ACCEPT()                     \
-    virtual void accept(VisitInvoker* visitor) \
-    {                                          \
-        visitor->invoke(this);                 \
+#define IMPLEMENT_ACCEPT()                                 \
+    virtual void accept(VisitInvoker* visitor)             \
+    {                                                      \
+        visitor->invoke(this);                             \
+    }                                                      \
+    virtual void accept(VisitInvoker* visitor, void** ref) \
+    {                                                      \
+        visitor->invoke(this, ref);                        \
     }

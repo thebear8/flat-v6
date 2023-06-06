@@ -1,7 +1,9 @@
 #include "constraint_extraction_pass.hpp"
 
 #include "../../compiler.hpp"
+#include "../../environment.hpp"
 #include "../../ir/ir.hpp"
+#include "../../util/graph_context.hpp"
 
 void ConstraintExtractionPass::process(ASTSourceFile* sourceFile)
 {

@@ -1,0 +1,34 @@
+module int2string
+
+@extern
+@no_mangle
+fn putchar(c: u8): i32
+
+fn print(str: string): void {
+    let i = 0
+    while((i) < __length(str)) {
+        putchar(str[i])
+        i = i + 1
+    }
+}
+
+fn print(value: i32): void {
+    if ((value) < 0) {
+        print("-")
+        print(-value)
+        return
+    }
+
+    let remainder = value % 10
+    if((remainder) > 0 && (value / 10) > 0)
+        print(value / 10)
+
+    putchar("0123456789"[remainder])
+}
+
+@no_mangle
+fn main(): i32 {
+    print("Hello World")
+    print(-12345)
+    return 0
+}

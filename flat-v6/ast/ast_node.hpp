@@ -3,7 +3,7 @@
 #include "../util/metadata_prop.hpp"
 #include "../util/visitor.hpp"
 
-using ASTTripleDispatchVisitor = triple_dispatch_visitor::TripleDispatchVisitor<
+using ASTTripleDispatchVisitor = TDV::TripleDispatchVisitor<
     struct ASTNode,
 
     struct ASTExpression,
@@ -41,8 +41,8 @@ using ASTTripleDispatchVisitor = triple_dispatch_visitor::TripleDispatchVisitor<
 
     struct ASTSourceFile>;
 
-template<typename TReturn>
-using ASTVisitor = ASTTripleDispatchVisitor::Visitor<TReturn>;
+template<typename TReturn, typename TRefBase = ASTNode>
+using ASTVisitor = ASTTripleDispatchVisitor::Visitor<TReturn, TRefBase>;
 
 struct ASTNode : ASTTripleDispatchVisitor::NodeBase
 {

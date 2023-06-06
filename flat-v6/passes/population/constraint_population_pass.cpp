@@ -68,7 +68,7 @@ IRNode* ConstraintPopulationPass::visit(ASTConstraintCondition* node)
         return m_logger.error(node->location, error, nullptr);
 
     auto condition =
-        m_irCtx->make(IRFunctionHead(node->functionName, params, result));
+        m_irCtx->make(IRConstraintFunction(node->functionName, params, result));
 
     condition->setLocation(node->location);
     return condition;
@@ -100,7 +100,9 @@ IRNode* ConstraintPopulationPass::visit(ASTConstraintDeclaration* node)
     }
 
     for (auto condition : node->conditions)
-        constraint->conditions.push_back((IRFunctionHead*)dispatch(condition));
+        constraint->conditions.push_back(
+            (IRConstraintFunction*)dispatch(condition)
+        );
 
     m_env = nullptr;
     return constraint;

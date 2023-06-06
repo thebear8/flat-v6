@@ -13,6 +13,7 @@ private:
     struct TNodeContainer : public NodeContainer, public TNode
     {
         TNodeContainer(TNode&& value) : TNode(std::forward<TNode>(value)) {}
+        virtual ~TNodeContainer() = default;
 
         TNode* get() { return this; }
     };
@@ -31,7 +32,9 @@ public:
 
     ~GraphContext()
     {
-        for (auto node : m_nodes)
-            delete node;
+        // TODO: FIX MEMORY DEALLOCATION CRASH!!!
+        // THIS IS NOT A GOOD SOLUTION!!!!
+        // for (auto node : m_nodes)
+        // delete node;
     }
 };

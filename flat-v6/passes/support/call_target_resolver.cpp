@@ -8,129 +8,46 @@
 #include "../../util/graph_context.hpp"
 #include "../../util/to_vector.hpp"
 #include "../../util/zip_view.hpp"
+#include "../update/constraint_instantiation_update_pass.hpp"
 #include "instantiator.hpp"
 
-IRFunctionHead* CallTargetResolver::getMatchingConstraintCondition(
-    Environment* env,
-    std::string const& name,
-    std::vector<IRType*> args,
-    IRType* result,
-    optional_ref<std::string> reason
-)
-{
-    auto [it, end] = env->getConstraintConditionMap().equal_range(name);
-    auto conditions = std::ranges::subrange(it, end) | std::views::values;
-    auto matchingConditions =
-        conditions | std::views::filter([&](auto c) {
-            auto params = c->params | std::views::values;
-
-            return (
-                params.size() == args.size() && std::ranges::equal(params, args)
-                && (!result || (c->result == result))
-            );
-        })
-        | range_utils::to_vector;
-
-    if (matchingConditions.size() == 1)
-    {
-        return matchingConditions.front();
-    }
-    else if (matchingConditions.size() == 0)
-    {
-        if (reason.has_value())
-        {
-            reason = "No matching constraint condition for "
-                + m_formatter.formatCallDescriptor(name, {}, args, result);
-        }
-
-        return nullptr;
-    }
-    else
-    {
-        if (reason.has_value())
-        {
-            reason = "Multiple matching constraint conditions for "
-                + m_formatter.formatCallDescriptor(name, {}, args, result);
-
-            for (auto c : matchingConditions)
-            {
-                reason.get() += "\n  Candidate: "
-                    + m_formatter.formatFunctionHeadDescriptor(c);
-            }
-        }
-
-        return nullptr;
-    }
-}
-
-IRFunctionHead* CallTargetResolver::findMatchingConstraintCondition(
-    Environment* env,
-    std::string const& name,
-    std::vector<IRType*> args,
-    IRType* result,
-    optional_ref<std::string> reason
-)
-{
-    if (auto c =
-            getMatchingConstraintCondition(env, name, args, result, reason))
-    {
-        return c;
-    }
-    else if (env->getParent())
-    {
-        return findMatchingConstraintCondition(
-            env->getParent(), name, args, result, reason
-        );
-    }
-    else
-    {
-        return nullptr;
-    }
-}
-
-std::optional<std::pair<std::vector<IRType*>, IRFunctionTemplate*>>
-CallTargetResolver::matchFunctionTemplate(
-    IRFunctionTemplate* functionTemplate,
+std::pair<std::optional<std::vector<IRType*>>, IRFunction*>
+CallTargetResolver::matchFunction(
+    IRFunction* function,
     std::vector<IRType*> const& typeArgs,
     std::vector<IRType*> const& args,
     IRType* result
 )
 {
-    zip_view zippedTypeArgs(functionTemplate->typeParams, typeArgs);
-    std::unordered_map typeArgMap(zippedTypeArgs.begin(), zippedTypeArgs.end());
+    auto zippedTypeArgs = zip(function->typeParams, typeArgs);
+    auto typeArgMap =
+        std::unordered_map(zippedTypeArgs.begin(), zippedTypeArgs.end());
 
-    zip_view zippedArgs(functionTemplate->params | std::views::values, args);
+    auto zippedArgs = zip(function->params | std::views::values, args);
     for (auto [param, arg] : zippedArgs)
     {
-        if (param != arg
-            && !Environment::inferTypeArgsAndMatch(
-                param, arg, typeArgMap, true
-            ))
-        {
-            return std::nullopt;
-        }
+        if (!Environment::inferTypeArgsAndMatch(param, arg, typeArgMap, true))
+            return { std::nullopt, function };
     }
 
     std::vector<IRType*> typeArgList;
-    for (auto typeParam : functionTemplate->typeParams)
+    for (auto typeParam : function->typeParams)
     {
         if (!typeArgMap.contains(typeParam))
-            return std::nullopt;
+            return { std::nullopt, function };
 
         typeArgList.push_back(typeArgMap.at(typeParam));
     }
 
-    return std::pair(typeArgList, functionTemplate);
+    return std::pair(typeArgList, function);
 }
 
 bool CallTargetResolver::checkRequirements(
-    Environment* env,
-    IRFunctionTemplate* functionTemplate,
-    std::vector<IRType*> const& typeArgs
+    Environment* env, IRFunction* function, std::vector<IRType*> const& typeArgs
 )
 {
     auto functionInstantiation =
-        m_instantiator.getFunctionInstantiation(functionTemplate, typeArgs);
+        m_instantiator.getFunctionInstantiation(function, typeArgs);
 
     for (auto r : functionInstantiation->requirements)
     {
@@ -141,172 +58,164 @@ bool CallTargetResolver::checkRequirements(
     return true;
 }
 
-IRFunctionTemplate* CallTargetResolver::getMatchingFunctionTemplate(
+std::vector<IRFunction*> CallTargetResolver::getMatchingFunctions(
     Environment* env,
     std::string const& name,
     std::vector<IRType*> const& typeArgs,
     std::vector<IRType*> const& args,
     IRType* result,
-    optional_ref<std::vector<IRType*>> inferredTypeArgs,
-    optional_ref<std::string> reason
+    optional_ref<std::set<IRFunction*>> argRejected,
+    optional_ref<std::set<IRFunction*>> requirementRejected
 )
 {
-    auto [it, end] = env->getFunctionTemplateMap().equal_range(name);
-    auto candidates =
-        std::ranges::subrange(it, end) | std::views::values
-        | std::views::filter([&](IRFunctionTemplate* f) {
-              return (typeArgs.size() <= f->typeParams.size())
-                  && (args.size() == f->params.size());
-          })
-        | std::views::transform([&](IRFunctionTemplate* f) {
-              return matchFunctionTemplate(f, typeArgs, args, result);
-          })
+    auto [it, end] = env->getFunctionMap().equal_range(name);
+    auto candidates = std::ranges::subrange(it, end) | std::views::values
+        | std::views::filter([&](IRFunction* f) {
+                          return (typeArgs.size() <= f->typeParams.size())
+                              && (args.size() == f->params.size());
+                      })
+        | std::views::transform([&](IRFunction* f) {
+                          return matchFunction(f, typeArgs, args, result);
+                      })
         | std::views::filter([&](auto const& f) {
-              return f.has_value();
-          })
+                          (!f.first && argRejected
+                           && (argRejected->emplace(f.second), true));
+                          return f.first.has_value();
+                      })
         | std::views::transform([&](auto const& f) {
-              return f.value();
-          });
+                          return std::pair(f.first.value(), f.second);
+                      })
+        | std::views::filter([&](auto const& f) {
+                          auto r = checkRequirements(env, f.second, f.first);
+                          (!r && requirementRejected
+                           && (requirementRejected->emplace(f.second), true));
+                          return r;
+                      })
+        | range_utils::to_vector;
 
-    auto requirementCompatibleCandidates =
-        candidates | std::views::filter([&](auto const& f) {
-            return checkRequirements(env, f.second, f.first);
+    std::ranges::sort(candidates, [](auto const& a, auto const& b) {
+        return a.first.size() > b.first.size();
+    });
+
+    return candidates | std::views::transform([&](auto const& f) {
+               auto function = f.second;
+               auto functionInstantiation =
+                   m_instantiator.getFunctionInstantiation(function, f.first);
+
+               // We have to add the function instantiation to the parent env
+               // here, as we
+               // only now know that the instantiation is legal.
+               // If we do so in the instantiator, we are going to get errors
+               // later
+               if (functionInstantiation != function)
+               {
+                   function->parent->getEnv()->addFunctionInstantiation(
+                       function, functionInstantiation
+                   );
+               }
+
+               return functionInstantiation;
+           })
+        | range_utils::to_vector;
+}
+
+std::vector<IRFunction*> CallTargetResolver::findMatchingFunctions(
+    Environment* env,
+    std::string const& name,
+    std::vector<IRType*> const& typeArgs,
+    std::vector<IRType*> const& args,
+    IRType* result,
+    optional_ref<std::set<IRFunction*>> argRejected,
+    optional_ref<std::set<IRFunction*>> requirementRejected
+)
+{
+    std::vector<std::pair<std::vector<IRType*>, IRFunction*>> candidates;
+    while (env != nullptr)
+    {
+        auto [it, end] = env->getFunctionMap().equal_range(name);
+        std::ranges::for_each(
+            std::ranges::subrange(it, end) | std::views::values
+                | std::views::filter([&](IRFunction* f) {
+                      return (typeArgs.size() <= f->typeParams.size())
+                          && (args.size() == f->params.size());
+                  })
+                | std::views::transform([&](IRFunction* f) {
+                      return matchFunction(f, typeArgs, args, result);
+                  })
+                | std::views::filter([&](auto const& f) {
+                      (!f.first && argRejected
+                       && (argRejected->emplace(f.second), true));
+                      return f.first.has_value();
+                  })
+                | std::views::transform([&](auto const& f) {
+                      return std::pair(f.first.value(), f.second);
+                  })
+                | std::views::filter([&](auto const& f) {
+                      auto r = checkRequirements(env, f.second, f.first);
+                      (!r && requirementRejected
+                       && (requirementRejected->emplace(f.second), true));
+                      return r;
+                  }),
+            [&](auto const& f) {
+            candidates.push_back(f);
+            });
+
+        env = env->getParent();
+    }
+
+    std::ranges::sort(candidates, [](auto const& a, auto const& b) {
+        return a.first.size() > b.first.size();
+    });
+
+    auto functions =
+        candidates | std::views::transform([&](auto const& f) {
+            auto function = f.second;
+            auto functionInstantiation =
+                m_instantiator.getFunctionInstantiation(function, f.first);
+
+            // We have to add the function instantiation to the parent env
+            // here, as we
+            // only now know that the instantiation is legal.
+            // If we do so in the instantiator, we are going to get errors
+            // later
+            if (functionInstantiation != function)
+            {
+                function->parent->getEnv()->addFunctionInstantiation(
+                    function, functionInstantiation
+                );
+            }
+
+            return functionInstantiation;
         })
         | range_utils::to_vector;
 
-    if (requirementCompatibleCandidates.size() == 0)
-    {
-        if (reason.has_value())
-        {
-            reason = "No function template matching "
-                + m_formatter.formatCallDescriptor(
-                    name, typeArgs, args, result
-                );
-        }
-
-        return nullptr;
-    }
-
-    std::ranges::sort(
-        requirementCompatibleCandidates,
-        [](auto const& a, auto const& b) {
-        return a.first.size() > b.first.size();
-        });
-
-    std::multiset<size_t> substitutionCount;
-    for (auto const& [typeArgs, functionTemplate] :
-         requirementCompatibleCandidates)
-    {
-        substitutionCount.emplace(typeArgs.size());
-    }
-
-    if (substitutionCount.count(
-            requirementCompatibleCandidates.front().first.size()
-        )
-        > 1)
-    {
-        if (reason.has_value())
-        {
-            reason = "Multiple function templates matching "
-                + m_formatter.formatCallDescriptor(
-                    name, typeArgs, args, result
-                );
-        }
-
-        return nullptr;
-    }
-
-    if (inferredTypeArgs.has_value())
-    {
-        inferredTypeArgs.get() =
-            std::vector(requirementCompatibleCandidates.front().first);
-    }
-
-    return requirementCompatibleCandidates.front().second;
-}
-
-IRFunctionTemplate* CallTargetResolver::findMatchingFunctionTemplate(
-    Environment* env,
-    std::string const& name,
-    std::vector<IRType*> const& typeArgs,
-    std::vector<IRType*> const& args,
-    IRType* result,
-    optional_ref<std::vector<IRType*>> inferredTypeArgs,
-    optional_ref<std::string> reason
-)
-{
-    if (auto f = getMatchingFunctionTemplate(
-            env, name, typeArgs, args, result, inferredTypeArgs, reason
-        ))
-    {
-        return f;
-    }
-    else if (env->getParent())
-    {
-        return findMatchingFunctionTemplate(
-            env->getParent(),
-            name,
-            typeArgs,
-            args,
-            result,
-            inferredTypeArgs,
-            reason
-        );
-    }
-    else
-    {
-        return nullptr;
-    }
+    return functions;
 }
 
 bool CallTargetResolver::isConstraintSatisfied(
-    Environment* env,
-    IRConstraintInstantiation* constraint,
-    optional_ref<std::string> reason
+    Environment* env, IRConstraintInstantiation* constraint
 )
 {
+    m_constraintUpdatePass.update(constraint);
+
     for (auto requirement : constraint->requirements)
     {
-        if (!isConstraintSatisfied(env, requirement, reason))
-        {
-            if (reason.has_value())
-            {
-                reason = "Requirement "
-                    + m_formatter.formatConstraintInstantiationDescriptor(
-                        requirement
-                    )
-                    + " is not satisfied: " + reason.get();
-            }
-
+        if (!isConstraintSatisfied(env, requirement))
             return false;
-        }
     }
 
     for (auto condition : constraint->conditions)
     {
-        auto args =
-            condition->params | std::views::values | range_utils::to_vector;
-        auto target = findMatchingFunctionTemplate(
+        auto candidates = findMatchingFunctions(
             env,
             condition->name,
             {},
-            args,
-            condition->result,
-            std::nullopt,
-            reason
+            condition->params | std::views::values | range_utils::to_vector,
+            condition->result
         );
 
-        if (!target)
-        {
-            if (reason.has_value())
-            {
-                reason = "No matching target for condition "
-                    + m_formatter.formatFunctionHeadDescriptor(condition) + ": "
-                    + reason.get();
-            }
-
+        if (candidates.size() != 1)
             return false;
-        }
     }
 
     return true;

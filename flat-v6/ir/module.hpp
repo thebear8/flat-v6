@@ -14,22 +14,21 @@ class IRType;
 class IRConstraint;
 class IRStruct;
 class IRStructInstantiation;
-class IRFunctionHead;
-class IRFunctionInstantiation;
+class IRFunction;
 
 struct IRModule : IRNode
 {
     std::string name;
     std::set<IRModule*> imports;
     std::vector<IRConstraint*> constraints;
-    std::vector<IRFunctionTemplate*> functions;
+    std::vector<IRFunction*> functions;
     std::vector<IRStructTemplate*> structs;
 
     IRModule(
         std::string const& name,
         std::set<IRModule*> const& imports,
         std::vector<IRConstraint*> const& constraints,
-        std::vector<IRFunctionTemplate*> const& functions,
+        std::vector<IRFunction*> const& functions,
         std::vector<IRStructTemplate*> const& structs
     )
         : name(name),

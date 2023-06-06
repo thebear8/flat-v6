@@ -1,7 +1,10 @@
 #pragma once
 #include "../../ast/ast.hpp"
-#include "../../compiler.hpp"
 #include "../../ir/ir.hpp"
+
+class ErrorLogger;
+class CompilationContext;
+class GraphContext;
 
 class StructExtractionPass : ASTVisitor<void>
 {

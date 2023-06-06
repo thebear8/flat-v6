@@ -14,8 +14,10 @@
 
 #include <filesystem>
 #include <fstream>
+#include <ranges>
 
 #include "ast/ast.hpp"
+#include "environment.hpp"
 #include "parser/parser.hpp"
 #include "passes/analysis/semantic_pass.hpp"
 #include "passes/codegen/codegen_pass.hpp"
@@ -35,55 +37,195 @@
 #include "passes/update/function_instantiation_update_pass.hpp"
 #include "passes/update/struct_instantiation_update_pass.hpp"
 #include "support/formatter.hpp"
+#include "util/graph_context.hpp"
 #include "util/string_switch.hpp"
 
-CompilationContext::CompilationContext(std::ostream& logStream)
-    : Environment("<global>", nullptr),
-      m_logger(logStream, m_sourceFiles),
-      m_void(new IRVoidType()),
-      m_bool(new IRBoolType()),
-      m_i8(new IRIntegerType(true, 8)),
-      m_i16(new IRIntegerType(true, 16)),
-      m_i32(new IRIntegerType(true, 32)),
-      m_i64(new IRIntegerType(true, 64)),
-      m_u8(new IRIntegerType(false, 8)),
-      m_u16(new IRIntegerType(false, 16)),
-      m_u32(new IRIntegerType(false, 32)),
-      m_u64(new IRIntegerType(false, 64)),
-      m_char(new IRCharType()),
-      m_string(new IRStringType())
+CompilationContext::CompilationContext(
+    GraphContext& astCtx, GraphContext& irCtx, std::ostream& logStream
+)
+    : m_logger(logStream, m_sourceFiles), m_astCtx(astCtx), m_irCtx(irCtx)
 {
-    addBuiltinType("void", getVoid());
-    addBuiltinType("bool", getBool());
-    addBuiltinType("i8", getI8());
-    addBuiltinType("i16", getI16());
-    addBuiltinType("i32", getI32());
-    addBuiltinType("i64", getI64());
-    addBuiltinType("u8", getU8());
-    addBuiltinType("u16", getU16());
-    addBuiltinType("u32", getU32());
-    addBuiltinType("u64", getU64());
-    addBuiltinType("char", getChar());
-    addBuiltinType("string", getString());
+    m_builtins = m_irCtx.make(IRModule("builtins", {}, {}, {}, {}));
+    m_builtins->setIrCtx(m_irCtx.make(GraphContext()));
+    m_builtins->setEnv(m_irCtx.make(Environment("builtins", nullptr)));
 
-    m_signedIntegerTypes.try_emplace(8, m_i8);
-    m_signedIntegerTypes.try_emplace(16, m_i16);
-    m_signedIntegerTypes.try_emplace(32, m_i32);
-    m_signedIntegerTypes.try_emplace(64, m_i64);
-    m_unsignedIntegerTypes.try_emplace(8, m_u8);
-    m_unsignedIntegerTypes.try_emplace(16, m_u16);
-    m_unsignedIntegerTypes.try_emplace(32, m_u32);
-    m_unsignedIntegerTypes.try_emplace(64, m_u64);
+    addBuiltinType("void", (m_void = m_irCtx.make(IRVoidType())));
+    addBuiltinType("bool", (m_bool = m_irCtx.make(IRBoolType())));
+    addBuiltinType("u8", (m_u8 = m_irCtx.make(IRIntegerType(false, 8))));
+    addBuiltinType("u16", (m_u16 = m_irCtx.make(IRIntegerType(false, 16))));
+    addBuiltinType("u32", (m_u32 = m_irCtx.make(IRIntegerType(false, 32))));
+    addBuiltinType("u64", (m_u64 = m_irCtx.make(IRIntegerType(false, 64))));
+    addBuiltinType("i8", (m_i8 = m_irCtx.make(IRIntegerType(true, 8))));
+    addBuiltinType("i16", (m_i16 = m_irCtx.make(IRIntegerType(true, 16))));
+    addBuiltinType("i32", (m_i32 = m_irCtx.make(IRIntegerType(true, 32))));
+    addBuiltinType("i64", (m_i64 = m_irCtx.make(IRIntegerType(true, 64))));
+    addBuiltinType("char", (m_char = m_irCtx.make(IRCharType())));
+    addBuiltinType("string", (m_string = m_irCtx.make(IRStringType())));
+
+    auto integers = { getU8(), getU16(), getU32(), getU64(),
+                      getI8(), getI16(), getI32(), getI64() };
+
+    for (auto idx : integers)
+    {
+        auto t = m_irCtx.make(IRGenericType("T"));
+
+        addBuiltinFunction(m_irCtx.make(IRIntrinsicFunction(
+            m_builtins,
+            "__index__",
+            { t },
+            { { "array", getArrayType(t) }, { "index", idx } },
+            t,
+            {}
+        )));
+
+        addBuiltinFunction(m_irCtx.make(IRIntrinsicFunction(
+            m_builtins,
+            "__index__",
+            {},
+            { { "str", getString() }, { "index", idx } },
+            getU8(),
+            {}
+        )));
+    }
+
+    for (auto a : integers)
+    {
+        addUnaryOperator("__pos__", a, a);
+        addUnaryOperator("__neg__", a, a);
+        addUnaryOperator("__not__", a, a);
+    }
+
+    addUnaryOperator("__lnot__", getBool(), getBool());
+
+    for (auto a : integers)
+    {
+        for (auto b : integers)
+        {
+            auto result = getIntegerType(
+                std::max(a->getBitSize(), b->getBitSize()), a->isSigned()
+            );
+
+            addBinaryOperator("__add__", a, b, result);
+            addBinaryOperator("__sub__", a, b, result);
+            addBinaryOperator("__mul__", a, b, result);
+            addBinaryOperator("__div__", a, b, result);
+            addBinaryOperator("__mod__", a, b, result);
+        }
+    }
+
+    for (auto a : integers)
+    {
+        addBinaryOperator("__and__", a, a, a);
+        addBinaryOperator("__or__", a, a, a);
+        addBinaryOperator("__xor__", a, a, a);
+        addBinaryOperator("__shl__", a, a, a);
+        addBinaryOperator("__shr__", a, a, a);
+    }
+
+    addBinaryOperator("__land__", getBool(), getBool(), getBool());
+    addBinaryOperator("__lor__", getBool(), getBool(), getBool());
+
+    for (auto a : integers)
+    {
+        for (auto b : integers)
+        {
+            addBinaryOperator("__eq__", a, b, getBool());
+            addBinaryOperator("__ne__", a, b, getBool());
+        }
+    }
+
+    for (auto a : integers)
+    {
+        for (auto b : integers)
+        {
+            addBinaryOperator("__lt__", a, b, getBool());
+            addBinaryOperator("__gt__", a, b, getBool());
+            addBinaryOperator("__lteq__", a, b, getBool());
+            addBinaryOperator("__gteq__", a, b, getBool());
+        }
+    }
+
+    for (auto a : integers)
+    {
+        for (auto b : integers)
+            addBinaryOperator("__assign__", a, b, a);
+    }
+
+    {
+        auto t = m_irCtx.make(IRGenericType("T"));
+        addBuiltinFunction(m_irCtx.make(IRIntrinsicFunction(
+            m_builtins, "__assign__", { t }, { { "a", t }, { "b", t } }, t, {}
+        )));
+    }
+
+    {
+        auto t = m_irCtx.make(IRGenericType("T"));
+        addBuiltinFunction(m_irCtx.make(IRIntrinsicFunction(
+            m_builtins,
+            "__u64_to_ptr",
+            { t },
+            { { "u", getU64() } },
+            getPointerType(t),
+            {}
+        )));
+    }
+
+    {
+        auto t = m_irCtx.make(IRGenericType("T"));
+        addBuiltinFunction(m_irCtx.make(IRIntrinsicFunction(
+            m_builtins,
+            "__ptr_to_u64",
+            { t },
+            { { "p", getPointerType(t) } },
+            getU64(),
+            {}
+        )));
+    }
+
+    {
+        auto t = m_irCtx.make(IRGenericType("T"));
+        addBuiltinFunction(m_irCtx.make(IRIntrinsicFunction(
+            m_builtins,
+            "__arr_to_ptr",
+            { t },
+            { { "a", getArrayType(t) } },
+            getPointerType(t),
+            {}
+        )));
+    }
+
+    {
+        addBuiltinFunction(m_irCtx.make(IRIntrinsicFunction(
+            m_builtins,
+            "__str_to_ptr",
+            {},
+            { { "s", getString() } },
+            getPointerType(getU8()),
+            {}
+        )));
+    }
+
+    {
+        addBuiltinFunction(m_irCtx.make(IRIntrinsicFunction(
+            m_builtins, "__length", {}, { { "s", getString() } }, getU64(), {}
+        )));
+    }
+
+    {
+        auto t = m_irCtx.make(IRGenericType("T"));
+        addBuiltinFunction(m_irCtx.make(IRIntrinsicFunction(
+            m_builtins,
+            "__length",
+            { t },
+            { { "s", getArrayType(t) } },
+            getU64(),
+            {}
+        )));
+    }
 }
 
 CompilationContext::~CompilationContext()
 {
-    for (auto [width, integerType] : m_signedIntegerTypes)
-        delete integerType;
-
-    for (auto [width, integerType] : m_unsignedIntegerTypes)
-        delete integerType;
-
     for (auto const& [type, pointerType] : m_pointerTypes)
         delete pointerType;
 
@@ -127,7 +269,17 @@ void CompilationContext::runPasses()
     Formatter formatter;
 
     Instantiator instantiator(envCtx);
-    CallTargetResolver callTargetResolver(instantiator, formatter);
+
+    StructInstantiationUpdatePass structInstantiationUpdatePass(
+        envCtx, instantiator
+    );
+    ConstraintInstantiationUpdatePass constraintInstantiationUpdatePass(
+        envCtx, instantiator
+    );
+
+    CallTargetResolver callTargetResolver(
+        instantiator, constraintInstantiationUpdatePass
+    );
     ASTTypeResolver astTypeResolver(instantiator);
 
     ModuleExtractionPass moduleExtractionPass(m_logger, *this, m_irCtx);
@@ -151,21 +303,21 @@ void CompilationContext::runPasses()
         m_logger, *this, envCtx, astTypeResolver, instantiator
     );
 
-    SemanticPass semanticPass(
-        m_logger, *this, envCtx, instantiator, callTargetResolver, formatter
-    );
+    OperatorLoweringPass operatorLoweringPass(m_logger, *this);
 
-    StructInstantiationUpdatePass structInstantiationUpdatePass(
-        envCtx, instantiator
-    );
-    ConstraintInstantiationUpdatePass constraintInstantiationUpdatePass(
-        envCtx, instantiator
-    );
     FunctionInstantiationUpdatePass functionInstantiationUpdatePass(
         envCtx, instantiator, callTargetResolver
     );
 
-    OperatorLoweringPass operatorLoweringPass(m_logger, *this);
+    SemanticPass semanticPass(
+        m_logger,
+        *this,
+        envCtx,
+        instantiator,
+        callTargetResolver,
+        formatter,
+        structInstantiationUpdatePass
+    );
 
     for (auto sf : m_parsedSourceFiles)
         moduleExtractionPass.process(sf);
@@ -198,17 +350,19 @@ void CompilationContext::runPasses()
         constraintInstantiationUpdatePass.process(module);
 
     for (auto const& [name, module] : m_modules)
+        operatorLoweringPass.process(module);
+
+    for (auto const& [name, module] : m_modules)
         semanticPass.process(module);
 
     for (auto const& [name, module] : m_modules)
         functionInstantiationUpdatePass.process(module);
-
-    for (auto const& [name, module] : m_modules)
-        operatorLoweringPass.process(module);
 }
 
 void CompilationContext::generateCode(
-    TargetDescriptor const& targetDesc, llvm::raw_pwrite_stream& output
+    TargetDescriptor const& targetDesc,
+    llvm::raw_pwrite_stream& output,
+    bool optimize
 )
 {
     llvm::InitializeAllTargetInfos();
@@ -224,7 +378,7 @@ void CompilationContext::generateCode(
         m_logger.fatal(error);
 
     auto targetOptions = llvm::TargetOptions();
-    auto relocModel = llvm::Optional<llvm::Reloc::Model>();
+    auto relocModel = llvm::Reloc::PIC_;
     auto targetMachine = target->createTargetMachine(
         targetDesc.targetTriple,
         targetDesc.cpuDesc,
@@ -263,18 +417,93 @@ void CompilationContext::generateCode(
     pb.crossRegisterProxies(lam, fam, cgam, mam);
 
     auto mpm = pb.buildPerModuleDefaultPipeline(llvm::OptimizationLevel::O1);
-    mpm.run(llvmModule, mam);
+    if (optimize)
+        mpm.run(llvmModule, mam);
 
     llvm::legacy::PassManager passManager;
-    if (targetMachine->addPassesToEmitFile(
+    FLC_ASSERT(
+        !targetMachine->addPassesToEmitFile(
             passManager, output, nullptr, llvm::CodeGenFileType::CGFT_ObjectFile
-        ))
-    {
-        m_logger.fatal("TargetMachine cannot emit object files");
-    }
+        ),
+        "TargetMachine cannot emit object files"
+    );
 
     passManager.run(llvmModule);
+    llvmModule.dump();
     output.flush();
+}
+
+void CompilationContext::linkWithGCC(
+    std::string const& executableFileName,
+    std::string const& objectFileName,
+    std::vector<std::string> const& additionalLibaryPaths,
+    std::vector<std::string> const& additionalObjectNames
+)
+{
+    std::string libString;
+    for (auto const& lib : additionalLibaryPaths)
+        libString += "-L\"" + lib + "\"";
+
+    std::string objString;
+    for (auto const& obj : additionalObjectNames)
+        objString += "-l\"" + obj + "\"";
+
+    auto command = "gcc -o " + executableFileName + " " + libString + " "
+        + objString + objectFileName;
+
+    std::cout << "Linker Command: " << command << "\n";
+    std::system(command.c_str());
+}
+
+void CompilationContext::addBuiltinType(std::string const& name, IRType* type)
+{
+    FLC_ASSERT(type);
+
+    FLC_ASSERT(m_builtins);
+    FLC_ASSERT(m_builtins->getEnv());
+    FLC_ASSERT(m_builtins->getEnv()->addBuiltinType(name, type));
+}
+
+void CompilationContext::addBuiltinFunction(IRFunction* function)
+{
+    FLC_ASSERT(function);
+
+    FLC_ASSERT(m_builtins);
+    FLC_ASSERT(m_builtins->getEnv());
+    FLC_ASSERT(m_builtins->getEnv()->addFunction(function));
+}
+
+void CompilationContext::addUnaryOperator(
+    std::string const& name, IRType* a, IRType* result
+)
+{
+    FLC_ASSERT(a);
+    FLC_ASSERT(result);
+
+    FLC_ASSERT(m_builtins);
+    FLC_ASSERT(m_builtins->getEnv());
+
+    FLC_ASSERT(m_builtins->getEnv()->addFunction(m_irCtx.make(
+        IRIntrinsicFunction(m_builtins, name, {}, { { "a", a } }, result, {})
+    )));
+}
+
+void CompilationContext::addBinaryOperator(
+    std::string const& name, IRType* a, IRType* b, IRType* result
+)
+{
+    FLC_ASSERT(a);
+    FLC_ASSERT(b);
+    FLC_ASSERT(result);
+
+    FLC_ASSERT(m_builtins);
+    FLC_ASSERT(m_builtins->getEnv());
+
+    FLC_ASSERT(
+        m_builtins->getEnv()->addFunction(m_irCtx.make(IRIntrinsicFunction(
+            m_builtins, name, {}, { { "a", a }, { "b", b } }, result, {}
+        )))
+    );
 }
 
 IRModule* CompilationContext::addModule(IRModule* mod)
@@ -297,34 +526,29 @@ IRIntegerType* CompilationContext::getIntegerType(
     std::size_t width, bool isSigned
 )
 {
-    if (isSigned)
-    {
-        if (!m_signedIntegerTypes.contains(width))
-            m_signedIntegerTypes.try_emplace(
-                width, new IRIntegerType(true, width)
-            );
-        return m_signedIntegerTypes.at(width);
-    }
-    else
-    {
-        if (!m_unsignedIntegerTypes.contains(width))
-            m_unsignedIntegerTypes.try_emplace(
-                width, new IRIntegerType(false, width)
-            );
-        return m_unsignedIntegerTypes.at(width);
-    }
+    if (width == 8)
+        return (isSigned ? m_i8 : m_u8);
+    else if (width == 16)
+        return (isSigned ? m_i16 : m_u16);
+    else if (width == 32)
+        return (isSigned ? m_i32 : m_u32);
+    else if (width == 64)
+        return (isSigned ? m_i64 : m_u64);
+
+    FLC_ASSERT(false);
+    return nullptr;
 }
 
 IRPointerType* CompilationContext::getPointerType(IRType* base)
 {
     if (!m_pointerTypes.contains(base))
-        m_pointerTypes.try_emplace(base, new IRPointerType(base));
+        m_pointerTypes.try_emplace(base, m_irCtx.make(IRPointerType(base)));
     return m_pointerTypes.at(base);
 }
 
 IRArrayType* CompilationContext::getArrayType(IRType* base)
 {
     if (!m_arrayTypes.contains(base))
-        m_arrayTypes.try_emplace(base, new IRArrayType(base));
+        m_arrayTypes.try_emplace(base, m_irCtx.make(IRArrayType(base)));
     return m_arrayTypes.at(base);
 }

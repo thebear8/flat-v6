@@ -41,7 +41,8 @@ fn crossProduct<T>[Scalar<T>](a: vec3<T>, b: vec3<T>): vec3<T> {
     }
 }
 
-fn main(argc: i32, argv: string[]): i32 {
+@no_mangle
+fn main(): i32 {
     let v1 = vec3<i32> {
         x: 8,
         y: 3,
@@ -60,5 +61,5 @@ fn main(argc: i32, argv: string[]): i32 {
     let v5 = dotProduct(v3, v4)
     let v6 = crossProduct(v3, v4)
 
-    return 0
+    return v5
 }

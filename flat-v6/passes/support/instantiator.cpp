@@ -69,70 +69,91 @@ IRConstraintInstantiation* Instantiator::getConstraintInstantiation(
     return instantiation;
 }
 
-IRFunctionInstantiation* Instantiator::getFunctionInstantiation(
-    IRFunctionTemplate* functionTemplate, std::vector<IRType*> const& typeArgs
+IRFunction* Instantiator::getFunctionInstantiation(
+    IRFunction* function, std::vector<IRType*> const& typeArgs
 )
 {
-    FLC_ASSERT(
-        typeArgs.size() == functionTemplate->typeParams.size(),
-        "Number of type args has to match number of type params"
+    if (function->isConstraintFunction())
+    {
+        FLC_ASSERT(typeArgs.size() == 0);
+        FLC_ASSERT(function->typeParams.size() == 0);
+        FLC_ASSERT(function->typeArgs.size() == function->typeParams.size());
+
+        return function;
+    }
+
+    FLC_ASSERT(function->isIntrinsicFunction() || function->isNormalFunction());
+
+    FLC_ASSERT(function->parent);
+    FLC_ASSERT(!function->blueprint);
+    FLC_ASSERT(function->typeArgs.size() == 0);
+    FLC_ASSERT(typeArgs.size() == function->typeParams.size());
+
+    if (typeArgs.size() == 0)
+        return function;
+
+    auto instantiation = function->parent->getEnv()->getFunctionInstantiation(
+        function, typeArgs
     );
+    if (instantiation)
+        return instantiation;
 
-    m_env = m_envCtx.make(Environment(
-        functionTemplate->name, functionTemplate->getParent()->getEnv()
-    ));
-    m_irCtx = functionTemplate->getParent()->getIrCtx();
+    m_env = m_envCtx.make(Environment(function->name));
+    auto prevIrCtx = m_irCtx;
+    m_irCtx = function->parent->getIrCtx();
 
-    auto zippedTypeArgs = zip_view(
-        std::views::all(functionTemplate->typeParams), std::views::all(typeArgs)
-    );
+    if (function->isIntrinsicFunction())
+        instantiation = m_irCtx->make(IRIntrinsicFunction());
+    else if (function->isNormalFunction())
+        instantiation = m_irCtx->make(IRNormalFunction());
+    else
+        FLC_ASSERT(false);
 
+    instantiation->parent = function->parent;
+    instantiation->blueprint = function;
+    instantiation->name = function->name;
+    instantiation->typeParams = function->typeParams;
+    instantiation->typeArgs = typeArgs;
+
+    auto zippedTypeArgs = zip(function->typeParams, typeArgs);
     for (auto [typeParam, typeArg] : zippedTypeArgs)
         m_env->addTypeParamValue(typeParam, typeArg);
 
-    auto params = functionTemplate->params
-        | std::views::transform([&](auto const& p) {
-                      return std::pair(p.first, instantiateType(p.second));
-                  })
+    instantiation->params =
+        function->params | std::views::transform([&](auto const& p) {
+            return std::pair(p.first, (IRType*)dispatch(p.second));
+        })
         | range_utils::to_vector;
 
-    auto result = instantiateType(functionTemplate->result);
+    instantiation->result = (IRType*)dispatch(function->result);
 
-    auto requirements = functionTemplate->requirements
-        | std::views::transform(
-                            [&](auto r) {
-        auto typeArgs = r->typeArgs | std::views::transform([&](auto arg) {
-                            return instantiateType(arg);
-                        })
-            | range_utils::to_vector;
+    instantiation->requirements =
+        function->requirements | std::views::transform([&](auto r) {
+            auto typeArgs = r->typeArgs | std::views::transform([&](auto arg) {
+                                return (IRType*)dispatch(arg);
+                            })
+                | range_utils::to_vector;
 
-        return getConstraintInstantiation(r->getInstantiatedFrom(), typeArgs);
-          });
+            return getConstraintInstantiation(
+                r->getInstantiatedFrom(), typeArgs
+            );
+        })
+        | range_utils::to_vector;
 
-    auto instantiation = m_irCtx->make(IRFunctionInstantiation(
-        functionTemplate->name,
-        typeArgs,
-        params,
-        result,
-        std::set(requirements.begin(), requirements.end()),
-        nullptr
-    ));
+    instantiation->setLocation(function->getLocation(SourceRef()));
+    instantiation->setNoMangle(function->getNoMangle(false));
+    instantiation->setExtern(function->getExtern(false));
 
-    instantiation->setInstantiatedFrom(functionTemplate);
-    instantiation->setLocation(functionTemplate->getLocation(SourceRef()));
+    // We can't add the function instantiation to the parent env right here,
+    // because we don't yet know if the instantiation is legal. If it is not, we
+    // are going to get errors later on.
 
-    functionTemplate->getParent()->getEnv()->addFunctionInstantiation(
-        functionTemplate, instantiation
-    );
+    // function->parent->getEnv()->addFunctionInstantiation(
+    //     function, instantiation
+    // );
 
-    m_env = nullptr;
-    m_irCtx = nullptr;
+    m_irCtx = prevIrCtx;
     return instantiation;
-}
-
-IRType* Instantiator::instantiateType(IRType* type)
-{
-    return (IRType*)dispatch(type);
 }
 
 IRType* Instantiator::instantiateType(
@@ -144,11 +165,23 @@ IRType* Instantiator::instantiateType(
     m_env = env;
     m_irCtx = irCtx;
 
-    auto instantiation = instantiateType(type);
+    auto instantiation = (IRType*)dispatch(type);
 
     m_env = prevEnv;
     m_irCtx = prevIrCtx;
     return instantiation;
+}
+
+IRNode* Instantiator::visit(IRConstraintFunction* node)
+{
+    auto params = node->params | std::views::transform([&](auto const& p) {
+                      return std::pair(p.first, (IRType*)dispatch(p.second));
+                  })
+        | range_utils::to_vector;
+
+    auto result = (IRType*)dispatch(node->result);
+
+    return m_irCtx->make(IRConstraintFunction(node->name, params, result));
 }
 
 IRNode* Instantiator::visit(IRStructInstantiation* node)

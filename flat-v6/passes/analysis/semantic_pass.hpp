@@ -13,6 +13,7 @@ class GraphContext;
 class Instantiator;
 class CallTargetResolver;
 class Formatter;
+class StructInstantiationUpdatePass;
 
 class SemanticPass : IRVisitor<IRType*>
 {
@@ -23,6 +24,7 @@ private:
     Instantiator& m_instantiator;
     CallTargetResolver& m_callTargetResolver;
     Formatter& m_formatter;
+    StructInstantiationUpdatePass& m_structUpdatePass;
 
     IRModule* m_module = nullptr;
     GraphContext* m_irCtx = nullptr;
@@ -38,19 +40,21 @@ public:
         GraphContext& envCtx,
         Instantiator& instantiator,
         CallTargetResolver& callTargetResolver,
-        Formatter& formatter
+        Formatter& formatter,
+        StructInstantiationUpdatePass& structUpdatePass
     )
         : m_logger(logger),
           m_compCtx(compCtx),
           m_envCtx(envCtx),
           m_instantiator(instantiator),
           m_callTargetResolver(callTargetResolver),
-          m_formatter(formatter)
+          m_formatter(formatter),
+          m_structUpdatePass(structUpdatePass)
     {
     }
 
 public:
-    void process(IRModule* mod);
+    void process(IRModule* node);
 
 private:
     virtual IRType* visit(IRIntegerExpression* node) override;
@@ -59,10 +63,7 @@ private:
     virtual IRType* visit(IRStringExpression* node) override;
     virtual IRType* visit(IRIdentifierExpression* node) override;
     virtual IRType* visit(IRStructExpression* node) override;
-    virtual IRType* visit(IRUnaryExpression* node) override;
-    virtual IRType* visit(IRBinaryExpression* node) override;
-    virtual IRType* visit(IRCallExpression* node) override;
-    virtual IRType* visit(IRIndexExpression* node) override;
+    virtual IRType* visit(IRLoweredCallExpression* node, IRNode*& ref) override;
     virtual IRType* visit(IRFieldExpression* node) override;
 
     virtual IRType* visit(IRBlockStatement* node) override;
@@ -72,11 +73,10 @@ private:
     virtual IRType* visit(IRWhileStatement* node) override;
     virtual IRType* visit(IRIfStatement* node) override;
 
-    virtual IRType* visit(IRFunctionTemplate* node) override;
-    virtual IRType* visit(IRModule* node) override;
+    virtual IRType* visit(IRNormalFunction* node) override;
 
 private:
-    IRFunctionHead* findCallTarget(
+    IRFunction* findCallTarget(
         std::string const& name,
         std::vector<IRType*> const& typeArgs,
         std::vector<IRType*> const& args,

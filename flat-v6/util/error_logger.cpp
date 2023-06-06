@@ -26,10 +26,13 @@ void ErrorLogger::fatal(SourceRef const& location, std::string const& message)
     std::stringstream text;
     text << "Fatal error: ln " << line << ", col " << column;
     if (location.begin != location.end)
-        text << source.substr(
-            std::min(location.begin, source.size() - 1),
-            location.end - location.begin
-        );
+    {
+        text << ": "
+             << source.substr(
+                    std::min(location.begin, source.size() - 1),
+                    location.end - location.begin
+                );
+    }
     text << ": " << message << "\n";
 
     output << text.str();
@@ -62,10 +65,13 @@ void ErrorLogger::error(SourceRef const& location, std::string const& message)
     std::stringstream text;
     text << "Error: ln " << line << ", col " << column;
     if (location.begin != location.end)
-        text << source.substr(
-            std::min(location.begin, source.size() - 1),
-            location.end - location.begin
-        );
+    {
+        text << ": "
+             << source.substr(
+                    std::min(location.begin, source.size() - 1),
+                    location.end - location.begin
+                );
+    }
     text << ": " << message << "\n";
 
     output << text.str();
@@ -95,10 +101,13 @@ void ErrorLogger::warning(SourceRef const& location, std::string const& message)
     std::stringstream text;
     text << "Warning: ln " << line << ", col " << column;
     if (location.begin != location.end)
-        text << source.substr(
-            std::min(location.begin, source.size() - 1),
-            location.end - location.begin
-        );
+    {
+        text << ": "
+             << source.substr(
+                    std::min(location.begin, source.size() - 1),
+                    location.end - location.begin
+                );
+    }
     text << ": " << message << "\n";
 
     output << text.str();

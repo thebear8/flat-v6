@@ -6,7 +6,7 @@
 #include "../data/operator.hpp"
 #include "ir_node.hpp"
 
-struct IRFunctionHead;
+struct IRFunction;
 
 struct IRExpression : public IRNode
 {
@@ -22,7 +22,10 @@ struct IRIntegerExpression : public IRExpression
     std::string value;
 
     IRIntegerExpression(
-        bool isSigned, std::size_t width, std::size_t radix, std::string const& value
+        bool isSigned,
+        std::size_t width,
+        std::size_t radix,
+        std::string const& value
     )
         : isSigned(isSigned), width(width), radix(radix), value(value)
     {
@@ -102,8 +105,6 @@ struct IRUnaryExpression : public IRExpression
     }
 
     IMPLEMENT_ACCEPT()
-
-    METADATA_PROP(target, IRFunctionHead*, getTarget, setTarget)
 };
 
 struct IRBinaryExpression : public IRExpression
@@ -119,8 +120,6 @@ struct IRBinaryExpression : public IRExpression
     }
 
     IMPLEMENT_ACCEPT()
-
-    METADATA_PROP(target, IRFunctionHead*, getTarget, setTarget)
 };
 
 struct IRCallExpression : public IRExpression
@@ -136,8 +135,6 @@ struct IRCallExpression : public IRExpression
     }
 
     IMPLEMENT_ACCEPT()
-
-    METADATA_PROP(target, IRFunctionHead*, getTarget, setTarget)
 };
 
 struct IRIndexExpression : public IRExpression
@@ -153,8 +150,6 @@ struct IRIndexExpression : public IRExpression
     }
 
     IMPLEMENT_ACCEPT()
-
-    METADATA_PROP(target, IRFunctionHead*, getTarget, setTarget)
 };
 
 struct IRFieldExpression : public IRExpression
@@ -164,6 +159,39 @@ struct IRFieldExpression : public IRExpression
 
     IRFieldExpression(IRExpression* expression, std::string const& fieldName)
         : expression(expression), fieldName(fieldName)
+    {
+    }
+
+    IMPLEMENT_ACCEPT()
+};
+
+struct IRLoweredCallExpression : public IRExpression
+{
+    std::string name;
+    std::vector<IRType*> typeArgs;
+    std::vector<IRExpression*> args;
+
+    IRLoweredCallExpression(
+        std::string name,
+        std::vector<IRType*> const& typeArgs,
+        std::vector<IRExpression*> const& args
+    )
+        : name(name), typeArgs(typeArgs), args(args)
+    {
+    }
+
+    IMPLEMENT_ACCEPT()
+};
+
+struct IRBoundCallExpression : public IRExpression
+{
+    IRFunction* target;
+    std::vector<IRExpression*> args;
+
+    IRBoundCallExpression(
+        IRFunction* target, std::vector<IRExpression*> const& args
+    )
+        : target(target), args(args)
     {
     }
 

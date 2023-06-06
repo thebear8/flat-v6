@@ -1,14 +1,10 @@
 #pragma once
 
-#include <llvm/Support/raw_ostream.h>
-
 #include <iostream>
 
 #include "ast/ast.hpp"
-#include "environment.hpp"
 #include "ir/ir.hpp"
 #include "util/error_logger.hpp"
-#include "util/graph_context.hpp"
 
 struct TargetDescriptor
 {
@@ -28,46 +24,69 @@ struct TargetDescriptor
     }
 };
 
-class CompilationContext : public Environment
-{
-    friend class ModuleContext;
+class GraphContext;
+class IRModule;
 
+namespace llvm
+{
+class raw_pwrite_stream;
+}
+
+class CompilationContext
+{
 private:
     ErrorLogger m_logger;
-    GraphContext m_astCtx, m_irCtx;
+    GraphContext &m_astCtx, &m_irCtx;
+    IRModule* m_builtins = nullptr;
+
     std::unordered_map<std::size_t, std::string> m_sourceFiles;
     std::vector<ASTSourceFile*> m_parsedSourceFiles;
 
     std::unordered_map<std::string, IRModule*> m_modules;
-
-    std::unordered_map<std::size_t, IRIntegerType*> m_signedIntegerTypes;
-    std::unordered_map<std::size_t, IRIntegerType*> m_unsignedIntegerTypes;
     std::unordered_map<IRType*, IRPointerType*> m_pointerTypes;
     std::unordered_map<IRType*, IRArrayType*> m_arrayTypes;
 
-    IRVoidType* m_void;
-    IRBoolType* m_bool;
-    IRIntegerType* m_i8;
-    IRIntegerType* m_i16;
-    IRIntegerType* m_i32;
-    IRIntegerType* m_i64;
-    IRIntegerType* m_u8;
-    IRIntegerType* m_u16;
-    IRIntegerType* m_u32;
-    IRIntegerType* m_u64;
-    IRCharType* m_char;
-    IRStringType* m_string;
+    IRVoidType* m_void = nullptr;
+    IRBoolType* m_bool = nullptr;
+    IRIntegerType* m_i8 = nullptr;
+    IRIntegerType* m_i16 = nullptr;
+    IRIntegerType* m_i32 = nullptr;
+    IRIntegerType* m_i64 = nullptr;
+    IRIntegerType* m_u8 = nullptr;
+    IRIntegerType* m_u16 = nullptr;
+    IRIntegerType* m_u32 = nullptr;
+    IRIntegerType* m_u64 = nullptr;
+    IRCharType* m_char = nullptr;
+    IRStringType* m_string = nullptr;
 
 public:
-    CompilationContext(std::ostream& logStream = std::cout);
+    CompilationContext(
+        GraphContext& astCtx, GraphContext& irCtx, std::ostream& logStream
+    );
     ~CompilationContext();
+
+private:
+    void addBuiltinType(std::string const& name, IRType* type);
+    void addBuiltinFunction(IRFunction* function);
+    void addUnaryOperator(std::string const& name, IRType* a, IRType* result);
+    void addBinaryOperator(
+        std::string const& name, IRType* a, IRType* b, IRType* result
+    );
 
 public:
     void readSourceFiles(std::string const& sourceDir);
     void parseSourceFiles();
     void runPasses();
     void generateCode(
-        TargetDescriptor const& targetDesc, llvm::raw_pwrite_stream& output
+        TargetDescriptor const& targetDesc,
+        llvm::raw_pwrite_stream& output,
+        bool optimize
+    );
+    void linkWithGCC(
+        std::string const& executableFileName,
+        std::string const& objectFileName,
+        std::vector<std::string> const& libaryPaths,
+        std::vector<std::string> const& objectNames
     );
 
 public:
@@ -145,4 +164,6 @@ public:
     /// @brief Get string type
     /// @return Type representing string
     IRStringType* getString() { return m_string; }
+
+    IRModule* getBuiltins() { return m_builtins; }
 };

@@ -40,12 +40,8 @@ private:
     std::unordered_multimap<IRStructTemplate*, IRStructInstantiation*>
         m_structInstantiations;
 
-    std::unordered_multimap<std::string, IRFunctionHead*>
-        m_constraintConditions;
-    std::unordered_multimap<std::string, IRFunctionTemplate*>
-        m_functionTemplates;
-    std::unordered_multimap<IRFunctionTemplate*, IRFunctionInstantiation*>
-        m_functionInstantiations;
+    std::unordered_multimap<std::string, IRFunction*> m_functions;
+    std::unordered_multimap<IRFunction*, IRFunction*> m_functionInstantiations;
 
     std::unordered_map<std::string, IRGenericType*> m_typeParams;
     std::unordered_map<IRGenericType*, IRType*> m_typeParamValues;
@@ -53,10 +49,9 @@ private:
     std::unordered_map<std::string, IRType*> m_variableTypes;
     std::unordered_map<std::string, llvm::Value*> m_llvmVariableValues;
 
-private:
-    Formatter m_formatter;
-
 public:
+    Environment(std::string name) : m_name(name), m_parent(nullptr) {}
+
     Environment(std::string name, Environment* parent)
         : m_name(name), m_parent(parent)
     {
@@ -240,97 +235,22 @@ public:
     /// module
     auto& getStructInstantiationMap() { return m_structInstantiations; }
 
-    /// @brief Add a constraint condition with specified name and params to this
-    /// environment
-    /// @param condition Condition to add
-    /// @return The added condition or nullptr if a condition with the same name
-    /// and parameters already exists
-    IRFunctionHead* addConstraintCondition(IRFunctionHead* condition);
+    IRFunction* addFunction(IRFunction* function);
 
-    /// @brief Search for a constraint condition by name and params in this
-    /// environment
-    /// @param name Name of the constraint condition
-    /// @param params Parameters of the constraint condition
-    /// @return The found constraint condition or nullptr if the constraint
-    /// condition was not found
-    IRFunctionHead* getConstraintCondition(
-        std::string const& name, std::vector<IRType*> const& params
+    auto& getFunctionMap() { return m_functions; }
+
+    IRFunction* addFunctionInstantiation(
+        IRFunction* function, IRFunction* instantiation
     );
 
-    /// @brief Search for a constraint condition by name and params in the
-    /// environment chain
-    /// @param name Name of the constraint condition
-    /// @param params Parameters of the constraint condition
-    /// @return The found constraint condition or nullptr if the constraint
-    /// condition was not found
-    IRFunctionHead* findConstraintCondition(
-        std::string const& name, std::vector<IRType*> const& params
+    IRFunction* getFunctionInstantiation(
+        IRFunction* function, std::vector<IRType*> const& typeArgs
     );
 
-    /// @brief Get the std::unordered_multimap of constraint conditions in this
-    /// environment
-    auto& getConstraintConditionMap() { return m_constraintConditions; }
-
-    /// @brief Add a function with specified name and params to this environment
-    /// @param function Function to add
-    /// @return The added function or nullptr if a function with the same name
-    /// and parameters already exists
-    IRFunctionTemplate* addFunctionTemplate(IRFunctionTemplate* function);
-
-    /// @brief Search for a function by name and params in this environment
-    /// @param name Name of the function
-    /// @param params Parameters of the function
-    /// @return The found function or nullptr if the function was not found
-    IRFunctionTemplate* getFunctionTemplate(
-        std::string const& name, std::vector<IRType*> const& params
+    IRFunction* findFunctionInstantiation(
+        IRFunction* function, std::vector<IRType*> const& typeArgs
     );
 
-    /// @brief Search for a function by name and params in the environment chain
-    /// @param name Name of the function
-    /// @param params Parameters of the function
-    /// @return The found function or nullptr if the function was not found
-    IRFunctionTemplate* findFunctionTemplate(
-        std::string const& name, std::vector<IRType*> const& params
-    );
-
-    /// @brief Get the std::unordered_multimap of function templates in this
-    /// environment
-    auto& getFunctionTemplateMap() { return m_functionTemplates; }
-
-    /// @brief Add a function instantiation with specified type args to this
-    /// environment
-    /// @param functionTemplate
-    /// @param functionInstantiation
-    /// @return
-    IRFunctionInstantiation* addFunctionInstantiation(
-        IRFunctionTemplate* functionTemplate,
-        IRFunctionInstantiation* functionInstantiation
-    );
-
-    /// @brief Search for a function instantiation by type args in this
-    /// environment
-    /// @param functionTemplate The function to get an instantiation of
-    /// @param typeArgs The type args of the instantiation
-    /// @return The found function instantiation or nullptr if the function
-    /// instantiation was not found
-    IRFunctionInstantiation* getFunctionInstantiation(
-        IRFunctionTemplate* functionTemplate,
-        std::vector<IRType*> const& typeArgs
-    );
-
-    /// @brief Search for a function instantiation by type args in the
-    /// environment chain
-    /// @param functionTemplate The function to get an instantiation of
-    /// @param typeArgs The type args of the instantiation
-    /// @return The found function instantiation or nullptr if the function
-    /// instantiation was not found
-    IRFunctionInstantiation* findFunctionInstantiation(
-        IRFunctionTemplate* functionTemplate,
-        std::vector<IRType*> const& typeArgs
-    );
-
-    /// @brief Get the std::unordered_multimap of function instantiations in
-    /// this environment
     auto& getFunctionInstantiationMap() { return m_functionInstantiations; }
 
     /// @brief Add a type for a variable of given name to the current

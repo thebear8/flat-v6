@@ -12,6 +12,8 @@
     ENTRY(Tab)            \
     ENTRY(NewLine)        \
     ENTRY(Comment)        \
+    ENTRY(Whitespace)     \
+    ENTRY(At)             \
     ENTRY(Dot)            \
     ENTRY(Comma)          \
     ENTRY(Colon)          \
@@ -53,6 +55,8 @@
     ENTRY(Function)       \
     ENTRY(Constraint)     \
     ENTRY(Extern)         \
+    ENTRY(NoMangle)       \
+    ENTRY(Test)           \
     ENTRY(Import)         \
     ENTRY(Module)         \
     ENTRY(Integer)        \

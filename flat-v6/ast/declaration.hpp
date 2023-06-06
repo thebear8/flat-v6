@@ -6,7 +6,7 @@
 
 class IRConstraintTemplate;
 class IRStructTemplate;
-class IRFunctionTemplate;
+class IRNormalFunction;
 
 struct ASTDeclaration : public ASTNode
 {
@@ -108,9 +108,27 @@ struct ASTStructDeclaration : public ASTDeclaration
     METADATA_PROP(irStruct, IRStructTemplate*, getIRStruct, setIRStruct)
 };
 
+struct ASTFunctionAttribute : public ASTNode
+{
+    std::string name;
+    std::vector<std::string> arguments;
+
+    ASTFunctionAttribute(
+        SourceRef const& location,
+        std::string const& name,
+        std::vector<std::string> const& arguments
+    )
+        : ASTNode(location), name(name), arguments(arguments)
+    {
+    }
+
+    IMPLEMENT_ACCEPT()
+};
+
 struct ASTFunctionDeclaration : public ASTDeclaration
 {
-    std::string lib, name;
+    std::string name;
+    std::vector<ASTFunctionAttribute*> attributes;
     std::vector<std::pair<std::string, ASTType*>> parameters;
     ASTType* result;
     std::vector<ASTRequirement*> requirements;
@@ -118,8 +136,8 @@ struct ASTFunctionDeclaration : public ASTDeclaration
 
     ASTFunctionDeclaration(
         SourceRef const& location,
-        std::string const& lib,
         std::string const& name,
+        std::vector<ASTFunctionAttribute*> const& attributes,
         std::vector<std::string> const& typeParams,
         std::vector<std::pair<std::string, ASTType*>> const& parameters,
         ASTType* result,
@@ -127,8 +145,8 @@ struct ASTFunctionDeclaration : public ASTDeclaration
         ASTStatement* body
     )
         : ASTDeclaration(location, typeParams),
-          lib(lib),
           name(name),
+          attributes(attributes),
           parameters(parameters),
           result(result),
           requirements(requirements),
@@ -138,5 +156,5 @@ struct ASTFunctionDeclaration : public ASTDeclaration
 
     IMPLEMENT_ACCEPT()
 
-    METADATA_PROP(irFunction, IRFunctionTemplate*, getIRFunction, setIRFunction)
+    METADATA_PROP(irFunction, IRNormalFunction*, getIRFunction, setIRFunction)
 };

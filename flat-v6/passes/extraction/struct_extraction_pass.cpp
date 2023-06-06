@@ -2,6 +2,10 @@
 
 #include <cassert>
 
+#include "../../environment.hpp"
+#include "../../util/error_logger.hpp"
+#include "../../util/graph_context.hpp"
+
 void StructExtractionPass::process(ASTSourceFile* sourceFile)
 {
     return dispatch(sourceFile);

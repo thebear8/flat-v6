@@ -3,7 +3,7 @@
 #include "../util/metadata_prop.hpp"
 #include "../util/visitor.hpp"
 
-using IRTripleDispatchVisitor = triple_dispatch_visitor::TripleDispatchVisitor<
+using IRTripleDispatchVisitor = TDV::TripleDispatchVisitor<
     struct IRNode,
 
     struct IRExpression,
@@ -18,6 +18,8 @@ using IRTripleDispatchVisitor = triple_dispatch_visitor::TripleDispatchVisitor<
     struct IRCallExpression,
     struct IRIndexExpression,
     struct IRFieldExpression,
+    struct IRLoweredCallExpression,
+    struct IRBoundCallExpression,
 
     struct IRStatement,
     struct IRBlockStatement,
@@ -30,9 +32,10 @@ using IRTripleDispatchVisitor = triple_dispatch_visitor::TripleDispatchVisitor<
     struct IRConstraint,
     struct IRConstraintTemplate,
     struct IRConstraintInstantiation,
-    struct IRFunctionHead,
-    struct IRFunctionTemplate,
-    struct IRFunctionInstantiation,
+    struct IRFunction,
+    struct IRConstraintFunction,
+    struct IRIntrinsicFunction,
+    struct IRNormalFunction,
     struct IRModule,
 
     struct IRType,
@@ -48,8 +51,8 @@ using IRTripleDispatchVisitor = triple_dispatch_visitor::TripleDispatchVisitor<
     struct IRStructTemplate,
     struct IRStructInstantiation>;
 
-template<typename TReturn>
-using IRVisitor = IRTripleDispatchVisitor::Visitor<TReturn>;
+template<typename TReturn, typename TRefBase = IRNode>
+using IRVisitor = IRTripleDispatchVisitor::Visitor<TReturn, TRefBase>;
 
 struct IRNode : IRTripleDispatchVisitor::NodeBase
 {

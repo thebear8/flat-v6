@@ -82,7 +82,7 @@
         "cinttypes": "cpp",
         "typeinfo": "cpp",
         "cassert": "cpp",
-        "*.def": "cpp",
-        "*.inc": "cpp"
-    }
+        "complex": "cpp"
+    },
+    "cmake.configureOnOpen": false
 }
